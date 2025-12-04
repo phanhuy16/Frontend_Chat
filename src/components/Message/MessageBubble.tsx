@@ -70,7 +70,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
 
           {/* Attachments - inside message bubble */}
           {message.attachments && message.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-col gap-2 mt-2 w-full">
               {message.attachments.map((attachment) => (
                 <a
                   key={attachment.id}
@@ -93,10 +93,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
                           : "bg-gray-300 dark:bg-gray-600 text-black dark:text-white hover:bg-gray-400 dark:hover:bg-gray-500"
                       } transition-colors`}
                     >
-                      <span className="material-symbols-outlined">
+                      <span className="material-symbols-outlined text-lg">
                         file_download
                       </span>
-                      <span className="text-sm truncate">
+                      <span className="text-sm truncate max-w-xs">
                         {attachment.fileName}
                       </span>
                     </div>

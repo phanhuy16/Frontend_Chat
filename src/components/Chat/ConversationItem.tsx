@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Conversation } from "../../types/conversation.types";
 import { ConversationType, StatusUser } from "../../types/enums";
 import { getStatusUserColor } from "../../utils/enum-helpers";
 import { useAuth } from "../../hooks/useAuth";
+import { userApi } from "../../api/user.api";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -14,6 +15,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   onSelect,
 }) => {
   const { user } = useAuth();
+  const [avatar, setAvatar] = React.useState("");
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      const data = await userApi.getUserById(user!.id);
+      setAvatar(`https://localhost:7201${data.avatar}`);
+    };
+
+    loadAvatar();
+  }, [user]);
 
   // Memoize calculations to prevent re-renders
   const otherMember = useMemo(() => {
@@ -31,13 +42,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     }
     return conversation.groupName || "Group Chat";
   }, [conversation.conversationType, conversation.groupName, otherMember]);
-
-  const avatarUrl = useMemo(() => {
-    if (conversation.conversationType === ConversationType.Direct) {
-      return otherMember?.avatar || "";
-    }
-    return "";
-  }, [conversation.conversationType, otherMember]);
 
   const status = useMemo(() => {
     if (conversation.conversationType === ConversationType.Direct) {
@@ -62,6 +66,13 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     conversation.members.length,
     onlineMembersCount,
   ]);
+
+  const avatarUrl = useMemo(() => {
+    if (conversation.conversationType === ConversationType.Direct) {
+      return otherMember?.avatar || "";
+    }
+    return "";
+  }, [conversation.conversationType, otherMember]);
 
   return (
     <div

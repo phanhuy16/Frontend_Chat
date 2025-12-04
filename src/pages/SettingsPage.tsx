@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { userApi } from "../api/user.api";
 import toast from "react-hot-toast";
@@ -21,6 +21,16 @@ const SettingsPage: React.FC = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
+  const [avatar, setAvatar] = useState("");
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      const data = await userApi.getUserById(user!.id);
+      setAvatar(`https://localhost:7201${data.avatar}`);
+    };
+
+    loadAvatar();
+  }, [user]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -136,7 +146,6 @@ const SettingsPage: React.FC = () => {
     await logout();
     window.location.href = "/auth";
   };
-
   return (
     <div className="flex h-screen w-full bg-background-light dark:bg-background-dark">
       {/* SideNavBar */}
@@ -147,7 +156,7 @@ const SettingsPage: React.FC = () => {
             <div className="flex gap-3 items-center">
               <div
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                style={{ backgroundImage: `url("${user?.avatar || ""}")` }}
+                style={{ backgroundImage: `url("${avatar}")` }}
               />
               <div className="flex flex-col">
                 <h1 className="text-gray-900 dark:text-white text-base font-medium leading-normal">
@@ -258,9 +267,7 @@ const SettingsPage: React.FC = () => {
                 <div
                   className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24"
                   style={{
-                    backgroundImage: `url("${
-                      avatarPreview || user?.avatar || ""
-                    }")`,
+                    backgroundImage: `url("${avatarPreview || avatar || ""}")`,
                   }}
                 />
                 <div className="flex flex-col justify-center">

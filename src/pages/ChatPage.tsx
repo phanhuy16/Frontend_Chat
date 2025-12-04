@@ -5,20 +5,21 @@ import React, {
   useRef,
   useState,
 } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { conversationApi } from "../api/conversation.api";
+import { friendApi } from "../api/friend.api";
+import { userApi } from "../api/user.api";
 import ChatWindow from "../components/Chat/ChatWindow";
 import ConversationList from "../components/Chat/ConversationList";
+import { CreateGroupModal } from "../components/Chat/CreateGroupModal";
 import SearchUsersModal from "../components/Chat/SearchUsersModal";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
-import { SIGNALR_HUB_URL } from "../utils/constants";
 import { FriendDto, StatusUser } from "../types";
-import { friendApi } from "../api/friend.api";
-import toast from "react-hot-toast";
+import { SIGNALR_HUB_URL } from "../utils/constants";
 import { getStatusUserColor, getStatusUserLabel } from "../utils/enum-helpers";
-import { CreateGroupModal } from "../components/Chat/CreateGroupModal";
 
 interface ChatPageProps {
   pendingRequestCount?: number;
@@ -41,6 +42,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [avatar, setAvatar] = useState("");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -242,6 +244,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     reloadConversations,
   ]);
 
+  useEffect(() => {
+    const loadAvatar = async () => {
+      const data = await userApi.getUserById(user!.id);
+      setAvatar(`https://localhost:7201${data.avatar}`);
+    };
+
+    loadAvatar();
+  }, [user]);
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -274,7 +285,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
               <div className="flex items-center gap-3">
                 <div
                   className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                  style={{ backgroundImage: `url("${user.avatar}")` }}
+                  style={{ backgroundImage: `url("${avatar}")` }}
                 />
                 <div className="flex flex-col">
                   <h1 className="text-black dark:text-white text-base font-medium leading-normal">
