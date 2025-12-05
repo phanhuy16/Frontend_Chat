@@ -6,7 +6,7 @@ export interface Message {
   conversationId: number;
   sender: User;
   senderId: number;
-  content: string;
+  content?: string | null;
   messageType: MessageType;
   createdAt: string;
   updatedAt: string;
@@ -34,12 +34,12 @@ export interface Attachment {
 export interface SendMessageRequest {
   conversationId: number;
   senderId: number;
-  content: string;
+  content?: string | null;
   messageType: MessageType;
 }
 
 export interface EditMessageRequest {
-  content: string;
+  content?: string | null;
 }
 
 export interface AddReactionRequest {

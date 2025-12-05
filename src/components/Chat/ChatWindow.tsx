@@ -4,7 +4,12 @@ import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
 import { useSignalR } from "../../hooks/useSignalR";
 import "../../styles/chat.css";
-import { Conversation, ConversationType, StatusUser } from "../../types";
+import {
+  Conversation,
+  ConversationType,
+  StatusUser,
+  MessageType,
+} from "../../types";
 import { Message } from "../../types/message.types";
 import { SIGNALR_HUB_URL, TYPING_TIMEOUT } from "../../utils/constants";
 import MessageBubble from "../Message/MessageBubble";
@@ -199,7 +204,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         conversation.id,
         user.id,
         inputValue.trim(),
-        0 // MessageType.Text
+        MessageType.Text
       );
       setInputValue("");
       invoke("StopTyping", conversation.id, user.id);
@@ -232,14 +237,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    // CRITICAL: Capture conversation ID at the START
+    const conversationIdAtStart = conversation.id;
+    const userIdAtStart = user?.id;
+
+    if (!userIdAtStart) return;
+
     setUploadingFiles(true);
     setUploadProgress(0);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Determine message type based on files
+      const isAllImages = Array.from(files).every((f) =>
+        f.type.startsWith("image/")
+      );
+      const messageType = isAllImages ? MessageType.Image : MessageType.File;
+      // Step 1: Send placeholder message using HTTP API to get ID immediately
+      const sentMessage = await messageApi.sendMessage({
+        conversationId: conversationIdAtStart,
+        senderId: userIdAtStart,
+        content: "",
+        messageType: messageType,
+      });
 
-      const lastMessage = messages[messages.length - 1];
-      const messageId = lastMessage?.id;
+      const messageId = sentMessage.id;
 
       if (!messageId) {
         toast.error("Failed to get message ID");
@@ -250,6 +271,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       const totalFiles = files.length;
       let successCount = 0;
 
+      // Step 2: Upload files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
@@ -257,7 +279,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           await attachmentApi.uploadAttachment(file, messageId.toString());
           successCount++;
 
-          // Update progress
           const progress = Math.round(((i + 1) / totalFiles) * 100);
           setUploadProgress(progress);
 
@@ -269,15 +290,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }
 
       if (successCount > 0) {
+        // Reload messages using CAPTURED conversation ID
         const updatedMessages = await messageApi.getConversationMessages(
-          conversation.id,
+          conversationIdAtStart,
           1,
           50
         );
         const sortedMessages = [...updatedMessages].reverse();
         setMessages(sortedMessages);
         toast.success(`Uploaded ${successCount} of ${totalFiles} files`);
-        processedMessageIdsRef.current.delete(messageId);
       }
     } catch (err) {
       console.error("Failed to upload files:", err);

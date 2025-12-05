@@ -34,39 +34,44 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
 
         {/* Message Bubble */}
         <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
-          <div
-            className={`p-3 rounded-lg ${
-              isOwn
-                ? "bg-primary text-white rounded-br-none"
-                : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-none"
-            }`}
-          >
-            {/* Sender name for group chats */}
-            {!isOwn && message.sender && (
-              <p className="text-xs font-semibold mb-1 opacity-75">
-                {message.sender.displayName}
-              </p>
-            )}
+          {/* Message Bubble - Only show if there is content, sender name (group), or reactions */}
+          {(message.content || (!isOwn && message.sender) || (message.reactions && message.reactions.length > 0)) && (
+            <div
+              className={`p-3 rounded-lg ${
+                isOwn
+                  ? "bg-primary text-white rounded-br-none"
+                  : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-none"
+              }`}
+            >
+              {/* Sender name for group chats */}
+              {!isOwn && message.sender && (
+                <p className="text-xs font-semibold mb-1 opacity-75">
+                  {message.sender.displayName}
+                </p>
+              )}
 
-            {/* Message content */}
-            <p className="text-sm leading-normal break-words">
-              {message.content}
-            </p>
+              {/* Message content */}
+              {message.content && (
+                <p className="text-sm leading-normal break-words">
+                  {message.content}
+                </p>
+              )}
 
-            {/* Reactions */}
-            {message.reactions && message.reactions.length > 0 && (
-              <div className="flex gap-1 mt-2 flex-wrap">
-                {message.reactions.map((reaction, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-white/20 dark:bg-black/20"
-                  >
-                    {reaction.emojiType}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+              {/* Reactions */}
+              {message.reactions && message.reactions.length > 0 && (
+                <div className="flex gap-1 mt-2 flex-wrap">
+                  {message.reactions.map((reaction, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-white/20 dark:bg-black/20"
+                    >
+                      {reaction.emojiType}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Attachments - inside message bubble */}
           {message.attachments && message.attachments.length > 0 && (

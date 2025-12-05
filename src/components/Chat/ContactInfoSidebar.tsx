@@ -1,6 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Conversation, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
+import { useAuth } from "../../hooks/useAuth";
+import blockApi from "../../api/block.api";
+import toast from "react-hot-toast";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -17,7 +20,51 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
   conversation,
   messages = [],
 }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"info" | "media">("info");
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
+  // Check if user is blocked
+  useEffect(() => {
+    const checkBlockStatus = async () => {
+      if (user?.id && otherMember?.id) {
+        try {
+          const blocked = await blockApi.isUserBlocked(user.id, otherMember.id);
+          setIsBlocked(blocked);
+        } catch (err) {
+          console.error("Error checking block status:", err);
+        }
+      }
+    };
+
+    if (isOpen) {
+      checkBlockStatus();
+    }
+  }, [isOpen, user?.id, otherMember?.id]);
+
+  // Handle block/unblock
+  const handleBlockUser = async () => {
+    if (!user?.id || !otherMember?.id) return;
+
+    setBlockLoading(true);
+    try {
+      if (isBlocked) {
+        await blockApi.unblockUser(user.id, otherMember.id);
+        toast.success(`Đã bỏ chặn ${otherMember.displayName}`);
+        setIsBlocked(false);
+      } else {
+        await blockApi.blockUser(user.id, otherMember.id);
+        toast.success(`Đã chặn ${otherMember.displayName}`);
+        setIsBlocked(true);
+      }
+    } catch (err) {
+      console.error("Error blocking user:", err);
+      toast.error("Lỗi khi chặn người dùng");
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   // Extract all attachments from messages
   const allAttachments = useMemo(() => {
@@ -212,17 +259,22 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                   <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 px-2">
                     Quyền riêng tư & hỗ trợ
                   </h4>
-                  <a
-                    href="#"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                  <button
+                    onClick={handleBlockUser}
+                    disabled={blockLoading}
+                    className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                      isBlocked
+                        ? "hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                        : "hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
-                      block
+                    <span className="material-symbols-outlined">
+                      {isBlocked ? "check_circle" : "block"}
                     </span>
                     <span className="text-black dark:text-white text-base">
-                      Chặn
+                      {isBlocked ? "Đã chặn" : "Chặn"}
                     </span>
-                  </a>
+                  </button>
                   <a
                     href="#"
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors"
