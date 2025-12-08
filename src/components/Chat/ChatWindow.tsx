@@ -11,12 +11,13 @@ import {
   MessageType,
 } from "../../types";
 import { Message } from "../../types/message.types";
-import { SIGNALR_HUB_URL, TYPING_TIMEOUT } from "../../utils/constants";
+import { SIGNALR_HUB_URL_CHAT, TYPING_TIMEOUT } from "../../utils/constants";
 import MessageBubble from "../Message/MessageBubble";
 import { conversationApi } from "../../api/conversation.api";
 import { GroupMembersModal } from "./GroupMembersModal";
 import { AddMembersModal } from "./AddMembersModal";
 import toast from "react-hot-toast";
+import blockApi from "../../api/block.api";
 import { EmojiPicker } from "./EmojiPicker";
 import ContactInfoSidebar from "./ContactInfoSidebar";
 import attachmentApi from "../../api/attachment.api";
@@ -37,7 +38,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setConversations,
     setCurrentConversation,
   } = useChat();
-  const { invoke, on, isConnected } = useSignalR(SIGNALR_HUB_URL);
+  const { invoke, on, off, isConnected } = useSignalR(SIGNALR_HUB_URL_CHAT);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [showGroupMembers, setShowGroupMembers] = useState(false);
@@ -48,6 +49,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showContactSidebar, setShowContactSidebar] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +86,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Check block status
+  useEffect(() => {
+    const checkBlockStatus = async () => {
+      const otherMember = getOtherMember();
+      if (
+        user?.id &&
+        otherMember?.id &&
+        conversation.conversationType === ConversationType.Direct
+      ) {
+        try {
+          const { isBlocked } = await blockApi.isUserBlockedMutual(
+            user.id,
+            otherMember.id
+          );
+          setIsBlocked(isBlocked);
+        } catch (err) {
+          console.error("Error checking block status:", err);
+        }
+      } else {
+        setIsBlocked(false);
+      }
+    };
+
+    checkBlockStatus();
+  }, [conversation, user?.id]);
 
   useEffect(() => {
     const loadMessage = async () => {
@@ -136,6 +164,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
     listenerSetupRef.current = convId;
 
+    on("Error", (errorMessage: string) => {
+      console.error("SignalR Error:", errorMessage);
+
+      if (errorMessage.includes("chặn")) {
+        setIsBlocked(true);
+        toast.error(errorMessage);
+      } else {
+        toast.error(errorMessage);
+      }
+    });
+
     on("ReceiveMessage", (message: Message) => {
       if (message.conversationId === convId) {
         if (!processedMessageIdsRef.current.has(message.id)) {
@@ -155,7 +194,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     on("UserStoppedTyping", (userId: number) => {
       removeTypingUser(userId);
     });
-  }, [conversation?.id, addMessage, addTypingUser, removeTypingUser, on]);
+
+    return () => {
+      off("Error");
+      off("ReceiveMessage");
+      off("UserTyping");
+      off("UserStoppedTyping");
+    };
+  }, [conversation?.id, addMessage, addTypingUser, removeTypingUser, on, off]);
 
   useEffect(() => {
     // small delay to ensure DOM painted
@@ -198,6 +244,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     e.preventDefault();
     if (!inputValue.trim() || !user) return;
 
+    if (isBlocked) {
+      toast.error("Bạn đã chặn người dùng này, không thể gửi tin nhắn");
+      return;
+    }
+
     try {
       await invoke(
         "SendMessage",
@@ -236,6 +287,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   // Handle file upload
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    if (isBlocked) {
+      toast.error("Bạn đã chặn người dùng này, không thể gửi file");
+      return;
+    }
 
     // CRITICAL: Capture conversation ID at the START
     const conversationIdAtStart = conversation.id;
@@ -473,135 +529,155 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               </div>
             </div>
           )}
-          <form
-            onSubmit={handleSendMessage}
-            className="flex items-center gap-4"
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileInput}
-              disabled={uploadingFiles}
-            />
 
-            {/* Upload Button with Dropdown Menu */}
-            <div className="relative">
-              <button
-                ref={uploadButtonRef}
-                type="button"
-                onClick={() => setShowUploadMenu(!showUploadMenu)}
-                disabled={uploadingFiles}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
-                title="Upload file"
-              >
-                <span className="material-symbols-outlined">
-                  {uploadingFiles ? "hourglass_empty" : "attach_file"}
+          {isBlocked ? (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-red-500 text-xl">
+                  block
                 </span>
-              </button>
-
-              {/* Dropdown Menu - hiện ra phía trên */}
-              {showUploadMenu && (
-                <div
-                  ref={uploadMenuRef}
-                  className="absolute left-0 bottom-full mb-2 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
-                >
-                  {/* Upload Image */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.accept = "image/*";
-                        fileInputRef.current.click();
-                      }
-                      setShowUploadMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 border-b border-gray-200 dark:border-gray-700"
-                  >
-                    <span className="material-symbols-outlined text-lg">
-                      image
-                    </span>
-                    <span className="text-sm">Upload ảnh</span>
-                  </button>
-
-                  {/* Upload Any File */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.accept = "*/*";
-                        fileInputRef.current.click();
-                      }
-                      setShowUploadMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-lg">
-                      description
-                    </span>
-                    <span className="text-sm">Upload file</span>
-                  </button>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                    Không thể gửi tin nhắn
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-500 mt-1">
+                    Bạn đã chặn người dùng này hoặc bị người dùng này chặn. Hãy
+                    bỏ chặn để tiếp tục trò chuyện.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
-
-            <input
-              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-background-dark border border-gray-300 dark:border-gray-700 rounded-full focus:ring-primary focus:border-primary text-black dark:text-white placeholder-gray-500 transition-all"
-              placeholder="Nhập tin nhắn..."
-              type="text"
-              value={inputValue}
-              onChange={handleInputChange}
-              disabled={uploadingFiles}
-            />
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                disabled={uploadingFiles}
-              >
-                <span className="material-symbols-outlined">
-                  emoji_emotions
-                </span>
-              </button>
-              <EmojiPicker
-                isOpen={showEmojiPicker}
-                onClose={() => setShowEmojiPicker(false)}
-                onEmojiSelect={async (emoji) => {
-                  const lastMessage = messages[messages.length - 1];
-
-                  if (!lastMessage || !lastMessage.id) {
-                    toast.error("No message to react to");
-                    setShowEmojiPicker(false);
-                    return;
-                  }
-
-                  try {
-                    await invoke(
-                      "AddReaction",
-                      lastMessage.id,
-                      conversation.id,
-                      user?.id,
-                      emoji,
-                      user?.displayName
-                    );
-                    setShowEmojiPicker(false);
-                  } catch (err) {
-                    console.error("Failed to add reaction:", err);
-                    toast.error("Failed to add reaction");
-                  }
-                }}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || uploadingFiles}
-              className="p-2 bg-primary text-white rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          ) : (
+            <form
+              onSubmit={handleSendMessage}
+              className="flex items-center gap-4"
             >
-              <span className="material-symbols-outlined">send</span>
-            </button>
-          </form>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileInput}
+                disabled={uploadingFiles}
+              />
+
+              {/* Upload Button with Dropdown Menu */}
+              <div className="relative">
+                <button
+                  ref={uploadButtonRef}
+                  type="button"
+                  onClick={() => setShowUploadMenu(!showUploadMenu)}
+                  disabled={uploadingFiles}
+                  className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+                  title="Upload file"
+                >
+                  <span className="material-symbols-outlined">
+                    {uploadingFiles ? "hourglass_empty" : "attach_file"}
+                  </span>
+                </button>
+
+                {/* Dropdown Menu - hiện ra phía trên */}
+                {showUploadMenu && (
+                  <div
+                    ref={uploadMenuRef}
+                    className="absolute left-0 bottom-full mb-2 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
+                  >
+                    {/* Upload Image */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "image/*";
+                          fileInputRef.current.click();
+                        }
+                        setShowUploadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 border-b border-gray-200 dark:border-gray-700"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        image
+                      </span>
+                      <span className="text-sm">Upload ảnh</span>
+                    </button>
+
+                    {/* Upload Any File */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "*/*";
+                          fileInputRef.current.click();
+                        }
+                        setShowUploadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        description
+                      </span>
+                      <span className="text-sm">Upload file</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <input
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-background-dark border border-gray-300 dark:border-gray-700 rounded-full focus:ring-primary focus:border-primary text-black dark:text-white placeholder-gray-500 transition-all"
+                placeholder="Nhập tin nhắn..."
+                type="text"
+                value={inputValue}
+                onChange={handleInputChange}
+                disabled={uploadingFiles}
+              />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+                  disabled={uploadingFiles}
+                >
+                  <span className="material-symbols-outlined">
+                    emoji_emotions
+                  </span>
+                </button>
+                <EmojiPicker
+                  isOpen={showEmojiPicker}
+                  onClose={() => setShowEmojiPicker(false)}
+                  onEmojiSelect={async (emoji) => {
+                    const lastMessage = messages[messages.length - 1];
+
+                    if (!lastMessage || !lastMessage.id) {
+                      toast.error("No message to react to");
+                      setShowEmojiPicker(false);
+                      return;
+                    }
+
+                    try {
+                      await invoke(
+                        "AddReaction",
+                        lastMessage.id,
+                        conversation.id,
+                        user?.id,
+                        emoji,
+                        user?.displayName
+                      );
+                      setShowEmojiPicker(false);
+                    } catch (err) {
+                      console.error("Failed to add reaction:", err);
+                      toast.error("Failed to add reaction");
+                    }
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!inputValue.trim() || uploadingFiles}
+                className="p-2 text-gray-950 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span className="material-symbols-outlined">send</span>
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -622,6 +698,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         otherMember={getOtherMember()}
         conversation={conversation}
         messages={messages}
+        onBlockChange={setIsBlocked}
       />
 
       {/* Group Members Modal */}

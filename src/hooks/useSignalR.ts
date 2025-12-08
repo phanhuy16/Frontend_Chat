@@ -2,9 +2,9 @@ import * as signalR from '@microsoft/signalr';
 import { useAuth } from './useAuth';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Global instance to prevent multiple connections
-let globalConnection: signalR.HubConnection | null = null;
-let globalConnectionPromise: Promise<void> | null = null;
+// Global maps to manage multiple connections
+const globalConnections = new Map<string, signalR.HubConnection>();
+const globalConnectionPromises = new Map<string, Promise<void>>();
 
 export const useSignalR = (hubUrl: string) => {
   const { token } = useAuth();
@@ -12,35 +12,70 @@ export const useSignalR = (hubUrl: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const isMountedRef = useRef(true);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+
+  // Track registered event handlers to prevent duplicates
+  const registeredHandlersRef = useRef<Map<string, (...args: any[]) => void>>(new Map());
+
+  // Queue for event listeners before connection is ready
+  const eventQueueRef = useRef<{ event: string; handler: (...args: any[]) => void }[]>([]);
+
+  // Process queued event listeners
+  const processEventQueue = useCallback(() => {
+    const connection = globalConnections.get(hubUrl);
+    if (!connection) return;
+
+    while (eventQueueRef.current.length > 0) {
+      const { event, handler } = eventQueueRef.current.shift()!;
+      connection.on(event, handler);
+      registeredHandlersRef.current.set(event, handler);
+    }
+  }, [hubUrl]);
 
   const connect = useCallback(async () => {
     if (!token) {
-      console.warn('No token available');
-      return;
-    }
-
-    // Use global connection if already exists and connected
-    if (globalConnection?.state === signalR.HubConnectionState.Connected) {
-      connectionRef.current = globalConnection;
-
+      console.warn('❌ No token available for SignalR connection');
       if (isMountedRef.current) {
-        setIsConnected(true);
+        setIsConnecting(false);
       }
       return;
     }
 
-    // If connection is in progress, wait for it
-    if (globalConnectionPromise) {
+    // Check existing connection
+    const existingConnection = globalConnections.get(hubUrl);
+    if (existingConnection?.state === signalR.HubConnectionState.Connected) {
+      connectionRef.current = existingConnection;
+
+      if (isMountedRef.current) {
+        setIsConnected(true);
+        setIsConnecting(false);
+      }
+
+      processEventQueue();
+      return;
+    }
+
+    // Check existing promise
+    let existingPromise = globalConnectionPromises.get(hubUrl);
+    if (existingPromise) {
       try {
-        await globalConnectionPromise;
+        await existingPromise;
         if (isMountedRef.current) {
-          connectionRef.current = globalConnection;
-          setIsConnected(true);
+          const conn = globalConnections.get(hubUrl);
+          if (conn) {
+            connectionRef.current = conn;
+            setIsConnected(true);
+            setIsConnecting(false);
+          }
         }
+
+        processEventQueue();
         return;
       } catch (error) {
         console.error('Failed waiting for connection:', error);
-        globalConnectionPromise = null;
+        globalConnectionPromises.delete(hubUrl);
+        existingPromise = undefined;
       }
     }
 
@@ -59,7 +94,7 @@ export const useSignalR = (hubUrl: string) => {
           withCredentials: true,
         })
         .withAutomaticReconnect([0, 0, 0, 1000, 3000, 5000])
-        .configureLogging(signalR.LogLevel.Information)
+        .configureLogging(signalR.LogLevel.Warning) 
         .build();
 
       connection.on('Error', (error: string) => {
@@ -76,6 +111,7 @@ export const useSignalR = (hubUrl: string) => {
         if (isMountedRef.current) {
           setIsConnected(true);
         }
+        processEventQueue();
       });
 
       connection.onclose(() => {
@@ -83,93 +119,147 @@ export const useSignalR = (hubUrl: string) => {
           setIsConnected(false);
           setIsConnecting(false);
         }
-        globalConnection = null;
-        globalConnectionPromise = null;
+        globalConnections.delete(hubUrl);
+        globalConnectionPromises.delete(hubUrl);
       });
 
-      globalConnectionPromise = connection.start();
+      const startPromise = connection.start();
+      globalConnectionPromises.set(hubUrl, startPromise);
 
-      await globalConnectionPromise;
+      await startPromise;
 
-      globalConnection = connection;
+      globalConnections.set(hubUrl, connection);
       connectionRef.current = connection;
+      reconnectAttemptsRef.current = 0;
 
       if (isMountedRef.current) {
         setIsConnected(true);
         setIsConnecting(false);
       }
 
+      processEventQueue();
+
     } catch (error) {
       console.error('SignalR connection error:', error);
-      globalConnectionPromise = null;
+      globalConnectionPromises.delete(hubUrl);
 
       if (isMountedRef.current) {
         setIsConnecting(false);
       }
       // Retry connection after delay
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          connect();
-        }
-      }, 5000);
+      reconnectAttemptsRef.current += 1;
+      const delayMs = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+
+      if (reconnectAttemptsRef.current <= maxReconnectAttempts) {
+        console.log(`⏳ Retrying connection in ${delayMs}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+        const timeoutId = setTimeout(() => {
+          if (isMountedRef.current) {
+            connect();
+          }
+        }, delayMs);
+
+        return () => clearTimeout(timeoutId);
+      } else {
+        console.error(`Max reconnect attempts (${maxReconnectAttempts}) reached`);
+      }
     }
-  }, [token, hubUrl, isConnecting]);
+  }, [token, hubUrl, isConnecting, processEventQueue]);
 
   const disconnect = useCallback(async () => {
-    if (isMountedRef.current) {
-      setIsConnected(false);
+    try {
+      const connection = globalConnections.get(hubUrl);
+      if (connection && connection.state === signalR.HubConnectionState.Connected) {
+        await connection.stop();
+        console.log('SignalR disconnected');
+      }
+    } catch (error) {
+      console.error('Error disconnecting SignalR:', error);
+    } finally {
+      globalConnections.delete(hubUrl);
+      globalConnectionPromises.delete(hubUrl);
+      registeredHandlersRef.current.clear();
+      eventQueueRef.current = [];
+
+      if (isMountedRef.current) {
+        setIsConnected(false);
+        setIsConnecting(false);
+      }
     }
-  }, []);
+  }, [hubUrl]);
 
   const invoke = useCallback(async (methodName: string, ...args: any[]) => {
-    // Wait for global connection
-    if (!globalConnection) {
-      throw new Error('Not connected');
-    }
+    // Wait for connection
+    let connection = globalConnections.get(hubUrl);
 
-    if (globalConnectionPromise) {
-      try {
-        await globalConnectionPromise;
-      } catch (error) {
-        console.error('Failed to connect:', error);
-        throw error;
+    if (!connection) {
+      // if we have a promise, wait for it
+      const promise = globalConnectionPromises.get(hubUrl);
+      if (promise) {
+        try {
+          await promise;
+          connection = globalConnections.get(hubUrl);
+        } catch (e) {
+          throw e;
+        }
       }
     }
 
-    if (globalConnection.state !== signalR.HubConnectionState.Connected) {
-      throw new Error(`Connection state: ${globalConnection.state}`);
+    if (!connection) {
+      throw new Error('Not connected');
     }
 
-    return globalConnection
+    if (connection.state !== signalR.HubConnectionState.Connected) {
+      throw new Error(`Connection state: ${connection.state}`);
+    }
+
+    return connection
       .invoke(methodName, ...args)
       .then(() => console.log(`${methodName} succeeded`))
       .catch((err) => {
         console.error(`${methodName} failed:`, err);
         throw err;
       });
-  }, []);
-
-  const eventQueue = useRef<{ event: string; handler: (...args: any[]) => void }[]>([]);
+  }, [hubUrl]);
 
   const on = useCallback((eventName: string, handler: (...args: any[]) => void) => {
+    const connection = globalConnections.get(hubUrl);
 
-    if (globalConnection) {
-      globalConnection.on(eventName, handler);
-    } else {
-      console.log(`Connection not ready, queueing listener: ${eventName}`);
-      eventQueue.current.push({ event: eventName, handler });
+    if (!connection) {
+      eventQueueRef.current.push({ event: eventName, handler });
+      return;
     }
-  }, []);
+
+    connection.on(eventName, handler);
+    registeredHandlersRef.current.set(eventName, handler);
+  }, [hubUrl]);
+
+  const off = useCallback((eventName: string) => {
+    const connection = globalConnections.get(hubUrl);
+
+    if (!connection) {
+      console.warn(`Cannot remove listener: ${eventName} - not connected`);
+      return;
+    }
+
+    const handler = registeredHandlersRef.current.get(eventName);
+    if (handler) {
+      connection.off(eventName, handler);
+      registeredHandlersRef.current.delete(eventName);
+      console.log(`✅ Removed listener: ${eventName}`);
+    }
+  }, [hubUrl]);
 
   useEffect(() => {
     isMountedRef.current = true;
 
-    connect();
+    if (token) {
+      connect();
+    }
 
     return () => {
       isMountedRef.current = false;
     };
-  }, [connect]);
+  }, [token, connect]);
 
   return {
     connection: connectionRef.current,
@@ -177,6 +267,7 @@ export const useSignalR = (hubUrl: string) => {
     isConnecting,
     invoke,
     on,
+    off,
     disconnect,
   };
 };

@@ -26,3 +26,31 @@ export enum StatusContact {
   Rejected = 2,
   Blocked = 3
 }
+
+export enum ReportStatus {
+  Pending = 0,
+  Reviewed = 1,
+  Resolved = 2,
+  Dismissed = 3
+}
+
+export enum CallType {
+  Audio = 0,
+  Video = 1,
+}
+
+export enum CallStatus {
+  Pending = 0,
+  Answered = 1,
+  Rejected = 2,
+  Missed = 3,
+  Completed = 4,
+  Ended = 5,
+}
+
+export interface EnumValue {
+  value: number;
+  name: string;
+}
+
+export type CallStatusType = "idle" | "ringing" | "connecting" | "connected" | "ended" | "rejected" | "missed";

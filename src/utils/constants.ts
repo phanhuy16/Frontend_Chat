@@ -35,8 +35,9 @@ export const STATUS_CONTACT_OPTIONS = [
 ];
 
 // API Settings
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7201/api';
-export const SIGNALR_HUB_URL = process.env.REACT_APP_SIGNALR_URL || 'https://localhost:7201/hubs/chat';
+export const API_BASE_URL = process.env.REACT_APP_API_URL;
+export const SIGNALR_HUB_URL_CHAT = process.env.REACT_APP_SIGNALR_URL_CHAT || 'https://localhost:7201/hub/chat';
+export const SIGNALR_HUB_URL_CALL = process.env.REACT_APP_SIGNALR_URL_CALL || 'https://localhost:7201/hub/calls';
 
 // Pagination
 export const DEFAULT_PAGE_SIZE = 50;

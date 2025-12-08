@@ -18,7 +18,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
 import { FriendDto, StatusUser } from "../types";
-import { SIGNALR_HUB_URL } from "../utils/constants";
+import { SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 import { getStatusUserColor, getStatusUserLabel } from "../utils/enum-helpers";
 
 interface ChatPageProps {
@@ -34,7 +34,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setConversations,
     setCurrentConversation,
   } = useChat();
-  const { isConnected, on } = useSignalR(SIGNALR_HUB_URL);
+  const { isConnected, on } = useSignalR(SIGNALR_HUB_URL_CHAT);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
