@@ -27,7 +27,6 @@ export class WebRTCService {
   async initPeerConnection(): Promise<void> {
     try {
       if (this.peerConnection) {
-        console.warn("Peer connection already initialized");
         return;
       }
 
@@ -81,6 +80,9 @@ export class WebRTCService {
         };
 
       this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.localStream.getTracks().forEach((track) => {
+        track.enabled = true;  // ← IMPORTANT!
+      });
       return this.localStream;
     } catch (err) {
       console.error("Error getting local stream:", err);
@@ -167,7 +169,6 @@ export class WebRTCService {
       if (!this.peerConnection) return;
 
       if (!this.peerConnection.remoteDescription) {
-        console.log("Buffered ICE candidate (no remote description)");
         this.candidateQueue.push(candidate);
         return;
       }
@@ -184,7 +185,6 @@ export class WebRTCService {
     if (!this.peerConnection) return;
 
     if (this.candidateQueue.length > 0) {
-      console.log(`Processing ${this.candidateQueue.length} buffered ICE candidates`);
 
       while (this.candidateQueue.length > 0) {
         const candidate = this.candidateQueue.shift();
@@ -205,7 +205,6 @@ export class WebRTCService {
 
     // Track event - when remote stream is received
     this.peerConnection.ontrack = (event: RTCTrackEvent) => {
-      console.log("Track received:", event.track.kind);
 
       if (event.streams && event.streams[0]) {
         this.remoteStream = event.streams[0];
@@ -216,7 +215,6 @@ export class WebRTCService {
     // ICE candidate event
     this.peerConnection.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate) {
-        console.log("ICE candidate found:", event.candidate);
         this.onIceCandidateFound?.(event.candidate);
       } else {
         console.log("ICE candidate gathering complete");
@@ -226,28 +224,24 @@ export class WebRTCService {
     // Connection state change
     this.peerConnection.onconnectionstatechange = () => {
       const state = this.peerConnection?.connectionState || "failed";
-      console.log("Connection state changed:", state);
       this.onConnectionStateChange?.(state);
     };
 
     // ICE connection state change
     this.peerConnection.oniceconnectionstatechange = () => {
       const state = this.peerConnection?.iceConnectionState || "failed";
-      console.log("ICE connection state changed:", state);
       this.onIceConnectionStateChange?.(state);
     };
 
     // Signaling state change
     this.peerConnection.onsignalingstatechange = () => {
       const state = this.peerConnection?.signalingState || "closed";
-      console.log("Signaling state changed:", state);
       this.onSignalingStateChange?.(state);
     };
 
     // Handle connection errors
     this.peerConnection.onconnectionstatechange = () => {
       const state = this.peerConnection?.connectionState;
-      console.log("Connection state changed:", state);
 
       if (state === "failed") {
         console.error("Peer connection failed.");

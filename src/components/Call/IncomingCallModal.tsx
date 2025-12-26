@@ -6,6 +6,7 @@ import {
   CloseOutlined,
   VideoCameraOutlined,
 } from "@ant-design/icons";
+import { CallType } from "../../types";
 
 interface IncomingCallModalProps {
   caller: {
@@ -13,7 +14,7 @@ interface IncomingCallModalProps {
     name: string;
     avatar?: string;
   };
-  callType: string;
+  callType: CallType;
   onAccept: () => void;
   onReject: () => void;
 }
@@ -52,19 +53,21 @@ const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
             {caller.name}
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2 animate-pulse">
-            {callType === "Video" ? "📹 Cuộc gọi video" : "☎️ Cuộc gọi thoại"}
+            {callType === CallType.Video
+              ? "📹 Cuộc gọi video"
+              : "☎️ Cuộc gọi thoại"}
           </p>
         </div>
 
         {/* Call Type Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-          {callType === "Video" ? (
+          {callType === CallType.Video ? (
             <VideoCameraOutlined className="text-blue-600 dark:text-blue-400" />
           ) : (
             <PhoneOutlined className="text-blue-600 dark:text-blue-400" />
           )}
           <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-            {callType === "Video" ? "Gọi video" : "Gọi thoại"}
+            {callType === CallType.Video ? "Gọi video" : "Gọi thoại"}
           </span>
         </div>
 

@@ -1,5 +1,3 @@
-
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from './useAuth';
 import { useSignalR } from './useSignalR';
@@ -13,7 +11,7 @@ interface IncomingCallData {
   callerName: string;
   callerAvatar?: string;
   conversationId: number;
-  callType: string;
+  callType: CallType;
   timestamp: number;
 }
 
@@ -36,11 +34,16 @@ export const useCallIntegration = (hubUrl: string) => {
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Store caller ID to use in SendCallAnswer
+  const callerIdRef = useRef<number>(0);
+
+  // Store pending offer and acceptance state
+  const callOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
+  const isCallAcceptedRef = useRef<boolean>(false);
 
   // Register user khi component mount
   useEffect(() => {
     if (user?.id) {
-      console.log(`✅ Registering user ${user.id}`);
       invoke('RegisterUser', user.id).catch((err) => {
         console.error('Failed to register user:', err);
       });
@@ -51,10 +54,36 @@ export const useCallIntegration = (hubUrl: string) => {
     };
   }, [user?.id, invoke]);
 
+  // Process Call Answer Logic (Extracted)
+  const processCallAnswer = useCallback(async (offer: RTCSessionDescriptionInit) => {
+    try {
+      if (!webrtcService) {
+        return;
+      }
+
+      // Create answer
+      const answer = await webrtcService.createAnswer(offer);
+
+      // Send answer back
+      await invoke('SendCallAnswer', callerIdRef.current, answer);
+
+      console.log('Answer sent successfully');
+      setConnectionEstablished();
+    } catch (err) {
+      console.error('Error processing call answer:', err);
+      toast.error('Lỗi khi xử lý cuộc gọi');
+    }
+  }, [webrtcService, invoke, setConnectionEstablished]);
+
   // Lắng nghe cuộc gọi đến
   useEffect(() => {
     const handleIncomingCall = async (data: IncomingCallData) => {
-      console.log('📞 Incoming call:', data);
+
+      // Store caller ID for later use
+      callerIdRef.current = data.callerId;
+      // Reset call state refs
+      callOfferRef.current = null;
+      isCallAcceptedRef.current = false;
 
       setIncomingCall(data);
 
@@ -63,68 +92,61 @@ export const useCallIntegration = (hubUrl: string) => {
 
       // Auto reject sau 30 giây nếu không pick up
       callTimeoutRef.current = setTimeout(() => {
-        console.log('⏱️ Call timeout - auto rejecting');
         handleRejectCall();
       }, 30000);
     };
 
     const handleCallRejected = (data: any) => {
-      console.log('❌ Call rejected:', data);
       stopRingtone();
       toast.error('Cuộc gọi bị từ chối');
       endCall();
       setIncomingCall(null);
+      callerIdRef.current = 0;
+      callOfferRef.current = null;
+      isCallAcceptedRef.current = false;
     };
 
     const handleCallEnded = (data: any) => {
-      console.log('📞 Call ended:', data);
       stopRingtone();
       toast.custom(`Cuộc gọi kết thúc (${data.duration}s)`);
       endCall();
       setIncomingCall(null);
+      callerIdRef.current = 0;
+      callOfferRef.current = null;
+      isCallAcceptedRef.current = false;
     };
 
     const handleReceiveCallOffer = async (data: any) => {
-      console.log('📤 Received call offer:', data);
 
-      try {
-        if (!webrtcService) return;
+      // Store the offer
+      callOfferRef.current = data.offer;
 
-        // Initialize peer connection
-        await webrtcService.initPeerConnection();
-
-        // Create answer
-        const answer = await webrtcService.createAnswer(data.offer);
-
-        // Send answer back
-        await invoke('SendCallAnswer', data.callerId, answer);
-
-        console.log('✅ Answer sent');
-      } catch (err) {
-        console.error('Error handling offer:', err);
-        rejectCall();
+      // Only process if user has ALREADY accepted
+      if (isCallAcceptedRef.current) {
+        await processCallAnswer(data.offer);
       }
     };
 
     const handleReceiveCallAnswer = async (data: any) => {
-      console.log('✅ Received call answer:', data);
-
       try {
-        if (!webrtcService) return;
-
+        if (!webrtcService) {
+          return;
+        }
         await webrtcService.handleAnswer(data.answer);
         setConnectionEstablished();
 
-        console.log('✅ Connection established');
       } catch (err) {
         console.error('Error handling answer:', err);
+        toast.error('Lỗi kết nối');
         endCall();
       }
     };
 
     const handleReceiveIceCandidate = async (data: any) => {
       try {
-        if (!webrtcService) return;
+        if (!webrtcService) {
+          return;
+        }
 
         await webrtcService.addIceCandidate(data.candidate);
       } catch (err) {
@@ -133,14 +155,10 @@ export const useCallIntegration = (hubUrl: string) => {
     };
 
     const handleRemoteMediaStateChanged = (data: any) => {
-      console.log('🔇 Remote media state changed:', data);
-
-      // Update UI to show remote user's media state
-      // You can dispatch actions or update state here
+      console.log('Remote media state changed:', data);
     };
 
     const handleUserOnlineStatusChanged = (data: any) => {
-      console.log(`👤 User ${data.userId} is ${data.status}`);
 
       if (data.status === 'Online') {
         setOnlineUsers((prev) => {
@@ -164,24 +182,20 @@ export const useCallIntegration = (hubUrl: string) => {
     on('RemoteMediaStateChanged', handleRemoteMediaStateChanged);
     on('UserOnlineStatusChanged', handleUserOnlineStatusChanged);
 
-    // return () => {
-    //   off('IncomingCall', handleIncomingCall);
-    //   off('CallRejected', handleCallRejected);
-    //   off('CallEnded', handleCallEnded);
-    //   off('ReceiveCallOffer', handleReceiveCallOffer);
-    //   off('ReceiveCallAnswer', handleReceiveCallAnswer);
-    //   off('ReceiveIceCandidate', handleReceiveIceCandidate);
-    //   off('RemoteMediaStateChanged', handleRemoteMediaStateChanged);
-    //   off('UserOnlineStatusChanged', handleUserOnlineStatusChanged);
+    return () => {
+      // Cleanup listeners
+      off('IncomingCall');
+      off('CallRejected');
+      off('CallEnded');
+      off('ReceiveCallOffer');
+      off('ReceiveCallAnswer');
+      off('ReceiveIceCandidate');
+      off('RemoteMediaStateChanged');
+      off('UserOnlineStatusChanged');
+    };
+  }, [on, off, webrtcService, invoke, processCallAnswer, endCall, setConnectionEstablished]);
 
-    //   // Cleanup
-    //   if (callTimeoutRef.current) {
-    //     clearTimeout(callTimeoutRef.current);
-    //   }
-    // };
-  }, [on, off, webrtcService, answerCall, rejectCall, endCall, invoke, setConnectionEstablished]);
-
-  // ✅ Setup WebRTC ICE candidates
+  // Setup WebRTC ICE candidates
   useEffect(() => {
     if (!webrtcService) return;
 
@@ -202,7 +216,26 @@ export const useCallIntegration = (hubUrl: string) => {
     };
   }, [webrtcService, callState.remoteUserId, invoke]);
 
-  // ✅ Play ringtone
+  // Setup remote stream handler
+  useEffect(() => {
+    if (!webrtcService) return;
+
+    const handleRemoteStream = (stream: MediaStream) => {
+      console.log('Remote stream received:', stream.id);
+      console.log('Video tracks:', stream.getVideoTracks().length);
+      console.log('Audio tracks:', stream.getAudioTracks().length);
+    };
+
+    webrtcService.onRemoteStreamReceived = handleRemoteStream;
+
+    return () => {
+      if (webrtcService) {
+        webrtcService.onRemoteStreamReceived = undefined;
+      }
+    };
+  }, [webrtcService]);
+
+  // Play ringtone
   const playRingtone = useCallback(() => {
     try {
       if (!ringtoneRef.current) {
@@ -219,7 +252,7 @@ export const useCallIntegration = (hubUrl: string) => {
     }
   }, []);
 
-  // ✅ Stop ringtone
+  // Stop ringtone
   const stopRingtone = useCallback(() => {
     try {
       if (ringtoneRef.current) {
@@ -231,15 +264,33 @@ export const useCallIntegration = (hubUrl: string) => {
     }
   }, []);
 
-  // ✅ Start call (initiate)
+  // Start call (initiate) - CALLER side
   const handleStartCall = useCallback(
     async (recipientId: number, recipientName: string, conversationId: number, callType: CallType) => {
       try {
-        // Start local call first
+        console.log(`Starting ${callType} call to ${recipientName} (ID: ${recipientId})`);
+
+        if (!webrtcService) {
+          throw new Error('WebRTC service not available');
+        }
+
+        // Initialize local stream FIRST
+        await webrtcService.initLocalStream(callType);
+
+        // Initialize PeerConnection
+        await webrtcService.initPeerConnection();
+
+        // Start local call state
         await startCall(callType, recipientId, recipientName);
 
-        // Invoke InitiateCall on backend
-        await invoke('InitiateCall', conversationId, recipientId, callType === CallType.Video ? 'Video' : 'Audio');
+        // Invoke InitiateCall on backend to notify receiver
+        const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
+        await invoke('InitiateCall', conversationId, recipientId, callTypeStr);
+
+        // Create offer and send to receiver
+        const offer = await webrtcService.createOffer();
+
+        await invoke('SendCallOffer', recipientId, offer);
 
         toast.success('Đang gọi...');
       } catch (err) {
@@ -248,13 +299,19 @@ export const useCallIntegration = (hubUrl: string) => {
         endCall();
       }
     },
-    [startCall, invoke, endCall]
+    [webrtcService, startCall, invoke, endCall]
   );
 
-  // ✅ Accept call
+  // Accept call - RECEIVER side
   const handleAcceptCall = useCallback(async () => {
     try {
-      if (!incomingCall) return;
+      if (!incomingCall) {
+        console.error('No incoming call to accept');
+        return;
+      }
+
+      // Set Accepted Flag
+      isCallAcceptedRef.current = true;
 
       stopRingtone();
 
@@ -262,21 +319,31 @@ export const useCallIntegration = (hubUrl: string) => {
         clearTimeout(callTimeoutRef.current);
       }
 
-      const callType = incomingCall.callType === 'Video' ? CallType.Video : CallType.Audio;
+      const callType = incomingCall.callType === CallType.Video ? CallType.Video : CallType.Audio;
 
-      // Answer call locally
-      await answerCall(callType);
-
-      // Initialize WebRTC
-      if (!webrtcService?.getPeerConnection()) {
-        await webrtcService?.initLocalStream(callType);
-        await webrtcService?.initPeerConnection();
+      if (!webrtcService) {
+        throw new Error('WebRTC service not available');
       }
 
-      // Create and send offer
-      const offer = await webrtcService?.createOffer();
-      if (offer) {
-        await invoke('SendCallOffer', incomingCall.callerId, offer);
+      // Initialize local stream FIRST
+      await webrtcService.initLocalStream(callType);
+
+      // Initialize peer connection
+      await webrtcService.initPeerConnection();
+
+      // Answer call locally
+      await answerCall(
+        callType,
+        incomingCall.callerId,
+        incomingCall.callerName,
+        incomingCall.callerAvatar
+      );
+
+      // Check if we already have the offer
+      if (callOfferRef.current) {
+        await processCallAnswer(callOfferRef.current);
+      } else {
+        console.log('Waiting for offer from caller...');
       }
 
       setIncomingCall(null);
@@ -286,9 +353,9 @@ export const useCallIntegration = (hubUrl: string) => {
       toast.error('Lỗi khi chấp nhận cuộc gọi');
       rejectCall();
     }
-  }, [incomingCall, webrtcService, answerCall, invoke, rejectCall, stopRingtone]);
+  }, [incomingCall, webrtcService, answerCall, rejectCall, stopRingtone, processCallAnswer]);
 
-  // ✅ Reject call
+  // Reject call
   const handleRejectCall = useCallback(async () => {
     try {
       stopRingtone();
@@ -303,13 +370,16 @@ export const useCallIntegration = (hubUrl: string) => {
 
       rejectCall();
       setIncomingCall(null);
+      callerIdRef.current = 0;
+      callOfferRef.current = null;
+      isCallAcceptedRef.current = false;
       toast.custom('Đã từ chối cuộc gọi');
     } catch (err) {
       console.error('Error rejecting call:', err);
     }
   }, [incomingCall, invoke, rejectCall, stopRingtone]);
 
-  // ✅ End call
+  // End call
   const handleEndCall = useCallback(async () => {
     try {
       const duration = callState.duration;
@@ -319,16 +389,20 @@ export const useCallIntegration = (hubUrl: string) => {
       }
 
       endCall();
+      callerIdRef.current = 0;
+      callOfferRef.current = null;
+      isCallAcceptedRef.current = false;
       toast.custom(`Cuộc gọi kết thúc (${duration}s)`);
     } catch (err) {
       console.error('Error ending call:', err);
     }
   }, [callState.remoteUserId, callState.duration, invoke, endCall]);
 
-  // ✅ Update media state
+  // Update media state
   const handleUpdateMediaState = useCallback(
     async (isAudioEnabled: boolean, isVideoEnabled: boolean) => {
       try {
+
         if (callState.remoteUserId) {
           await invoke('UpdateMediaState', callState.remoteUserId, isAudioEnabled, isVideoEnabled);
         }
@@ -344,7 +418,7 @@ export const useCallIntegration = (hubUrl: string) => {
     [callState.remoteUserId, callState.callType, invoke, toggleAudio, toggleVideo]
   );
 
-  // ✅ Get online users
+  // Get online users
   const getOnlineUsers = useCallback(async () => {
     try {
       await invoke('GetOnlineUsers');

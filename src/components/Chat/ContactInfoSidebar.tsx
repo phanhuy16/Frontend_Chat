@@ -11,6 +11,7 @@ import { SIGNALR_HUB_URL_CALL } from "../../utils/constants";
 import IncomingCallModal from "../Call/IncomingCallModal";
 import CallModal from "../Call/CallModal";
 import VideoCallWindow from "../Call/VideoCallWindow";
+import AudioCallWindow from "../Call/AudioCallWindow";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -337,6 +338,21 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
           videoEnabled={callState.isVideoEnabled}
         />
       )}
+
+      {/* Audio Call Window */}
+      {callState.callStatus === "connected" &&
+        callState.callType === CallType.Audio && (
+          <AudioCallWindow
+            remoteStream={callState.remoteStream}
+            remoteUserName={callState.remoteUserName}
+            remoteUserAvatar={otherMember?.avatar}
+            duration={callState.duration}
+            onEndCall={endCall}
+            onToggleAudio={toggleAudio}
+            audioEnabled={callState.isAudioEnabled}
+          />
+        )}
+
       {/* Overlay */}
       {isOpen && (
         <div
@@ -517,7 +533,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                     </span>
                   </button>
 
-                  {/* ✅ Report Button */}
+                  {/* Report Button */}
                   <button
                     onClick={() => setReportModalOpen(true)}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"

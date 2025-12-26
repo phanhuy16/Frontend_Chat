@@ -98,7 +98,7 @@ const FriendsListPage: React.FC = () => {
     });
   };
 
-  // ✅ Filter friends
+  // Filter friends
   const filteredFriends = friends.filter((friend) => {
     const matchesSearch =
       friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -251,7 +251,7 @@ const FriendsListPage: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">
-                  {/* ✅ Chat Button */}
+                  {/* Chat Button */}
                   <button
                     onClick={() => handleOpenChat(friend)}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
@@ -262,7 +262,7 @@ const FriendsListPage: React.FC = () => {
                     <span className="truncate">Chat</span>
                   </button>
 
-                  {/* ✅ Remove Button */}
+                  {/* Remove Button */}
                   <button
                     onClick={() =>
                       handleRemoveFriend(friend.id, friend.displayName)

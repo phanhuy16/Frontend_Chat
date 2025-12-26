@@ -35,7 +35,6 @@ export const useSignalR = (hubUrl: string) => {
 
   const connect = useCallback(async () => {
     if (!token) {
-      console.warn('❌ No token available for SignalR connection');
       if (isMountedRef.current) {
         setIsConnecting(false);
       }
@@ -151,7 +150,6 @@ export const useSignalR = (hubUrl: string) => {
       const delayMs = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
 
       if (reconnectAttemptsRef.current <= maxReconnectAttempts) {
-        console.log(`⏳ Retrying connection in ${delayMs}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
         const timeoutId = setTimeout(() => {
           if (isMountedRef.current) {
             connect();
@@ -170,7 +168,6 @@ export const useSignalR = (hubUrl: string) => {
       const connection = globalConnections.get(hubUrl);
       if (connection && connection.state === signalR.HubConnectionState.Connected) {
         await connection.stop();
-        console.log('SignalR disconnected');
       }
     } catch (error) {
       console.error('Error disconnecting SignalR:', error);
@@ -234,10 +231,13 @@ export const useSignalR = (hubUrl: string) => {
   }, [hubUrl]);
 
   const off = useCallback((eventName: string) => {
+    // Remove from queue if it hasn't been blocked yet
+    eventQueueRef.current = eventQueueRef.current.filter(item => item.event !== eventName);
+
     const connection = globalConnections.get(hubUrl);
 
     if (!connection) {
-      console.warn(`Cannot remove listener: ${eventName} - not connected`);
+      // Not connected yet, but we successfully removed from queue
       return;
     }
 
@@ -245,7 +245,6 @@ export const useSignalR = (hubUrl: string) => {
     if (handler) {
       connection.off(eventName, handler);
       registeredHandlersRef.current.delete(eventName);
-      console.log(`✅ Removed listener: ${eventName}`);
     }
   }, [hubUrl]);
 

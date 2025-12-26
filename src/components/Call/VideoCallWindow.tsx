@@ -34,40 +34,52 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Setup local video stream
+  // Fix local video setup
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+    if (!localVideoRef.current || !localStream) return;
+    localVideoRef.current.srcObject = localStream;
 
-      // Ensure autoplay works
-      localVideoRef.current.play().catch((err) => {
-        console.error("Error playing local video:", err);
-      });
-    }
+    // Chỉ gọi play() một lần, wrap trong async
+    const playVideo = async () => {
+      try {
+        await localVideoRef.current?.play();
+      } catch (err) {
+        // Local video fail không ảnh hưởng, âm thanh vẫn hoạt động
+        console.warn("Could not play local video:", err);
+      }
+    };
+
+    // Delay 100ms to avoid race condition
+    const timeoutId = setTimeout(playVideo, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
       }
     };
   }, [localStream]);
 
-  // Setup remote video stream
+  // Fix remote video setup
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      console.log("📺 Setting remote stream:", remoteStream.id);
-      console.log("🔊 Remote audio tracks:", remoteStream.getAudioTracks());
-      console.log("📹 Remote video tracks:", remoteStream.getVideoTracks());
+    if (!remoteVideoRef.current || !remoteStream) return;
 
-      remoteVideoRef.current.srcObject = remoteStream;
+    remoteVideoRef.current.srcObject = remoteStream;
 
-      // Ensure autoplay works
-      remoteVideoRef.current.play().catch((err) => {
-        console.error("Error playing remote video:", err);
-      });
-    }
+    // Chỉ gọi play() một lần
+    const playVideo = async () => {
+      try {
+        await remoteVideoRef.current?.play();
+      } catch (err) {
+        console.warn("Could not play remote video:", err);
+      }
+    };
+
+    // Delay 100ms to avoid race condition
+    const timeoutId = setTimeout(playVideo, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
