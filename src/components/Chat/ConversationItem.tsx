@@ -4,6 +4,8 @@ import { ConversationType, StatusUser } from "../../types/enums";
 import { getStatusUserColor } from "../../utils/enum-helpers";
 import { useAuth } from "../../hooks/useAuth";
 import { userApi } from "../../api/user.api";
+import { REACT_APP_AVATAR_URL } from "../../utils/constants";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -20,7 +22,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   useEffect(() => {
     const loadAvatar = async () => {
       const data = await userApi.getUserById(user!.id);
-      setAvatar(`https://localhost:7201${data.avatar}`);
+      setAvatar(getAvatarUrl(data.avatar));
     };
 
     loadAvatar();
@@ -69,8 +71,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 
   const avatarUrl = useMemo(() => {
     if (conversation.conversationType === ConversationType.Direct) {
-      return otherMember?.avatar || "";
+      return getAvatarUrl(otherMember?.avatar);
     }
+
     return "";
   }, [conversation.conversationType, otherMember]);
 

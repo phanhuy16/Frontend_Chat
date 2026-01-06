@@ -1,6 +1,8 @@
 // src/components/Call/IncomingCallModal.tsx
 import React from "react";
 import { Avatar, Button, Space, Modal } from "antd";
+import { getAvatarUrl } from "../../utils/helpers";
+
 import {
   PhoneOutlined,
   CloseOutlined,
@@ -41,7 +43,7 @@ const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
         <div className="animate-pulse">
           <Avatar
             size={120}
-            src={caller.avatar || undefined}
+            src={getAvatarUrl(caller.avatar) || undefined}
             icon={<PhoneOutlined />}
             className="bg-blue-500"
           />

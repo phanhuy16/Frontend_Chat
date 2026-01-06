@@ -14,6 +14,9 @@ export const authApi = {
   logout: (): Promise<any> =>
     axiosInstance.post('/auth/logout').then((res) => res.data),
 
+  googleLogin: ({ idToken }: { idToken: string }): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/google-login', { idToken }).then((res) => res.data),
+
   getCurrentUser: (): Promise<UserAuth> =>
     axiosInstance.get('/auth/me').then((res) => res.data),
 

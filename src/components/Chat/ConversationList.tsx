@@ -4,6 +4,7 @@ import { Conversation } from "../../types/conversation.types";
 import { ConversationType } from "../../types/enums";
 import { User } from "../../types/user.types";
 import { formatDate } from "../../utils/formatters";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -50,7 +51,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   const getConversationAvatar = (conversation: Conversation): string => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = conversation.members.find((m) => m.id !== user.id);
-      return otherMember?.avatar || "";
+      return getAvatarUrl(otherMember?.avatar);
     }
     return "";
   };

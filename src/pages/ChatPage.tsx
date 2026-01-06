@@ -18,7 +18,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
 import { FriendDto, StatusUser } from "../types";
-import { SIGNALR_HUB_URL_CHAT } from "../utils/constants";
+import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 import { getStatusUserColor, getStatusUserLabel } from "../utils/enum-helpers";
 
 interface ChatPageProps {
@@ -34,7 +34,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setConversations,
     setCurrentConversation,
   } = useChat();
-  const { isConnected, on } = useSignalR(SIGNALR_HUB_URL_CHAT);
+  const { isConnected, on } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -247,7 +247,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   useEffect(() => {
     const loadAvatar = async () => {
       const data = await userApi.getUserById(user!.id);
-      setAvatar(`https://localhost:7201${data.avatar}`);
+      setAvatar(`${REACT_APP_AVATAR_URL}${data.avatar}`);
     };
 
     loadAvatar();

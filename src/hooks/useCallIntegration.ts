@@ -4,6 +4,7 @@ import { useSignalR } from './useSignalR';
 import { useCall } from './useCall';
 import { CallType } from '../types';
 import toast from 'react-hot-toast';
+import callApi from '../api/call.api';
 
 interface IncomingCallData {
   callId: string;
@@ -36,6 +37,7 @@ export const useCallIntegration = (hubUrl: string) => {
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Store caller ID to use in SendCallAnswer
   const callerIdRef = useRef<number>(0);
+  const callIdRef = useRef<string>('');
 
   // Store pending offer and acceptance state
   const callOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
@@ -268,7 +270,6 @@ export const useCallIntegration = (hubUrl: string) => {
   const handleStartCall = useCallback(
     async (recipientId: number, recipientName: string, conversationId: number, callType: CallType) => {
       try {
-        console.log(`Starting ${callType} call to ${recipientName} (ID: ${recipientId})`);
 
         if (!webrtcService) {
           throw new Error('WebRTC service not available');
@@ -282,6 +283,20 @@ export const useCallIntegration = (hubUrl: string) => {
 
         // Start local call state
         await startCall(callType, recipientId, recipientName);
+
+        try {
+          const callResult = await callApi.initiateCall(
+            recipientId,
+            conversationId,
+            callType === CallType.Video ? 'Video' : 'Audio'
+          );
+
+          // Store callId from database response
+          callIdRef.current = callResult.callId;
+        } catch (apiErr) {
+          console.warn('Failed to save call to DB, continuing anyway:', apiErr);
+          // Don't throw - continue with the call
+        }
 
         // Invoke InitiateCall on backend to notify receiver
         const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
@@ -383,6 +398,16 @@ export const useCallIntegration = (hubUrl: string) => {
   const handleEndCall = useCallback(async () => {
     try {
       const duration = callState.duration;
+
+      if (callIdRef.current) {
+        try {
+          await callApi.endCall(callIdRef.current, duration);
+        } catch (apiErr) {
+          console.error('Failed to save call to DB:', apiErr);
+        }
+      } else {
+        console.warn('callIdRef.current is empty, cannot save to DB');
+      }
 
       if (callState.remoteUserId) {
         await invoke('EndCall', callState.remoteUserId, duration);

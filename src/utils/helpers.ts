@@ -49,3 +49,11 @@ export const isValidUrl = (url: string): boolean => {
     return false;
   }
 };
+
+export const getAvatarUrl = (avatarPath: string | null | undefined): string => {
+  if (!avatarPath) return "";
+  if (avatarPath.startsWith("http")) return avatarPath;
+  const baseUrl = process.env.REACT_APP_AVATAR_URL || "";
+  return `${baseUrl}${avatarPath}`;
+};
+

@@ -5,6 +5,8 @@ import {
 } from "@ant-design/icons";
 import { Avatar, Button, Modal, Space } from "antd";
 import React from "react";
+import { getAvatarUrl } from "../../utils/helpers";
+
 import { CallType } from "../../types";
 import { CallState } from "../../types/call.type";
 
@@ -48,7 +50,7 @@ const CallModal: React.FC<CallModalProps> = ({
         {/* Avatar */}
         <Avatar
           size={120}
-          src={callerAvatar || undefined}
+          src={getAvatarUrl(callerAvatar) || undefined}
           icon={<PhoneOutlined />}
           className="bg-primary"
         />

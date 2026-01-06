@@ -17,6 +17,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   refreshAuthToken: (data: RefreshTokenRequest) => Promise<boolean>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -128,6 +129,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await authApi.googleLogin({ idToken });
+      if (response.success && response.user && response.token) {
+        setUser(response.user);
+        setToken(response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("refreshToken", response.refreshToken || "");
+      } else {
+        setError(response.message || "Google login failed");
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Google login failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -141,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         clearError,
         isAuthenticated: !!token,
         refreshAuthToken,
+        loginWithGoogle,
       }}
     >
       {children}

@@ -88,16 +88,27 @@ const FriendRequestsPage: React.FC = () => {
     <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#111418]">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-2xl font-bold text-black dark:text-white">
-          Friend Requests
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {requests.length > 0
-            ? `You have ${requests.length} pending friend request${
-                requests.length !== 1 ? "s" : ""
-              }`
-            : "No pending friend requests"}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-black dark:text-white">
+              Friend Requests
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {requests.length > 0
+                ? `You have ${requests.length} pending friend request${
+                    requests.length !== 1 ? "s" : ""
+                  }`
+                : "No pending friend requests"}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/chat")}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+            title="Back to Chat"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+        </div>
       </div>
 
       {/* Content */}

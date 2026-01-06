@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from "react";
+import { getAvatarUrl } from "../../utils/helpers";
+
 import { Button, Space, Tooltip } from "antd";
 import {
   CloseOutlined,
@@ -110,7 +112,7 @@ const AudioCallWindow: React.FC<AudioCallWindowProps> = ({
       <div className="w-32 h-32 rounded-full bg-white/20 flex items-center justify-center mb-8 border-4 border-white/30">
         {remoteUserAvatar ? (
           <img
-            src={remoteUserAvatar}
+            src={getAvatarUrl(remoteUserAvatar)}
             alt={remoteUserName || "Caller"}
             className="w-full h-full rounded-full object-cover"
           />

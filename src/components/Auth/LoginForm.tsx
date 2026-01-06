@@ -2,15 +2,24 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 const LoginForm: React.FC = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, clearError, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
+
+  React.useEffect(() => {
+    clearError();
+    // Enable dark mode if system prefers it
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.classList.add("dark");
+    }
+  }, [clearError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -24,6 +33,17 @@ const LoginForm: React.FC = () => {
       navigate("/chat");
     } catch (err) {
       console.error("Login error: ", err);
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      try {
+        await loginWithGoogle(credentialResponse.credential);
+        navigate("/chat");
+      } catch (error) {
+        console.error("Google login error: ", error);
+      }
     }
   };
 
@@ -115,37 +135,13 @@ const LoginForm: React.FC = () => {
 
       {/* Social Buttons */}
       <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M22.5776 12.2773C22.5776 11.4545 22.5059 10.6591 22.3821 9.88636H12.2312V14.3364H18.1565C17.8827 15.8636 17.0622 17.1591 15.8239 17.9545V20.7273H19.6713C21.5793 18.9955 22.5776 15.9318 22.5776 12.2773Z"
-              fill="#4285F4"
-            ></path>
-            <path
-              d="M12.2312 23C15.1497 23 17.6188 22.0318 19.6713 20.7273L15.8239 17.9545C14.8645 18.5909 13.6531 19 12.2312 19C9.44973 19 7.08041 17.1136 6.17591 14.6591H2.20455V17.5182C4.1392 20.75 7.89973 23 12.2312 23Z"
-              fill="#34A853"
-            ></path>
-            <path
-              d="M6.1759 14.6591C5.92886 13.9136 5.79181 13.1227 5.79181 12.3182C5.79181 11.5136 5.92886 10.7227 6.1759 9.97727V7.11818H2.20454C1.49136 8.56818 1 10.3864 1 12.3182C1 14.25 1.49136 16.0682 2.20454 17.5182L6.1759 14.6591Z"
-              fill="#FBBC05"
-            ></path>
-            <path
-              d="M12.2312 5.63636C13.7381 5.63636 15.2449 6.18182 16.3824 7.27273L19.7438 4.09091C17.6145 2.15909 15.1455 1 12.2312 1C7.89973 1 4.1392 3.25 2.20455 6.48182L6.17591 9.34091C7.08041 6.88636 9.44973 5.63636 12.2312 5.63636Z"
-              fill="#EA4335"
-            ></path>
-          </svg>
-          <span>Google</span>
-        </button>
-
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={() => console.log("Login Failed")}
+          useOneTap={false}
+          text="signin_with"
+          size="large"
+        />
         <button
           type="button"
           disabled={loading}

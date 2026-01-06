@@ -10,6 +10,7 @@ import {
   getStatusUserColor,
   getStatusUserLabel,
 } from "../../utils/enum-helpers";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface SearchUsersModalProps {
   isOpen: boolean;
@@ -310,7 +311,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                               className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shrink-0"
                               style={{
                                 backgroundImage: `url("${
-                                  resultUser.avatar || ""
+                                  getAvatarUrl(resultUser.avatar) || ""
                                 }")`,
                               }}
                             />
@@ -358,7 +359,9 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                 <div
                   className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-32"
                   style={{
-                    backgroundImage: `url("${selectedUser.avatar || ""}")`,
+                    backgroundImage: `url("${
+                      getAvatarUrl(selectedUser.avatar) || ""
+                    }")`,
                   }}
                 />
 

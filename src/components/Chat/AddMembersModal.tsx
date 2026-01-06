@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { conversationApi } from "../../api/conversation.api";
 import { friendApi } from "../../api/friend.api";
 import toast from "react-hot-toast";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface AddMembersModalProps {
   conversation: any;
@@ -149,7 +150,9 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
                   {/* Avatar */}
                   <div
                     className="w-8 h-8 rounded-full bg-center bg-cover shrink-0"
-                    style={{ backgroundImage: `url("${u.avatar}")` }}
+                    style={{
+                      backgroundImage: `url("${getAvatarUrl(u.avatar)}")`,
+                    }}
                   />
 
                   {/* User Info */}

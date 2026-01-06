@@ -1,6 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import { API_BASE_URL } from "../utils/constants";
-console.log(API_BASE_URL)
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

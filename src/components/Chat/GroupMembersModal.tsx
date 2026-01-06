@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { AddMembersModal } from "./AddMembersModal";
 import { Modal } from "antd";
 import { ExclamationCircleFilled } from "@ant-design/icons";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface GroupMembersModalProps {
   conversation: any;
@@ -157,7 +158,9 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                   {/* Avatar */}
                   <div
                     className="w-10 h-10 rounded-full bg-center bg-cover ring-2 ring-blue-200 dark:ring-blue-900"
-                    style={{ backgroundImage: `url("${member.avatar}")` }}
+                    style={{
+                      backgroundImage: `url("${getAvatarUrl(member.avatar)}")`,
+                    }}
                   />
 
                   {/* User Info */}

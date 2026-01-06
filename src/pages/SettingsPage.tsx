@@ -4,10 +4,14 @@ import { userApi } from "../api/user.api";
 import toast from "react-hot-toast";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import { Modal } from "antd";
+import { getAvatarUrl } from "../utils/helpers";
+
+import { useNavigate } from "react-router-dom";
 
 const { confirm } = Modal;
 
 const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [formData, setFormData] = useState({
     displayName: user?.displayName || "",
@@ -26,7 +30,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     const loadAvatar = async () => {
       const data = await userApi.getUserById(user!.id);
-      setAvatar(`https://localhost:7201${data.avatar}`);
+      setAvatar(getAvatarUrl(data.avatar));
     };
 
     loadAvatar();
@@ -141,7 +145,7 @@ const SettingsPage: React.FC = () => {
       },
     });
   };
-
+  console.log(avatar);
   const handleLogout = async () => {
     await logout();
     window.location.href = "/auth";
@@ -152,12 +156,22 @@ const SettingsPage: React.FC = () => {
       <aside className="flex w-64 flex-col border-r border-gray-200 dark:border-white/10 bg-white/50 dark:bg-background-dark/50 p-4">
         <div className="flex flex-col justify-between h-full">
           <div className="flex flex-col gap-4">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 mb-2 text-gray-500 hover:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+              <span className="text-sm font-medium">Trở về</span>
+            </button>
+
             {/* User Info */}
             <div className="flex gap-3 items-center">
               <div
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                style={{ backgroundImage: `url("${avatar}")` }}
+                style={{ backgroundImage: `url("${getAvatarUrl(avatar)}")` }}
               />
+
               <div className="flex flex-col">
                 <h1 className="text-gray-900 dark:text-white text-base font-medium leading-normal">
                   {user?.displayName}
@@ -267,7 +281,9 @@ const SettingsPage: React.FC = () => {
                 <div
                   className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24"
                   style={{
-                    backgroundImage: `url("${avatarPreview || avatar || ""}")`,
+                    backgroundImage: `url("${
+                      avatarPreview || getAvatarUrl(avatar) || ""
+                    }")`,
                   }}
                 />
                 <div className="flex flex-col justify-center">

@@ -4,14 +4,9 @@ import toast from "react-hot-toast";
 import blockApi from "../../api/block.api";
 import reportApi from "../../api/report.api";
 import { useAuth } from "../../hooks/useAuth";
-import { useCallIntegration } from "../../hooks/useCallIntegration";
-import { CallType, Conversation, StatusUser, User } from "../../types";
+import { Conversation, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
-import { SIGNALR_HUB_URL_CALL } from "../../utils/constants";
-import IncomingCallModal from "../Call/IncomingCallModal";
-import CallModal from "../Call/CallModal";
-import VideoCallWindow from "../Call/VideoCallWindow";
-import AudioCallWindow from "../Call/AudioCallWindow";
+import { getAvatarUrl } from "../../utils/helpers";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -20,6 +15,8 @@ interface ContactInfoSidebarProps {
   conversation?: Conversation | null;
   messages?: Message[];
   onBlockChange?: (isBlocked: boolean) => void;
+  onStartAudioCall: () => void;
+  onStartVideoCall: () => void;
 }
 
 const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
@@ -29,18 +26,10 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
   conversation,
   messages = [],
   onBlockChange,
+  onStartAudioCall,
+  onStartVideoCall,
 }) => {
   const { user } = useAuth();
-  const {
-    callState,
-    incomingCall,
-    startCall,
-    acceptCall,
-    rejectCall,
-    endCall,
-    toggleAudio,
-    toggleVideo,
-  } = useCallIntegration(SIGNALR_HUB_URL_CALL);
 
   const [activeTab, setActiveTab] = useState<"info" | "media">("info");
   const [isBlocked, setIsBlocked] = useState(false);
@@ -223,31 +212,6 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     setReportSubmitted(false);
   };
 
-  // Start audio call
-  const handleStartAudioCall = async () => {
-    await startCall(
-      otherMember?.id!,
-      otherMember?.displayName!,
-      conversation?.id!,
-      CallType.Audio
-    );
-  };
-
-  // Start video call
-  const handleStartVideoCall = async () => {
-    await startCall(
-      otherMember?.id!,
-      otherMember?.displayName!,
-      conversation?.id!,
-      CallType.Video
-    );
-  };
-
-  // End call
-  const handleEndCall = async () => {
-    await endCall();
-  };
-
   // Extract all attachments from messages
   const allAttachments = useMemo(() => {
     const attachments: Array<{
@@ -300,59 +264,6 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
 
   return (
     <>
-      {/* Incoming Call Modal */}
-      {incomingCall && (
-        <IncomingCallModal
-          caller={{
-            id: incomingCall.callerId,
-            name: incomingCall.callerName,
-            avatar: incomingCall.callerAvatar,
-          }}
-          callType={incomingCall.callType}
-          onAccept={acceptCall}
-          onReject={rejectCall}
-        />
-      )}
-
-      {/* Call Modal (during ringing) */}
-      <CallModal
-        callState={callState}
-        isIncoming={false}
-        onAnswer={() => {}}
-        onReject={rejectCall}
-        onEnd={endCall}
-        callerAvatar={incomingCall?.callerAvatar}
-      />
-
-      {/* Video Call Window */}
-      {callState.callStatus === "connected" && (
-        <VideoCallWindow
-          localStream={callState.localStream}
-          remoteStream={callState.remoteStream}
-          remoteUserName={callState.remoteUserName}
-          duration={callState.duration}
-          onEndCall={endCall}
-          onToggleAudio={toggleAudio}
-          onToggleVideo={toggleVideo}
-          audioEnabled={callState.isAudioEnabled}
-          videoEnabled={callState.isVideoEnabled}
-        />
-      )}
-
-      {/* Audio Call Window */}
-      {callState.callStatus === "connected" &&
-        callState.callType === CallType.Audio && (
-          <AudioCallWindow
-            remoteStream={callState.remoteStream}
-            remoteUserName={callState.remoteUserName}
-            remoteUserAvatar={otherMember?.avatar}
-            duration={callState.duration}
-            onEndCall={endCall}
-            onToggleAudio={toggleAudio}
-            audioEnabled={callState.isAudioEnabled}
-          />
-        )}
-
       {/* Overlay */}
       {isOpen && (
         <div
@@ -413,7 +324,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 <div
                   className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-24"
                   style={{
-                    backgroundImage: `url("${otherMember?.avatar || ""}")`,
+                    backgroundImage: `url("${
+                      getAvatarUrl(otherMember?.avatar) || ""
+                    }")`,
                   }}
                 />
 
@@ -432,7 +345,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 {/* Action Buttons */}
                 <div className="flex gap-4">
                   <button
-                    onClick={handleStartAudioCall}
+                    onClick={onStartAudioCall}
                     disabled={isBlocked}
                     className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
                   >
@@ -440,7 +353,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                     <span className="text-xs">Gọi</span>
                   </button>
                   <button
-                    onClick={handleStartVideoCall}
+                    onClick={onStartVideoCall}
                     disabled={isBlocked}
                     className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
                   >

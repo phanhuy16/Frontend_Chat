@@ -22,6 +22,14 @@ import { EmojiPicker } from "./EmojiPicker";
 import ContactInfoSidebar from "./ContactInfoSidebar";
 import attachmentApi from "../../api/attachment.api";
 import { Progress, Spin } from "antd";
+import { getAvatarUrl } from "../../utils/helpers";
+import { useCallIntegration } from "../../hooks/useCallIntegration";
+import { SIGNALR_HUB_URL_CALL } from "../../utils/constants";
+import IncomingCallModal from "../Call/IncomingCallModal";
+import CallModal from "../Call/CallModal";
+import VideoCallWindow from "../Call/VideoCallWindow";
+import AudioCallWindow from "../Call/AudioCallWindow";
+import { CallType } from "../../types";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -38,7 +46,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setConversations,
     setCurrentConversation,
   } = useChat();
-  const { invoke, on, off, isConnected } = useSignalR(SIGNALR_HUB_URL_CHAT);
+
+  const {
+    callState,
+    incomingCall,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleAudio,
+    toggleVideo,
+  } = useCallIntegration(SIGNALR_HUB_URL_CALL as string);
+
+  const { invoke, on, off, isConnected } = useSignalR(
+    SIGNALR_HUB_URL_CHAT as string
+  );
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [showGroupMembers, setShowGroupMembers] = useState(false);
@@ -408,6 +430,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     return `${conversation.members.length} members`;
   };
 
+  const handleStartAudioCall = async () => {
+    const otherMember = getOtherMember();
+    if (otherMember && conversation.id) {
+      await startCall(
+        otherMember.id,
+        otherMember.displayName,
+        conversation.id,
+        CallType.Audio
+      );
+    }
+  };
+
+  const handleStartVideoCall = async () => {
+    const otherMember = getOtherMember();
+    if (otherMember && conversation.id) {
+      await startCall(
+        otherMember.id,
+        otherMember.displayName,
+        conversation.id,
+        CallType.Video
+      );
+    }
+  };
+
   return (
     // ← Main wrapper với flex layout
     <div className="flex h-full w-full overflow-hidden">
@@ -417,7 +463,61 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
+        {/* Incoming Call Modal */}
+        {incomingCall && (
+          <IncomingCallModal
+            caller={{
+              id: incomingCall.callerId,
+              name: incomingCall.callerName,
+              avatar: getAvatarUrl(incomingCall.callerAvatar),
+            }}
+            callType={incomingCall.callType}
+            onAccept={acceptCall}
+            onReject={rejectCall}
+          />
+        )}
+
+        {/* Call Modal (during ringing) */}
+        <CallModal
+          callState={callState}
+          isIncoming={false}
+          onAnswer={() => {}}
+          onReject={rejectCall}
+          onEnd={endCall}
+          callerAvatar={getAvatarUrl(incomingCall?.callerAvatar)}
+        />
+
+        {/* Video Call Window */}
+        {callState.callStatus === "connected" && (
+          <VideoCallWindow
+            localStream={callState.localStream}
+            remoteStream={callState.remoteStream}
+            remoteUserName={callState.remoteUserName}
+            duration={callState.duration}
+            onEndCall={endCall}
+            onToggleAudio={toggleAudio}
+            onToggleVideo={toggleVideo}
+            audioEnabled={callState.isAudioEnabled}
+            videoEnabled={callState.isVideoEnabled}
+          />
+        )}
+
+        {/* Audio Call Window */}
+        {callState.callStatus === "connected" &&
+          callState.callType === CallType.Audio && (
+            <AudioCallWindow
+              remoteStream={callState.remoteStream}
+              remoteUserName={callState.remoteUserName}
+              remoteUserAvatar={getAvatarUrl(getOtherMember()?.avatar)}
+              duration={callState.duration}
+              onEndCall={endCall}
+              onToggleAudio={toggleAudio}
+              audioEnabled={callState.isAudioEnabled}
+            />
+          )}
+
         {/* Chat Header */}
+
         <header className="flex items-center justify-between gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111418] shrink-0">
           <div className="flex items-center gap-4">
             {conversation.conversationType === ConversationType.Group ? (
@@ -428,7 +528,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               <div
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
                 style={{
-                  backgroundImage: `url("${getOtherMember()?.avatar || ""}")`,
+                  backgroundImage: `url("${getAvatarUrl(
+                    getOtherMember()?.avatar
+                  )}")`,
                 }}
               />
             )}
@@ -453,12 +555,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 <span className="material-symbols-outlined">group</span>
               </button>
             )}
-            <button className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+            <button
+              onClick={handleStartVideoCall}
+              disabled={isBlocked}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <span className="material-symbols-outlined">videocam</span>
             </button>
-            <button className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+            <button
+              onClick={handleStartAudioCall}
+              disabled={isBlocked}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <span className="material-symbols-outlined">call</span>
             </button>
+
             <button
               onClick={() => setShowContactSidebar(!showContactSidebar)}
               className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
@@ -500,6 +611,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                   <MessageBubble
                     message={message}
                     isOwn={message.senderId === user?.id}
+                    onReact={async (messageId, emoji) => {
+                      try {
+                        await invoke(
+                          "AddReaction",
+                          messageId,
+                          conversation.id,
+                          user?.id,
+                          emoji,
+                          user?.displayName
+                        );
+                      } catch (err) {
+                        console.error("Failed to add reaction:", err);
+                        toast.error("Failed to add reaction");
+                      }
+                    }}
                   />
                 </div>
               ))}
@@ -643,29 +769,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 <EmojiPicker
                   isOpen={showEmojiPicker}
                   onClose={() => setShowEmojiPicker(false)}
-                  onEmojiSelect={async (emoji) => {
-                    const lastMessage = messages[messages.length - 1];
-
-                    if (!lastMessage || !lastMessage.id) {
-                      toast.error("No message to react to");
-                      setShowEmojiPicker(false);
-                      return;
-                    }
-
-                    try {
-                      await invoke(
-                        "AddReaction",
-                        lastMessage.id,
-                        conversation.id,
-                        user?.id,
-                        emoji,
-                        user?.displayName
-                      );
-                      setShowEmojiPicker(false);
-                    } catch (err) {
-                      console.error("Failed to add reaction:", err);
-                      toast.error("Failed to add reaction");
-                    }
+                  onEmojiSelect={(emoji) => {
+                    setInputValue((prev) => prev + emoji);
                   }}
                 />
               </div>
@@ -673,6 +778,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 type="submit"
                 disabled={!inputValue.trim() || uploadingFiles}
                 className="p-2 text-gray-950 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Gửi"
               >
                 <span className="material-symbols-outlined">send</span>
               </button>
@@ -699,6 +805,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         conversation={conversation}
         messages={messages}
         onBlockChange={setIsBlocked}
+        onStartAudioCall={handleStartAudioCall}
+        onStartVideoCall={handleStartVideoCall}
       />
 
       {/* Group Members Modal */}
