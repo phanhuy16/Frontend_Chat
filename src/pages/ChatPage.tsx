@@ -10,6 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { conversationApi } from "../api/conversation.api";
 import { friendApi } from "../api/friend.api";
 import { userApi } from "../api/user.api";
+import ChatEmptyState from "../components/Chat/ChatEmptyState";
+import ChatPageDropdownMenu from "../components/Chat/ChatPageDropdownMenu";
+import ChatPageSearchResults from "../components/Chat/ChatPageSearchResults";
 import ChatWindow from "../components/Chat/ChatWindow";
 import ConversationList from "../components/Chat/ConversationList";
 import { CreateGroupModal } from "../components/Chat/CreateGroupModal";
@@ -17,9 +20,8 @@ import SearchUsersModal from "../components/Chat/SearchUsersModal";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
-import { FriendDto, StatusUser } from "../types";
+import { FriendDto, Conversation } from "../types";
 import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
-import { getStatusUserColor, getStatusUserLabel } from "../utils/enum-helpers";
 
 interface ChatPageProps {
   pendingRequestCount?: number;
@@ -43,6 +45,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [avatar, setAvatar] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState<{ [key: number]: number }>(
+    {}
+  );
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -151,6 +156,19 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     }
   };
 
+  // Handle selecting conversation from search
+  const handleSelectConversation = (conv: Conversation) => {
+    setCurrentConversation(conv);
+    setSearchTerm("");
+    setShowSearchResults(false);
+
+    // Reset unread count for this conversation
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [conv.id]: 0,
+    }));
+  };
+
   useEffect(() => {
     loadFriends();
   }, []);
@@ -190,8 +208,28 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
   // Listen for SignalR conversation updates
   useEffect(() => {
-    on("ReceiveMessage", async () => {
+    on("ReceiveMessage", async (data: any) => {
       await reloadConversations();
+
+      // Update unread count if not in current conversation AND message exists
+      // Note: message might be just a notification, ideally we check message.conversationId
+      // The previous on("ReceiveMessage") callback didn't have arguments in the original code,
+      // but SignalR typically sends arguments. We assume message object here.
+      // If the event doesn't pass data, we can't know which conv it is.
+      // Checking original ChatPage.tsx: it was `on("ReceiveMessage", async () => { ... })`.
+      // Usage in implementation plan assumed message arg.
+      // Let's modify to `on("ReceiveMessage", async (data: any) => { ... })`
+
+      if (
+        data &&
+        data.conversationId &&
+        currentConversation?.id !== data.conversationId
+      ) {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [data.conversationId]: (prev[data.conversationId] || 0) + 1,
+        }));
+      }
     });
 
     on("NewConversationCreated", async () => {
@@ -243,6 +281,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setCurrentConversation,
     reloadConversations,
   ]);
+
+  // Fix: The 'data' variable in ReceiveMessage above might be undefined if not defined in callback parameters
+  // I need to correct that part of the code before writing.
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -303,111 +344,25 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
                   title="Menu"
                 >
                   <span className="material-symbols-outlined">more_vert</span>
                 </button>
 
-                {/* Dropdown Menu */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 z-50">
-                    {/* Friends List */}
-                    <button
-                      onClick={() => handleMenuClick("friends")}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors first:rounded-t-lg"
-                    >
-                      <span className="material-symbols-outlined text-lg">
-                        people
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">Friends</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          View your friends
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Friend Requests */}
-                    <button
-                      onClick={() => handleMenuClick("requests")}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-t border-gray-200 dark:border-gray-700 relative"
-                    >
-                      <span className="material-symbols-outlined text-lg">
-                        person_add
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">Friend Requests</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Manage requests
-                        </p>
-                      </div>
-                      {/* Badge in dropdown */}
-                      {pendingRequestCount > 0 && (
-                        <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
-                          {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* New Chat */}
-                    <button
-                      onClick={() => handleMenuClick("new-chat")}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-t border-gray-200 dark:border-gray-700"
-                    >
-                      <span className="material-symbols-outlined text-lg">
-                        add_circle
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">New Chat</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Start a conversation
-                        </p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setShowCreateGroup(true)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border-t border-gray-200 dark:border-gray-700"
-                    >
-                      <span className="material-symbols-outlined text-lg">
-                        group_add
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">New Group</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Start a conversation
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Divider */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
-
-                    {/* Settings */}
-                    <button
-                      onClick={() => handleMenuClick("settings")}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-lg">
-                        settings
-                      </span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">Settings</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Profile & preferences
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                )}
+                {/* Dropdown Menu Component */}
+                <ChatPageDropdownMenu
+                  isOpen={isDropdownOpen}
+                  pendingRequestCount={pendingRequestCount}
+                  onMenuClick={handleMenuClick}
+                />
               </div>
             </div>
 
             {/* Search */}
             <div className="relative w-full" ref={searchRef}>
               <input
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-background-light dark:bg-background-dark text-black dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-primary focus:border-primary transition-all"
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-input-light dark:bg-input-dark text-black dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-primary focus:border-primary transition-all"
                 placeholder="Search chats..."
                 type="search"
                 value={searchTerm}
@@ -433,108 +388,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
                 </div>
               ) : (
                 showSearchResults && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 z-40 max-h-96 overflow-y-auto">
-                    {/* Conversations Results */}
-                    {searchResults.conversations.length > 0 && (
-                      <>
-                        <div className="sticky top-0 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                          Kết quả cuộc trò chuyện
-                        </div>
-                        {searchResults.conversations.map((conv) => {
-                          const otherMember =
-                            conv.conversationType === 1
-                              ? conv.members.find((m) => m.id !== user.id)
-                              : null;
-                          return (
-                            <button
-                              key={conv.id}
-                              onClick={() => {
-                                setCurrentConversation(conv);
-                                setSearchTerm("");
-                                setShowSearchResults(false);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
-                            >
-                              <div
-                                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0"
-                                style={{
-                                  backgroundImage: `url("${
-                                    otherMember?.avatar || ""
-                                  }")`,
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-black dark:text-white truncate">
-                                  {otherMember?.displayName || conv.groupName}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  @{otherMember?.userName}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </>
-                    )}
-
-                    {/* Friends Results */}
-                    {searchResults.friends.length > 0 && (
-                      <>
-                        <div className="sticky top-0 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                          Friends
-                        </div>
-                        {searchResults.friends.map((friend) => (
-                          <button
-                            key={friend.id}
-                            onClick={() => {
-                              handleOpenChatWithFriend(friend);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
-                          >
-                            <div className="relative">
-                              <div
-                                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0"
-                                style={{
-                                  backgroundImage: `url("${
-                                    friend.avatar || ""
-                                  }")`,
-                                }}
-                              />
-                              <div
-                                className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white dark:border-gray-900"
-                                style={{
-                                  backgroundColor: getStatusUserColor(
-                                    friend.status as StatusUser
-                                  ),
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-black dark:text-white truncate">
-                                {friend.displayName}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {getStatusUserLabel(
-                                  friend.status as StatusUser
-                                )}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                      </>
-                    )}
-
-                    {/* No Results */}
-                    {searchResults.conversations.length === 0 &&
-                      searchResults.friends.length === 0 && (
-                        <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
-                          <span className="material-symbols-outlined block text-3xl mb-2">
-                            search_off
-                          </span>
-                          <p className="text-sm">No results found</p>
-                        </div>
-                      )}
-                  </div>
+                  <ChatPageSearchResults
+                    searchResults={searchResults}
+                    user={user}
+                    onSelectConversation={handleSelectConversation}
+                    onSelectFriend={handleOpenChatWithFriend}
+                  />
                 )
               )}
             </div>
@@ -544,8 +403,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           <ConversationList
             conversations={filteredConversations}
             currentConversation={currentConversation}
-            onSelectConversation={setCurrentConversation}
+            onSelectConversation={(conv) => {
+              setCurrentConversation(conv);
+              // Reset unread count
+              setUnreadCounts((prev) => ({
+                ...prev,
+                [conv.id]: 0,
+              }));
+            }}
             user={user}
+            unreadCounts={unreadCounts}
           />
         </aside>
 
@@ -565,25 +432,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
               </div>
             </div>
           ) : (
-            /* Empty State */
-            <div className="flex flex-1 flex-col items-center justify-center bg-white dark:bg-[#111418] p-8 text-center">
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 mb-6">
-                <span className="material-symbols-outlined !text-6xl text-primary">
-                  chat_bubble
-                </span>
-              </div>
-              <h3 className="text-xl font-bold text-black dark:text-white">
-                Your conversations live here
-              </h3>
-              <p className="mt-2 max-w-sm text-gray-600 dark:text-gray-400">
-                Select a chat to see the conversation or start a new one with
-                your friends and colleagues.
-              </p>
-              <button className="mt-6 flex h-10 min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary px-5 text-white font-display text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined !text-xl">add</span>
-                <span className="truncate">Start a New Chat</span>
-              </button>
-            </div>
+            /* Empty State Component */
+            <ChatEmptyState onStartNewChat={() => setShowSearchModal(true)} />
           )}
         </main>
       </div>

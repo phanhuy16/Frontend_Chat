@@ -6,7 +6,7 @@ import reportApi from "../../api/report.api";
 import { useAuth } from "../../hooks/useAuth";
 import { Conversation, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
-import { getAvatarUrl } from "../../utils/helpers";
+import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -284,7 +284,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
           </h3>
           <button
             onClick={onClose}
-            className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full"
+            className="md:hidden w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -338,7 +338,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {otherMember?.status === StatusUser.Online
                       ? "Đang hoạt động"
-                      : "Hoạt động 15 phút trước"}
+                      : formatLastActive(otherMember?.lastActiveAt)}
                   </p>
                 </div>
 

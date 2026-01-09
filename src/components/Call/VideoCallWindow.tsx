@@ -1,12 +1,4 @@
 import React, { useEffect, useRef } from "react";
-import { Button, Space, Tooltip } from "antd";
-import {
-  CloseOutlined,
-  AudioMutedOutlined,
-  AudioOutlined,
-  VideoCameraOutlined,
-  StopOutlined,
-} from "@ant-design/icons";
 
 interface VideoCallWindowProps {
   localStream: MediaStream | null;
@@ -136,65 +128,54 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
       </div>
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 flex justify-center gap-4">
-        <Space size="large">
-          {/* Mute/Unmute Audio Button */}
-          <Tooltip
-            title={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-            placement="top"
-          >
-            <Button
-              shape="circle"
-              size="large"
-              icon={audioEnabled ? <AudioOutlined /> : <AudioMutedOutlined />}
-              onClick={onToggleAudio}
-              className={`${
-                audioEnabled
-                  ? "bg-white text-black hover:bg-gray-200"
-                  : "bg-red-500 text-white hover:bg-red-600"
-              }`}
-              aria-label={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-            />
-          </Tooltip>
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 flex justify-center gap-6">
+        {/* Mute/Unmute Audio Button */}
+        <button
+          onClick={onToggleAudio}
+          className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
+            audioEnabled
+              ? "bg-white text-black hover:bg-gray-200"
+              : "bg-red-500 text-white hover:bg-red-600 ring-2 ring-white/50"
+          }`}
+          title={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
+        >
+          <span className="material-symbols-outlined text-2xl">
+            {audioEnabled ? "mic" : "mic_off"}
+          </span>
+        </button>
 
-          {/* Mute/Unmute Video Button */}
-          <Tooltip
-            title={videoEnabled ? "Tắt camera" : "Bật camera"}
-            placement="top"
-          >
-            <Button
-              shape="circle"
-              size="large"
-              icon={videoEnabled ? <VideoCameraOutlined /> : <StopOutlined />}
-              onClick={onToggleVideo}
-              className={`${
-                videoEnabled
-                  ? "bg-white text-black hover:bg-gray-200"
-                  : "bg-red-500 text-white hover:bg-red-600"
-              }`}
-              aria-label={videoEnabled ? "Tắt camera" : "Bật camera"}
-            />
-          </Tooltip>
+        {/* Mute/Unmute Video Button */}
+        <button
+          onClick={onToggleVideo}
+          className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
+            videoEnabled
+              ? "bg-white text-black hover:bg-gray-200"
+              : "bg-red-500 text-white hover:bg-red-600 ring-2 ring-white/50"
+          }`}
+          title={videoEnabled ? "Tắt camera" : "Bật camera"}
+        >
+          <span className="material-symbols-outlined text-2xl">
+            {videoEnabled ? "videocam" : "videocam_off"}
+          </span>
+        </button>
 
-          {/* End Call Button */}
-          <Tooltip title="Kết thúc cuộc gọi" placement="top">
-            <Button
-              danger
-              shape="circle"
-              size="large"
-              icon={<CloseOutlined />}
-              onClick={onEndCall}
-              aria-label="Kết thúc cuộc gọi"
-            />
-          </Tooltip>
-        </Space>
+        {/* End Call Button */}
+        <button
+          onClick={onEndCall}
+          className="w-14 h-14 flex items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+          title="Kết thúc cuộc gọi"
+        >
+          <span className="material-symbols-outlined text-2xl">call_end</span>
+        </button>
       </div>
 
       {/* No Video Indicator */}
       {!videoEnabled && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
           <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center mb-4">
-            <StopOutlined className="text-4xl text-gray-400" />
+            <span className="material-symbols-outlined text-4xl text-gray-400">
+              videocam_off
+            </span>
           </div>
           <p className="text-white text-lg font-semibold">{remoteUserName}</p>
           <p className="text-gray-400 text-sm">Camera đã bị tắt</p>

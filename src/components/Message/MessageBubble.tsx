@@ -46,11 +46,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Message Bubble Container */}
         <div className="relative max-w-md group/bubble">
-          {/* Reaction Button (Three dots) - Shows on hover */}
+          {/* Reaction Button (Three dots) - Shows on hover, always on the right */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 ${
-              isOwn ? "right-full mr-2" : "left-full ml-2"
-            } opacity-0 group-hover:opacity-100 transition-opacity z-10`}
+            className={`absolute top-1/2 -translate-y-1/2 left-full ml-2 opacity-0 group-hover:opacity-100 transition-opacity z-10`}
           >
             <div className="relative group/reaction">
               <button className="p-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -60,20 +58,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               </button>
 
               {/* Reaction Picker Popup */}
-              <div
-                className={`absolute bottom-full ${
-                  isOwn ? "right-0" : "left-0"
-                } mb-2 p-1 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 flex gap-1 hidden group-hover/reaction:flex animate-fade-in`}
-              >
-                {REACTION_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => onReact?.(message.id, emoji)}
-                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-transform hover:scale-125 text-lg leading-none"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="absolute bottom-full left-0 mb-0 pb-2 pt-1 px-1 bg-transparent hidden group-hover/reaction:flex">
+                <div className="p-1 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 flex gap-1 animate-fade-in">
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => onReact?.(message.id, emoji)}
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-transform hover:scale-125 text-lg leading-none"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -82,9 +78,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div
             className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
           >
-            {(message.content ||
-              (!isOwn && message.sender) ||
-              (message.reactions && message.reactions.length > 0)) && (
+            {(message.content || (!isOwn && message.sender)) && (
               <div
                 className={`p-3 rounded-2xl ${
                   isOwn
@@ -155,8 +149,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             {/* Reactions Display */}
             {message.reactions && message.reactions.length > 0 && (
               <div
-                className={`flex gap-1 mt-1 -mb-2 z-10 ${
-                  isOwn ? "justify-end" : "justify-start"
+                className={`flex gap-1 mt-1 -mb-2 z-10 w-full ${
+                  isOwn ? "justify-start" : "justify-end"
                 }`}
               >
                 {message.reactions.map((reaction, idx) => (

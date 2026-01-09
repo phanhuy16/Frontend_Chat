@@ -1,12 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { getAvatarUrl } from "../../utils/helpers";
 
-import { Button, Space, Tooltip } from "antd";
-import {
-  CloseOutlined,
-  AudioMutedOutlined,
-  AudioOutlined,
-} from "@ant-design/icons";
+
 
 interface AudioCallWindowProps {
   remoteStream: MediaStream | null;
@@ -157,48 +152,31 @@ const AudioCallWindow: React.FC<AudioCallWindowProps> = ({
       </div>
 
       {/* Controls */}
-      <Space size="large">
-        {/* Toggle Audio Button */}
-        <Tooltip
+      <div className="absolute bottom-16 left-0 right-0 p-6 flex justify-center gap-6">
+        {/* Toggle Mute */}
+        <button
+          onClick={onToggleAudio}
+          className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
+            audioEnabled
+              ? "bg-white/20 text-white hover:bg-white/30 backdrop-blur-md"
+              : "bg-red-500 text-white hover:bg-red-600 ring-2 ring-white/50"
+          }`}
           title={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-          placement="top"
         >
-          <Button
-            shape="circle"
-            size="large"
-            icon={audioEnabled ? <AudioOutlined /> : <AudioMutedOutlined />}
-            onClick={onToggleAudio}
-            className={`${
-              audioEnabled
-                ? "bg-white text-blue-600 hover:bg-gray-100"
-                : "bg-red-500 text-white hover:bg-red-600"
-            }`}
-            style={{
-              width: "60px",
-              height: "60px",
-              fontSize: "24px",
-            }}
-            aria-label={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-          />
-        </Tooltip>
+          <span className="material-symbols-outlined text-2xl">
+            {audioEnabled ? "mic" : "mic_off"}
+          </span>
+        </button>
 
-        {/* End Call Button */}
-        <Tooltip title="Kết thúc cuộc gọi" placement="top">
-          <Button
-            danger
-            shape="circle"
-            size="large"
-            icon={<CloseOutlined />}
-            onClick={onEndCall}
-            style={{
-              width: "60px",
-              height: "60px",
-              fontSize: "24px",
-            }}
-            aria-label="Kết thúc cuộc gọi"
-          />
-        </Tooltip>
-      </Space>
+        {/* End Call */}
+        <button
+          onClick={onEndCall}
+          className="w-14 h-14 flex items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg"
+          title="Kết thúc cuộc gọi"
+        >
+          <span className="material-symbols-outlined text-2xl">call_end</span>
+        </button>
+      </div>
 
       {/* Floating Info */}
       <div className="absolute top-8 left-8 text-white/80 text-sm">

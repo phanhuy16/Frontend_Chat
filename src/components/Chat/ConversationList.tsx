@@ -11,6 +11,7 @@ interface ConversationListProps {
   currentConversation: Conversation | null;
   onSelectConversation: (conversation: Conversation) => void;
   user: User;
+  unreadCounts?: { [key: number]: number };
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -18,6 +19,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   currentConversation,
   onSelectConversation,
   user,
+  unreadCounts = {},
 }) => {
   const getConversationName = (conversation: Conversation): string => {
     if (conversation.conversationType === ConversationType.Direct) {
@@ -80,8 +82,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="flex flex-col">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-2">
+      <div className="flex flex-col px-2 gap-1">
         {conversations.map((conversation) => (
           <div
             key={conversation.id}
@@ -113,7 +115,13 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 <p className="text-black dark:text-white text-base font-medium leading-normal line-clamp-1">
                   {getConversationName(conversation)}
                 </p>
-                <p className="text-[#64748b] dark:text-[#9dabb9] text-sm font-normal leading-normal line-clamp-1">
+                <p
+                  className={`text-sm font-normal leading-normal line-clamp-1 ${
+                    (unreadCounts[conversation.id] || 0) > 0
+                      ? "text-black dark:text-white font-semibold"
+                      : "text-[#64748b] dark:text-[#9dabb9]"
+                  }`}
+                >
                   {getConversationPreview(conversation)}
                 </p>
               </div>
@@ -126,10 +134,14 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   conversation.messages[0]?.createdAt || conversation.createdAt
                 )}
               </p>
-              {/* Unread badge (if needed) */}
-              {Math.random() > 0.7 && (
+              {/* Unread badge */}
+              {(unreadCounts[conversation.id] || 0) > 0 && (
                 <div className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
-                  <p className="text-white text-xs font-bold">1</p>
+                  <p className="text-white text-xs font-bold">
+                    {(unreadCounts[conversation.id] || 0) > 9
+                      ? "9+"
+                      : unreadCounts[conversation.id]}
+                  </p>
                 </div>
               )}
             </div>

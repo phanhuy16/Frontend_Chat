@@ -251,7 +251,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                       value={searchTerm}
                       onChange={(e) => handleSearch(e.target.value)}
                       placeholder="Search by username or name..."
-                      className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-background-dark border border-gray-300 dark:border-gray-700 text-black dark:text-white placeholder-gray-500 focus:ring-primary focus:border-primary transition-all"
+                      className="w-full pl-10 pr-4 py-2 rounded-lg bg-input-light dark:bg-input-dark border border-gray-300 dark:border-gray-700 text-black dark:text-white placeholder-gray-500 focus:ring-primary focus:border-primary transition-all"
                       autoFocus
                     />
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">

@@ -7,6 +7,7 @@ export interface User {
   displayName: string;
   avatar: string;
   status: StatusUser;
+  lastActiveAt?: string;
 }
 
 export interface UserSearchResponse {

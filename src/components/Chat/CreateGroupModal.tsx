@@ -57,8 +57,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       return;
     }
 
-    if (selectedMembers.length === 0) {
-      setError("Chọn ít nhất 1 thành viên");
+    if (selectedMembers.length < 2) {
+      setError(
+        "Chọn ít nhất 2 thành viên khác (tổng cộng 3 người bao gồm bạn) để tạo nhóm"
+      );
       return;
     }
 
@@ -114,7 +116,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Nhập tên nhóm chat"
-              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-input-light dark:bg-input-dark border border-gray-300 dark:border-gray-700 rounded-lg text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 

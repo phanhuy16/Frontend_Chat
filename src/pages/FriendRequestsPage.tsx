@@ -103,7 +103,7 @@ const FriendRequestsPage: React.FC = () => {
           </div>
           <button
             onClick={() => navigate("/chat")}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+            className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
             title="Back to Chat"
           >
             <span className="material-symbols-outlined">arrow_back</span>

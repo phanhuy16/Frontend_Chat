@@ -1,4 +1,4 @@
-import { StatusUser } from "./enums";
+import { User } from "./user.types";
 
 export interface RegisterRequest {
   username: string;
@@ -22,14 +22,7 @@ export interface AuthResponse {
   expiresIn?: Date;
 }
 
-export interface UserAuth {
-  id: number;
-  userName: string;
-  email: string;
-  displayName: string;
-  avatar: string;
-  status: StatusUser;
-}
+export interface UserAuth extends User { }
 export interface RefreshTokenRequest {
   token: string;
   refreshToken: string;

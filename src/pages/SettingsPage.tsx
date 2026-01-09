@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../hooks/useAuth";
 import { userApi } from "../api/user.api";
 import toast from "react-hot-toast";
@@ -13,6 +14,7 @@ const { confirm } = Modal;
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [formData, setFormData] = useState({
     displayName: user?.displayName || "",
     email: user?.email || "",
@@ -319,7 +321,7 @@ const SettingsPage: React.FC = () => {
                   Tên hiển thị
                 </label>
                 <input
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-background-light dark:bg-background-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
                   id="displayName"
                   value={formData.displayName}
                   onChange={handleInputChange}
@@ -335,7 +337,7 @@ const SettingsPage: React.FC = () => {
                   Email
                 </label>
                 <input
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-background-light dark:bg-background-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
                   id="email"
                   type="email"
                   value={formData.email}
@@ -354,7 +356,7 @@ const SettingsPage: React.FC = () => {
                 Tiểu sử ngắn
               </label>
               <textarea
-                className="form-input flex w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-background-light dark:bg-background-dark focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                className="form-input flex w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
                 id="bio"
                 rows={4}
                 value={formData.bio}
@@ -383,7 +385,7 @@ const SettingsPage: React.FC = () => {
                     Mật khẩu hiện tại
                   </label>
                   <input
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-background-light dark:bg-background-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
                     id="currentPassword"
                     placeholder="••••••••"
                     type="password"
@@ -399,7 +401,7 @@ const SettingsPage: React.FC = () => {
                     Mật khẩu mới
                   </label>
                   <input
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-background-light dark:bg-background-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
                     id="newPassword"
                     placeholder="••••••••"
                     type="password"
@@ -418,6 +420,44 @@ const SettingsPage: React.FC = () => {
                   {loading ? "Đang xử lý..." : "Đổi mật khẩu"}
                 </span>
               </button>
+            </div>
+
+            {/* Divider */}
+            <hr className="border-t border-gray-200 dark:border-white/10 my-8" />
+
+            {/* Theme Section */}
+            <div id="theme">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                Giao diện
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Chọn chế độ hiển thị sáng hoặc tối cho ứng dụng.
+              </p>
+              <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark/50">
+                <div className="flex-1">
+                  <p className="text-base font-medium text-gray-900 dark:text-white">
+                    Chế độ tối
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Chuyển đổi giữa giao diện sáng và tối.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:ring-offset-background-dark ${
+                    theme === "dark"
+                      ? "bg-primary"
+                      : "bg-gray-200 dark:bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className={`${
+                      theme === "dark" ? "translate-x-6" : "translate-x-1"
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Divider */}

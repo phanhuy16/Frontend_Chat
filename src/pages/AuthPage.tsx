@@ -13,11 +13,6 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Enable dark mode if system prefers it
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      document.documentElement.classList.add("dark");
-    }
-
     // Redirect if already logged in
     if (isAuthenticated) {
       navigate("/chat");

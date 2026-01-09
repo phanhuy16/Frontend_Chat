@@ -132,7 +132,7 @@ const FriendsListPage: React.FC = () => {
           {/* Back Button */}
           <button
             onClick={() => navigate("/chat")}
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+            className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
             title="Back to Chat"
           >
             <span className="material-symbols-outlined">arrow_back</span>
@@ -205,61 +205,84 @@ const FriendsListPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-2">
             {filteredFriends.map((friend) => (
               <div
                 key={friend.id}
-                className="flex flex-col p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:shadow-md transition-shadow"
+                className="flex items-center gap-4 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group"
               >
-                {/* Friend Avatar & Info */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="relative">
+                {/* Friend Avatar */}
+                <div className="relative shrink-0">
+                  {friend.avatar ? (
                     <div
-                      className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-14 shrink-0"
+                      className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
                       style={{
-                        backgroundImage: `url("${friend.avatar || ""}")`,
+                        backgroundImage: `url("${friend.avatar}")`,
                       }}
                     />
-                    {/* Status Indicator */}
-                    <div
-                      className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-gray-900"
-                      style={{
-                        backgroundColor: getStatusUserColor(
-                          friend.status as StatusUser
-                        ),
-                      }}
-                    />
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-center size-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-white font-semibold text-sm">
+                      {friend.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Status Indicator */}
+                  <div
+                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-gray-50 dark:border-gray-900"
+                    style={{
+                      backgroundColor: getStatusUserColor(
+                        friend.status as StatusUser
+                      ),
+                    }}
+                  />
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-base font-bold text-black dark:text-white truncate">
+                {/* Friend Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-black dark:text-white truncate">
                       {friend.displayName}
                     </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
                       @{friend.userName}
-                    </p>
-                    <p
-                      className="text-xs font-medium mt-1"
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span
+                      className="inline-flex items-center gap-1 text-xs"
                       style={{
                         color: getStatusUserColor(friend.status as StatusUser),
                       }}
                     >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          backgroundColor: getStatusUserColor(
+                            friend.status as StatusUser
+                          ),
+                        }}
+                      ></span>
                       {getStatusUserLabel(friend.status as StatusUser)}
-                    </p>
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      • Friends since {formatDate(friend.becomeFriendAt)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {/* Chat Button */}
                   <button
                     onClick={() => handleOpenChat(friend)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-base">
+                    <span
+                      className="material-symbols-outlined text-sm"
+                      style={{ fontSize: "16px" }}
+                    >
                       message
                     </span>
-                    <span className="truncate">Chat</span>
+                    <span>Chat</span>
                   </button>
 
                   {/* Remove Button */}
@@ -268,19 +291,17 @@ const FriendsListPage: React.FC = () => {
                       handleRemoveFriend(friend.id, friend.displayName)
                     }
                     disabled={removing[friend.id]}
-                    className="flex items-center justify-center px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors opacity-0 group-hover:opacity-100"
                     title="Remove friend"
                   >
-                    <span className="material-symbols-outlined text-base">
+                    <span
+                      className="material-symbols-outlined text-sm"
+                      style={{ fontSize: "18px" }}
+                    >
                       person_remove
                     </span>
                   </button>
                 </div>
-
-                {/* Friend Since */}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  Friends since {formatDate(friend.becomeFriendAt)}
-                </p>
               </div>
             ))}
           </div>

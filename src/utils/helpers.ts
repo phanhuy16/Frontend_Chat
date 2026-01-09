@@ -57,3 +57,37 @@ export const getAvatarUrl = (avatarPath: string | null | undefined): string => {
   return `${baseUrl}${avatarPath}`;
 };
 
+export const formatLastActive = (lastActiveAt: string | null | undefined): string => {
+  if (!lastActiveAt) return "Hoạt động gần đây";
+
+  const lastActive = new Date(lastActiveAt);
+
+  // Kiểm tra ngày không hợp lệ (NaN hoặc ngày mặc định từ C# như 0001-01-01)
+  if (isNaN(lastActive.getTime()) || lastActive.getFullYear() < 1970) {
+    return "Hoạt động gần đây";
+  }
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - lastActive.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return "Vừa mới hoạt động";
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `Hoạt động ${diffInMinutes} phút trước`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `Hoạt động ${diffInHours} giờ trước`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `Hoạt động ${diffInDays} ngày trước`;
+  }
+
+  return `Hoạt động ngày ${lastActive.toLocaleDateString('vi-VN')}`;
+};
+
