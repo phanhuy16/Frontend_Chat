@@ -38,7 +38,9 @@ const CallModal: React.FC<CallModalProps> = ({
   return (
     <Modal
       title={null}
-      open={callState.callStatus !== "idle"}
+      open={
+        callState.callStatus !== "idle" && callState.callStatus !== "connected"
+      }
       onCancel={onReject}
       footer={null}
       closable={false}

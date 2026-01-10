@@ -29,6 +29,7 @@ import IncomingCallModal from "../Call/IncomingCallModal";
 import CallModal from "../Call/CallModal";
 import VideoCallWindow from "../Call/VideoCallWindow";
 import AudioCallWindow from "../Call/AudioCallWindow";
+import GroupCallWindow from "../Call/GroupCallWindow";
 import { CallType } from "../../types";
 
 interface ChatWindowProps {
@@ -51,6 +52,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     callState,
     incomingCall,
     startCall,
+    startGroupCall,
     acceptCall,
     rejectCall,
     endCall,
@@ -507,26 +509,38 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   };
 
   const handleStartAudioCall = async () => {
-    const otherMember = getOtherMember();
-    if (otherMember && conversation.id) {
-      await startCall(
-        otherMember.id,
-        otherMember.displayName,
-        conversation.id,
-        CallType.Audio
-      );
+    if (conversation.conversationType === ConversationType.Direct) {
+      const otherMember = getOtherMember();
+      if (otherMember && conversation.id) {
+        await startCall(
+          otherMember.id,
+          otherMember.displayName,
+          conversation.id,
+          CallType.Audio
+        );
+      }
+    } else {
+      // Group Audio Call
+      const memberIds = conversation.members.map((m) => m.id);
+      await startGroupCall(memberIds, conversation.id, CallType.Audio);
     }
   };
 
   const handleStartVideoCall = async () => {
-    const otherMember = getOtherMember();
-    if (otherMember && conversation.id) {
-      await startCall(
-        otherMember.id,
-        otherMember.displayName,
-        conversation.id,
-        CallType.Video
-      );
+    if (conversation.conversationType === ConversationType.Direct) {
+      const otherMember = getOtherMember();
+      if (otherMember && conversation.id) {
+        await startCall(
+          otherMember.id,
+          otherMember.displayName,
+          conversation.id,
+          CallType.Video
+        );
+      }
+    } else {
+      // Group Video Call
+      const memberIds = conversation.members.map((m) => m.id);
+      await startGroupCall(memberIds, conversation.id, CallType.Video);
     }
   };
 
@@ -547,7 +561,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               name: incomingCall.callerName,
               avatar: getAvatarUrl(incomingCall.callerAvatar),
             }}
-            callType={incomingCall.callType}
+            callType={
+              incomingCall.callType === "Video"
+                ? CallType.Video
+                : CallType.Audio
+            }
             onAccept={acceptCall}
             onReject={rejectCall}
           />
@@ -564,7 +582,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         />
 
         {/* Video Call Window */}
-        {callState.callStatus === "connected" && (
+        {callState.callStatus === "connected" && !callState.isGroup && (
           <VideoCallWindow
             localStream={callState.localStream}
             remoteStream={callState.remoteStream}
@@ -580,6 +598,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
         {/* Audio Call Window */}
         {callState.callStatus === "connected" &&
+          !callState.isGroup &&
           callState.callType === CallType.Audio && (
             <AudioCallWindow
               remoteStream={callState.remoteStream}
@@ -591,6 +610,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               audioEnabled={callState.isAudioEnabled}
             />
           )}
+
+        {/* Group Call Window */}
+        {callState.callStatus === "connected" && callState.isGroup && (
+          <GroupCallWindow
+            participants={callState.participants}
+            localStream={callState.localStream}
+            callType={callState.callType}
+            duration={callState.duration}
+            isAudioEnabled={callState.isAudioEnabled}
+            isVideoEnabled={callState.isVideoEnabled}
+            onEndCall={endCall}
+            onToggleAudio={toggleAudio}
+            onToggleVideo={toggleVideo}
+          />
+        )}
 
         {/* Chat Header */}
         <header className="flex items-center justify-between gap-4 px-8 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">

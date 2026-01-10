@@ -3,18 +3,9 @@ import { useAuth } from './useAuth';
 import { useSignalR } from './useSignalR';
 import { useCall } from './useCall';
 import { CallType } from '../types';
+import { IncomingCallData } from '../types/call.type';
 import toast from 'react-hot-toast';
 import callApi from '../api/call.api';
-
-interface IncomingCallData {
-  callId: string;
-  callerId: number;
-  callerName: string;
-  callerAvatar?: string;
-  conversationId: number;
-  callType: CallType;
-  timestamp: number;
-}
 
 export const useCallIntegration = (hubUrl: string) => {
   const { user } = useAuth();
@@ -29,336 +20,225 @@ export const useCallIntegration = (hubUrl: string) => {
     toggleVideo,
     webrtcService,
     setConnectionEstablished,
+    addParticipant,
+    removeParticipant,
+    setCallState,
   } = useCall();
 
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Store caller ID to use in SendCallAnswer
-  const callerIdRef = useRef<number>(0);
   const callIdRef = useRef<string>('');
 
-  // Store pending offer and acceptance state
-  const callOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
-  const isCallAcceptedRef = useRef<boolean>(false);
-
-  // Register user khi component mount
+  // Register user on mount
   useEffect(() => {
     if (user?.id) {
-      invoke('RegisterUser', user.id).catch((err) => {
-        console.error('Failed to register user:', err);
-      });
+      invoke('RegisterUser', user.id).catch(err => console.error('SignalR RegisterUser error:', err));
     }
-
-    return () => {
-      // Cleanup
-    };
   }, [user?.id, invoke]);
 
-  // Process Call Answer Logic (Extracted)
-  const processCallAnswer = useCallback(async (offer: RTCSessionDescriptionInit) => {
-    try {
-      if (!webrtcService) {
-        return;
-      }
-
-      // Create answer
-      const answer = await webrtcService.createAnswer(offer);
-
-      // Send answer back
-      await invoke('SendCallAnswer', callerIdRef.current, answer);
-
-      console.log('Answer sent successfully');
-      setConnectionEstablished();
-    } catch (err) {
-      console.error('Error processing call answer:', err);
-      toast.error('Lỗi khi xử lý cuộc gọi');
-    }
-  }, [webrtcService, invoke, setConnectionEstablished]);
-
-  // Lắng nghe cuộc gọi đến
+  // Handle incoming signaling messages
   useEffect(() => {
-    const handleIncomingCall = async (data: IncomingCallData) => {
-
-      // Store caller ID for later use
-      callerIdRef.current = data.callerId;
-      // Reset call state refs
-      callOfferRef.current = null;
-      isCallAcceptedRef.current = false;
-
-      setIncomingCall(data);
-
-      // Phát ringtone
+    const handleIncomingCall = (data: any) => {
+      setIncomingCall({ ...data, isGroup: false });
       playRingtone();
-
-      // Auto reject sau 30 giây nếu không pick up
-      callTimeoutRef.current = setTimeout(() => {
-        handleRejectCall();
-      }, 30000);
+      callTimeoutRef.current = setTimeout(() => handleRejectCall(), 30000);
     };
 
-    const handleCallRejected = (data: any) => {
-      stopRingtone();
-      toast.error('Cuộc gọi bị từ chối');
-      endCall();
-      setIncomingCall(null);
-      callerIdRef.current = 0;
-      callOfferRef.current = null;
-      isCallAcceptedRef.current = false;
+    const handleIncomingGroupCall = (data: any) => {
+      setIncomingCall({ ...data, isGroup: true });
+      playRingtone();
+      callTimeoutRef.current = setTimeout(() => handleRejectCall(), 30000);
     };
 
-    const handleCallEnded = (data: any) => {
-      stopRingtone();
-      toast.custom(`Cuộc gọi kết thúc (${data.duration}s)`);
-      endCall();
-      setIncomingCall(null);
-      callerIdRef.current = 0;
-      callOfferRef.current = null;
-      isCallAcceptedRef.current = false;
+    const handleUserJoinedGroupCall = async (data: any) => {
+      const { userId, displayName } = data;
+      console.log(`User ${displayName} (${userId}) joined group call. Initiating offer...`);
+
+      if (!webrtcService) return;
+
+      addParticipant(userId, displayName || `User ${userId}`);
+
+      // We are an existing participant, so we send the offer to the newcomer
+      try {
+        const offer = await webrtcService.createOffer(userId);
+        await invoke('SendCallOffer', userId, offer);
+      } catch (err) {
+        console.error(`Failed to send offer to user ${userId}:`, err);
+      }
     };
 
     const handleReceiveCallOffer = async (data: any) => {
+      const { callerId, offer } = data;
+      if (!webrtcService) return;
 
-      // Store the offer
-      callOfferRef.current = data.offer;
+      addParticipant(callerId, `User ${callerId}`);
 
-      // Only process if user has ALREADY accepted
-      if (isCallAcceptedRef.current) {
-        await processCallAnswer(data.offer);
+      try {
+        const answer = await webrtcService.createAnswer(callerId, offer);
+        await invoke('SendCallAnswer', callerId, answer);
+        setConnectionEstablished();
+      } catch (err) {
+        console.error(`Failed to handle offer from user ${callerId}:`, err);
       }
     };
 
     const handleReceiveCallAnswer = async (data: any) => {
-      try {
-        if (!webrtcService) {
-          return;
-        }
-        await webrtcService.handleAnswer(data.answer);
-        setConnectionEstablished();
+      const { receiverId, answer } = data;
+      if (!webrtcService) return;
 
+      try {
+        await webrtcService.handleAnswer(receiverId, answer);
+        setConnectionEstablished();
       } catch (err) {
-        console.error('Error handling answer:', err);
-        toast.error('Lỗi kết nối');
-        endCall();
+        console.error(`Failed to handle answer from user ${receiverId}:`, err);
       }
     };
 
     const handleReceiveIceCandidate = async (data: any) => {
-      try {
-        if (!webrtcService) {
-          return;
-        }
-
-        await webrtcService.addIceCandidate(data.candidate);
-      } catch (err) {
-        console.warn('Error handling ICE candidate:', err);
+      const { senderId, candidate } = data;
+      if (webrtcService) {
+        await webrtcService.addIceCandidate(senderId, candidate);
       }
     };
 
-    const handleRemoteMediaStateChanged = (data: any) => {
-      console.log('Remote media state changed:', data);
+    const handleCallRejected = () => {
+      stopRingtone();
+      toast.error('Cuộc gọi bị từ chối');
+      endCall();
+      setIncomingCall(null);
     };
 
-    const handleUserOnlineStatusChanged = (data: any) => {
+    const handleCallEnded = (data: any) => {
+      stopRingtone();
+      toast(`Cuộc gọi kết thúc (${data.duration}s)`);
+      endCall();
+      setIncomingCall(null);
+    };
 
-      if (data.status === 'Online') {
-        setOnlineUsers((prev) => {
-          if (!prev.includes(data.userId)) {
-            return [...prev, data.userId];
-          }
-          return prev;
-        });
-      } else {
-        setOnlineUsers((prev) => prev.filter((id) => id !== data.userId));
+    const handleCallInitiated = (data: any) => {
+      const { callId, status, isGroup } = data;
+      console.log('Call initiated:', data);
+
+      if (isGroup) {
+        setConnectionEstablished(); // Transition to connected immediately for initiator
       }
+
+      setCallState(prev => ({
+        ...prev,
+        callId: callId,
+        callStatus: isGroup ? 'connected' : (status === 'Ringing' ? 'ringing' : 'idle'),
+        isGroup: !!isGroup
+      }));
     };
 
-    // Register listeners
     on('IncomingCall', handleIncomingCall);
-    on('CallRejected', handleCallRejected);
-    on('CallEnded', handleCallEnded);
+    on('IncomingGroupCall', handleIncomingGroupCall);
+    on('UserJoinedGroupCall', handleUserJoinedGroupCall);
     on('ReceiveCallOffer', handleReceiveCallOffer);
     on('ReceiveCallAnswer', handleReceiveCallAnswer);
     on('ReceiveIceCandidate', handleReceiveIceCandidate);
-    on('RemoteMediaStateChanged', handleRemoteMediaStateChanged);
-    on('UserOnlineStatusChanged', handleUserOnlineStatusChanged);
+    on('CallRejected', handleCallRejected);
+    on('CallEnded', handleCallEnded);
+    on('CallInitiated', handleCallInitiated);
 
     return () => {
-      // Cleanup listeners
       off('IncomingCall');
-      off('CallRejected');
-      off('CallEnded');
+      off('IncomingGroupCall');
+      off('UserJoinedGroupCall');
       off('ReceiveCallOffer');
       off('ReceiveCallAnswer');
       off('ReceiveIceCandidate');
-      off('RemoteMediaStateChanged');
-      off('UserOnlineStatusChanged');
+      off('CallRejected');
+      off('CallEnded');
+      off('CallInitiated');
     };
-  }, [on, off, webrtcService, invoke, processCallAnswer, endCall, setConnectionEstablished]);
+  }, [on, off, webrtcService, invoke, addParticipant, setConnectionEstablished, endCall]);
 
-  // Setup WebRTC ICE candidates
+  // Forward local ICE candidates to relevant peers
   useEffect(() => {
     if (!webrtcService) return;
 
-    const handleIceCandidate = (candidate: RTCIceCandidate) => {
-      if (callState.remoteUserId) {
-        invoke('SendIceCandidate', callState.remoteUserId, candidate).catch((err) => {
-          console.warn('Failed to send ICE candidate:', err);
-        });
-      }
-    };
-
-    webrtcService.onIceCandidateFound = handleIceCandidate;
-
-    return () => {
-      if (webrtcService) {
-        webrtcService.onIceCandidateFound = undefined;
-      }
-    };
-  }, [webrtcService, callState.remoteUserId, invoke]);
-
-  // Setup remote stream handler
-  useEffect(() => {
-    if (!webrtcService) return;
-
-    const handleRemoteStream = (stream: MediaStream) => {
-      console.log('Remote stream received:', stream.id);
-      console.log('Video tracks:', stream.getVideoTracks().length);
-      console.log('Audio tracks:', stream.getAudioTracks().length);
-    };
-
-    webrtcService.onRemoteStreamReceived = handleRemoteStream;
-
-    return () => {
-      if (webrtcService) {
-        webrtcService.onRemoteStreamReceived = undefined;
-      }
-    };
-  }, [webrtcService]);
-
-  // Play ringtone
-  const playRingtone = useCallback(() => {
-    try {
-      if (!ringtoneRef.current) {
-        ringtoneRef.current = new Audio('/sounds/ringtone.mp3');
-        ringtoneRef.current.loop = true;
-        ringtoneRef.current.volume = 0.8;
-      }
-
-      ringtoneRef.current.play().catch((err) => {
-        console.warn('Could not play ringtone:', err);
+    webrtcService.onIceCandidateFound = (targetUserId: number, candidate: RTCIceCandidate) => {
+      invoke('SendIceCandidate', targetUserId, candidate).catch(err => {
+        console.warn(`Failed to send ICE candidate to user ${targetUserId}:`, err);
       });
-    } catch (err) {
-      console.error('Error playing ringtone:', err);
-    }
-  }, []);
+    };
 
-  // Stop ringtone
-  const stopRingtone = useCallback(() => {
+    return () => {
+      if (webrtcService) webrtcService.onIceCandidateFound = undefined;
+    };
+  }, [webrtcService, invoke]);
+
+  // Action methods
+  const handleStartCall = useCallback(async (
+    recipientId: number,
+    recipientName: string,
+    conversationId: number,
+    callType: CallType
+  ) => {
     try {
-      if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-      }
+      if (!webrtcService) throw new Error('WebRTC service not available');
+
+      await webrtcService.initLocalStream(callType);
+      await startCall(callType, recipientId, recipientName, undefined, false);
+
+      const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
+      await invoke('InitiateCall', conversationId, recipientId, callTypeStr);
+
+      // For 1-on-1, initiator sends initial offer
+      const offer = await webrtcService.createOffer(recipientId);
+      await invoke('SendCallOffer', recipientId, offer);
+
+      toast.success('Đang gọi...');
     } catch (err) {
-      console.error('Error stopping ringtone:', err);
+      console.error('Error starting call:', err);
+      toast.error('Lỗi khi bắt đầu gọi');
+      endCall();
     }
-  }, []);
+  }, [webrtcService, startCall, invoke, endCall]);
 
-  // Start call (initiate) - CALLER side
-  const handleStartCall = useCallback(
-    async (recipientId: number, recipientName: string, conversationId: number, callType: CallType) => {
-      try {
+  const handleStartGroupCall = useCallback(async (
+    memberIds: number[],
+    conversationId: number,
+    callType: CallType
+  ) => {
+    try {
+      if (!webrtcService) throw new Error('WebRTC service not available');
 
-        if (!webrtcService) {
-          throw new Error('WebRTC service not available');
-        }
+      await webrtcService.initLocalStream(callType);
+      await startCall(callType, 0, 'Nhóm', undefined, true);
 
-        // Initialize local stream FIRST
-        await webrtcService.initLocalStream(callType);
+      const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
+      await invoke('InitiateGroupCall', conversationId, callTypeStr, memberIds);
 
-        // Initialize PeerConnection
-        await webrtcService.initPeerConnection();
+      toast.success('Đang khởi tạo cuộc gọi nhóm...');
+    } catch (err) {
+      console.error('Error starting group call:', err);
+      toast.error('Lỗi khi bắt đầu gọi nhóm');
+      endCall();
+    }
+  }, [webrtcService, startCall, invoke, endCall]);
 
-        // Start local call state
-        await startCall(callType, recipientId, recipientName);
-
-        try {
-          const callResult = await callApi.initiateCall(
-            recipientId,
-            conversationId,
-            callType === CallType.Video ? 'Video' : 'Audio'
-          );
-
-          // Store callId from database response
-          callIdRef.current = callResult.callId;
-        } catch (apiErr) {
-          console.warn('Failed to save call to DB, continuing anyway:', apiErr);
-          // Don't throw - continue with the call
-        }
-
-        // Invoke InitiateCall on backend to notify receiver
-        const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
-        await invoke('InitiateCall', conversationId, recipientId, callTypeStr);
-
-        // Create offer and send to receiver
-        const offer = await webrtcService.createOffer();
-
-        await invoke('SendCallOffer', recipientId, offer);
-
-        toast.success('Đang gọi...');
-      } catch (err) {
-        console.error('Error starting call:', err);
-        toast.error('Lỗi khi bắt đầu gọi');
-        endCall();
-      }
-    },
-    [webrtcService, startCall, invoke, endCall]
-  );
-
-  // Accept call - RECEIVER side
   const handleAcceptCall = useCallback(async () => {
     try {
-      if (!incomingCall) {
-        console.error('No incoming call to accept');
-        return;
-      }
-
-      // Set Accepted Flag
-      isCallAcceptedRef.current = true;
-
+      if (!incomingCall) return;
       stopRingtone();
+      if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
 
-      if (callTimeoutRef.current) {
-        clearTimeout(callTimeoutRef.current);
-      }
+      const callType = incomingCall.callType === 'Video' ? CallType.Video : CallType.Audio;
+      if (!webrtcService) throw new Error('WebRTC service not available');
 
-      const callType = incomingCall.callType === CallType.Video ? CallType.Video : CallType.Audio;
-
-      if (!webrtcService) {
-        throw new Error('WebRTC service not available');
-      }
-
-      // Initialize local stream FIRST
       await webrtcService.initLocalStream(callType);
 
-      // Initialize peer connection
-      await webrtcService.initPeerConnection();
-
-      // Answer call locally
-      await answerCall(
-        callType,
-        incomingCall.callerId,
-        incomingCall.callerName,
-        incomingCall.callerAvatar
-      );
-
-      // Check if we already have the offer
-      if (callOfferRef.current) {
-        await processCallAnswer(callOfferRef.current);
+      if (incomingCall.isGroup) {
+        await answerCall(callType, 0, 'Nhóm', undefined, true);
+        // Inform others that we joined so they can send us offers
+        // The backend now tracks participants, so we don't need to pass them
+        await invoke('JoinGroupCall', incomingCall.conversationId, incomingCall.callId);
       } else {
-        console.log('Waiting for offer from caller...');
+        await answerCall(callType, incomingCall.callerId, incomingCall.callerName, incomingCall.callerAvatar, false);
       }
 
       setIncomingCall(null);
@@ -366,108 +246,53 @@ export const useCallIntegration = (hubUrl: string) => {
     } catch (err) {
       console.error('Error accepting call:', err);
       toast.error('Lỗi khi chấp nhận cuộc gọi');
-      rejectCall();
+      handleRejectCall();
     }
-  }, [incomingCall, webrtcService, answerCall, rejectCall, stopRingtone, processCallAnswer]);
+  }, [incomingCall, webrtcService, answerCall, invoke, user?.id]);
 
-  // Reject call
   const handleRejectCall = useCallback(async () => {
-    try {
-      stopRingtone();
-
-      if (callTimeoutRef.current) {
-        clearTimeout(callTimeoutRef.current);
-      }
-
-      if (incomingCall) {
-        await invoke('RejectCall', incomingCall.callerId);
-      }
-
-      rejectCall();
-      setIncomingCall(null);
-      callerIdRef.current = 0;
-      callOfferRef.current = null;
-      isCallAcceptedRef.current = false;
-      toast.custom('Đã từ chối cuộc gọi');
-    } catch (err) {
-      console.error('Error rejecting call:', err);
+    stopRingtone();
+    if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
+    if (incomingCall && !incomingCall.isGroup) {
+      await invoke('RejectCall', incomingCall.callerId);
     }
-  }, [incomingCall, invoke, rejectCall, stopRingtone]);
+    rejectCall();
+    setIncomingCall(null);
+  }, [incomingCall, invoke, rejectCall]);
 
-  // End call
   const handleEndCall = useCallback(async () => {
-    try {
-      const duration = callState.duration;
-
-      if (callIdRef.current) {
-        try {
-          await callApi.endCall(callIdRef.current, duration);
-        } catch (apiErr) {
-          console.error('Failed to save call to DB:', apiErr);
-        }
-      } else {
-        console.warn('callIdRef.current is empty, cannot save to DB');
-      }
-
-      if (callState.remoteUserId) {
-        await invoke('EndCall', callState.remoteUserId, duration);
-      }
-
-      endCall();
-      callerIdRef.current = 0;
-      callOfferRef.current = null;
-      isCallAcceptedRef.current = false;
-      toast.custom(`Cuộc gọi kết thúc (${duration}s)`);
-    } catch (err) {
-      console.error('Error ending call:', err);
+    const duration = callState.duration;
+    if (!callState.isGroup && callState.remoteUserId) {
+      await invoke('EndCall', callState.remoteUserId, duration);
     }
-  }, [callState.remoteUserId, callState.duration, invoke, endCall]);
+    endCall();
+    toast(`Cuộc gọi kết thúc (${duration}s)`);
+  }, [callState, invoke, endCall]);
 
-  // Update media state
-  const handleUpdateMediaState = useCallback(
-    async (isAudioEnabled: boolean, isVideoEnabled: boolean) => {
-      try {
-
-        if (callState.remoteUserId) {
-          await invoke('UpdateMediaState', callState.remoteUserId, isAudioEnabled, isVideoEnabled);
-        }
-
-        toggleAudio();
-        if (callState.callType === CallType.Video) {
-          toggleVideo();
-        }
-      } catch (err) {
-        console.error('Error updating media state:', err);
-      }
-    },
-    [callState.remoteUserId, callState.callType, invoke, toggleAudio, toggleVideo]
-  );
-
-  // Get online users
-  const getOnlineUsers = useCallback(async () => {
-    try {
-      await invoke('GetOnlineUsers');
-    } catch (err) {
-      console.error('Error getting online users:', err);
+  const playRingtone = () => {
+    if (!ringtoneRef.current) {
+      ringtoneRef.current = new Audio('/sounds/ringtone.mp3');
+      ringtoneRef.current.loop = true;
     }
-  }, [invoke]);
+    ringtoneRef.current.play().catch(() => { });
+  };
+
+  const stopRingtone = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+  };
 
   return {
-    // State
     callState,
     incomingCall,
-    onlineUsers,
-
-    // Call handlers
     startCall: handleStartCall,
+    startGroupCall: handleStartGroupCall,
     acceptCall: handleAcceptCall,
     rejectCall: handleRejectCall,
     endCall: handleEndCall,
-    updateMediaState: handleUpdateMediaState,
     toggleAudio,
     toggleVideo,
-
-    // Utility
-    getOnlineUsers,
   };
 };
