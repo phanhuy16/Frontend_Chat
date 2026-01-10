@@ -85,10 +85,10 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-[#111418] rounded-xl p-6 w-96 max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-[#111418] rounded-xl p-5 w-[340px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-black dark:text-white">
+          <h2 className="text-lg font-bold text-black dark:text-white">
             ➕ Thêm thành viên vào nhóm
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -130,7 +130,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
               {availableUsers.map((u) => (
                 <label
                   key={u.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -149,7 +149,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
 
                   {/* Avatar */}
                   <div
-                    className="w-8 h-8 rounded-full bg-center bg-cover shrink-0"
+                    className="w-7 h-7 rounded-full bg-center bg-cover shrink-0"
                     style={{
                       backgroundImage: `url("${getAvatarUrl(u.avatar)}")`,
                     }}
@@ -185,14 +185,14 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 text-xs"
           >
             Hủy
           </button>
           <button
             onClick={handleAddMembers}
             disabled={loading || selectedMembers.length === 0}
-            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-xs"
           >
             {loading ? (
               <>

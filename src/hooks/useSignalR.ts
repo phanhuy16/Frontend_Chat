@@ -7,7 +7,7 @@ const globalConnections = new Map<string, signalR.HubConnection>();
 const globalConnectionPromises = new Map<string, Promise<void>>();
 
 export const useSignalR = (hubUrl: string) => {
-  const { token } = useAuth();
+  const { token, refreshAuthToken, logout } = useAuth();
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -138,13 +138,38 @@ export const useSignalR = (hubUrl: string) => {
 
       processEventQueue();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('SignalR connection error:', error);
       globalConnectionPromises.delete(hubUrl);
 
       if (isMountedRef.current) {
         setIsConnecting(false);
       }
+
+      // Handle 401 specifically
+      if (error?.toString().includes('401') || error?.message?.includes('401') || error?.toString().includes('Unauthorized')) {
+        console.log('Received 401 from SignalR, attempting token refresh...');
+        reconnectAttemptsRef.current = maxReconnectAttempts + 1; // Stop retry loop
+
+        try {
+          const refreshed = await refreshAuthToken({
+            token: localStorage.getItem('token') || '',
+            refreshToken: localStorage.getItem('refreshToken') || ''
+          });
+
+          if (!refreshed) {
+            console.log('Token refresh failed, logging out');
+            logout();
+          }
+          // If refreshed, the token dependency will trigger a re-connect automatically
+          return;
+        } catch (refreshError) {
+          console.error('Error during token refresh:', refreshError);
+          logout();
+          return;
+        }
+      }
+
       // Retry connection after delay
       reconnectAttemptsRef.current += 1;
       const delayMs = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
@@ -161,7 +186,7 @@ export const useSignalR = (hubUrl: string) => {
         console.error(`Max reconnect attempts (${maxReconnectAttempts}) reached`);
       }
     }
-  }, [token, hubUrl, isConnecting, processEventQueue]);
+  }, [token, hubUrl, isConnecting, processEventQueue, refreshAuthToken, logout]);
 
   const disconnect = useCallback(async () => {
     try {

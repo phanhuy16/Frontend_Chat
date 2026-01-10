@@ -4,6 +4,8 @@ export interface FriendRequestDto {
   senderName: string;
   senderAvatar: string;
   receiverId: number;
+  receiverName: string;
+  receiverAvatar: string;
   status: number;
   createdAt: string;
 }

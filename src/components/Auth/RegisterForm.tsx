@@ -142,7 +142,7 @@ const RegisterForm: React.FC = () => {
         </p>
         <div className="relative flex w-full flex-1 items-stretch">
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 text-base font-normal leading-normal transition-all"
+            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 text-xs font-normal leading-normal transition-all"
             placeholder="Nhập tên người dùng của bạn"
             type="text"
             name="username"
@@ -161,7 +161,7 @@ const RegisterForm: React.FC = () => {
         </p>
         <div className="relative flex w-full flex-1 items-stretch">
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 text-base font-normal leading-normal transition-all"
+            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 text-xs font-normal leading-normal transition-all"
             placeholder="Nhập email của bạn"
             type="email"
             name="email"
@@ -180,7 +180,7 @@ const RegisterForm: React.FC = () => {
         </p>
         <div className="relative flex w-full flex-1 items-stretch">
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 text-base font-normal leading-normal transition-all"
+            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 text-xs font-normal leading-normal transition-all"
             placeholder="Nhập tên hiển thị của bạn"
             type="text"
             name="displayName"
@@ -199,7 +199,7 @@ const RegisterForm: React.FC = () => {
         </p>
         <div className="relative flex w-full flex-1 items-stretch">
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 pr-10 text-base font-normal leading-normal transition-all"
+            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 pr-9 text-xs font-normal leading-normal transition-all"
             placeholder="Nhập mật khẩu của bạn"
             type={showPassword ? "text" : "password"}
             name="password"
@@ -228,7 +228,7 @@ const RegisterForm: React.FC = () => {
         </p>
         <div className="relative flex w-full flex-1 items-stretch">
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 pr-10 text-base font-normal leading-normal transition-all"
+            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 pr-9 text-xs font-normal leading-normal transition-all"
             placeholder="Nhập lại mật khẩu của bạn"
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
@@ -255,7 +255,7 @@ const RegisterForm: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className="flex items-center justify-center rounded-lg h-12 px-6 text-base font-bold bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors w-full mt-2"
+          className="flex items-center justify-center rounded-lg h-9 px-4 text-xs font-bold bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors w-full mt-2"
         >
           {loading ? (
             <>
@@ -290,7 +290,7 @@ const RegisterForm: React.FC = () => {
         <button
           type="button"
           disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 rounded-lg h-9 px-3 text-[10px] font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <svg
             className="h-5 w-5"

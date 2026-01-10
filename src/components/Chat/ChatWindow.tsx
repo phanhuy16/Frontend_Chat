@@ -249,11 +249,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       removeTypingUser(userId);
     });
 
+    on("MessageDeleted", (data: any) => {
+      const messageId = data.messageId ?? data.MessageId;
+      const conversationId = data.conversationId ?? data.ConversationId;
+
+      if (conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, isDeleted: true, content: null, attachments: [] }
+              : m
+          )
+        );
+      }
+    });
+
     return () => {
       off("Error");
       off("ReceiveMessage");
       off("UserTyping");
       off("UserStoppedTyping");
+      off("MessageDeleted");
     };
   }, [conversation?.id, addMessage, addTypingUser, removeTypingUser, on, off]);
 
@@ -419,6 +435,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
   };
 
+  const handleDeleteForMe = async (messageId: number) => {
+    try {
+      await messageApi.deleteMessageForMe(messageId);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, isDeletedForMe: true, content: null, attachments: [] }
+            : m
+        )
+      );
+      toast.success("Đã xoá tin nhắn ở phía bạn");
+    } catch (err) {
+      console.error("Failed to delete message for me:", err);
+      toast.error("Không thể xoá tin nhắn");
+    }
+  };
+
+  const handleDeleteForEveryone = async (messageId: number) => {
+    try {
+      await invoke("DeleteMessage", messageId, conversation.id, user?.id);
+      // The local state will be updated via SignalR "MessageDeleted" event
+      toast.success("Đã thu hồi tin nhắn");
+    } catch (err) {
+      console.error("Failed to recall message:", err);
+      toast.error("Không thể thu hồi tin nhắn");
+    }
+  };
+
   // Handle drag and drop
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -549,86 +593,127 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           )}
 
         {/* Chat Header */}
-        <header className="flex items-center justify-between gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111418] shrink-0">
+        <header className="flex items-center justify-between gap-4 px-8 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
           <div className="flex items-center gap-4">
-            {conversation.conversationType === ConversationType.Group ? (
-              <div className="bg-blue-500 bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white">
-                <span className="material-symbols-outlined">group</span>
-              </div>
-            ) : (
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                style={{
-                  backgroundImage: `url("${getAvatarUrl(
-                    getOtherMember()?.avatar
-                  )}")`,
-                }}
-              />
-            )}
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setShowContactSidebar(true)}
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-tr from-primary to-secondary rounded-full blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
+              {conversation.conversationType === ConversationType.Group ? (
+                <div className="relative bg-gradient-to-br from-primary to-primary-dark aspect-square rounded-full size-10 flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                  <span className="material-symbols-outlined text-[24px]">
+                    group
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white/20 shadow-lg"
+                  style={{
+                    backgroundImage: `url("${getAvatarUrl(
+                      getOtherMember()?.avatar
+                    )}")`,
+                  }}
+                />
+              )}
+            </div>
             <div className="flex flex-col">
-              <h2 className="text-black dark:text-white text-base font-semibold leading-normal">
+              <h2 className="text-slate-900 dark:text-white text-base font-extrabold leading-tight">
                 {getHeaderTitle()}
               </h2>
-              <p className="text-[#64748b] dark:text-[#9dabb9] text-sm font-normal leading-normal">
-                {getHeaderSubtitle()}
-              </p>
+              <div className="flex items-center gap-1.5">
+                {conversation.conversationType === ConversationType.Direct &&
+                  getOtherMember()?.status === StatusUser.Online && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )}
+                <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold">
+                  {getHeaderSubtitle()}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
-            {conversation.conversationType === ConversationType.Group && (
+          <div className="flex items-center gap-1">
+            <div className="flex items-center bg-slate-100/50 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5">
+              {conversation.conversationType === ConversationType.Group && (
+                <button
+                  onClick={() => setShowGroupMembers(true)}
+                  className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
+                  title="Members"
+                >
+                  <span className="material-symbols-outlined !text-[20px]">
+                    group
+                  </span>
+                </button>
+              )}
               <button
-                onClick={() => setShowGroupMembers(true)}
-                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                title="Xem thành viên"
+                onClick={handleStartVideoCall}
+                disabled={isBlocked}
+                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-30"
+                title="Video Call"
               >
-                <span className="material-symbols-outlined">group</span>
+                <span className="material-symbols-outlined !text-[20px]">
+                  videocam
+                </span>
               </button>
-            )}
-            <button
-              onClick={handleStartVideoCall}
-              disabled={isBlocked}
-              className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined">videocam</span>
-            </button>
-            <button
-              onClick={handleStartAudioCall}
-              disabled={isBlocked}
-              className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined">call</span>
-            </button>
-            <button
-              onClick={() => setShowContactSidebar(!showContactSidebar)}
-              className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-              title="Thông tin liên hệ"
-            >
-              <span className="material-symbols-outlined">info</span>
-            </button>
+              <button
+                onClick={handleStartAudioCall}
+                disabled={isBlocked}
+                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-30"
+                title="Audio Call"
+              >
+                <span className="material-symbols-outlined !text-[20px]">
+                  call
+                </span>
+              </button>
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <button
+                onClick={() => setShowContactSidebar(!showContactSidebar)}
+                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
+                title="Info"
+              >
+                <span className="material-symbols-outlined !text-[20px]">
+                  info
+                </span>
+              </button>
+            </div>
           </div>
         </header>
 
         {/* Messages Pane */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 shadow-inner">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              Đang tải tin nhắn...
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+              <div className="animate-spin text-primary">
+                <span className="material-symbols-outlined text-4xl">sync</span>
+              </div>
+              <p className="font-bold">Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Chưa có tin nhắn
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-60">
+              <span className="material-symbols-outlined text-6xl">
+                chat_bubble_outline
+              </span>
+              <p className="text-xl font-bold">No messages yet</p>
+              <p className="text-sm">Be the first to say hello!</p>
             </div>
           ) : (
             <>
-              <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                Today
+              <div className="flex items-center gap-4 my-8">
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">
+                  Today
+                </span>
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
               </div>
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${
+                  className={`flex animate-fade-in ${
                     message.senderId === user?.id
                       ? "justify-end"
                       : "justify-start"
@@ -637,6 +722,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                   <MessageBubble
                     message={message}
                     isOwn={message.senderId === user?.id}
+                    onDeleteForMe={handleDeleteForMe}
+                    onDeleteForEveryone={handleDeleteForEveryone}
                     onReact={async (messageId, emoji) => {
                       try {
                         await invoke(
@@ -662,21 +749,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         </div>
 
         {/* Input Area */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111418] shrink-0">
+        <div className="px-8 py-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
           {uploadingFiles && (
-            <div className="mb-2">
-              <Progress percent={uploadProgress} size="small" />
+            <div className="mb-4 bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
             </div>
           )}
 
           {isBlocked ? (
-            <div className="p-3 text-center text-red-500 bg-red-100 dark:bg-red-900/20 rounded-lg">
-              Bạn không thể gửi tin nhắn trong cuộc trò chuyện này
+            <div className="p-4 text-center text-red-500 bg-red-100/50 dark:bg-red-900/20 border border-red-200/50 dark:border-red-900/50 rounded-2xl font-bold animate-pulse-subtle">
+              <p>Chat is disabled due to blockade</p>
             </div>
           ) : (
             <form
               onSubmit={handleSendMessage}
-              className="flex items-center gap-3"
+              className="flex items-center gap-4"
             >
               <input
                 ref={fileInputRef}
@@ -685,56 +775,63 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 className="hidden"
                 onChange={handleFileInput}
               />
-              <button
-                type="button"
-                onClick={() => setShowUploadMenu(!showUploadMenu)}
-                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
-              >
-                <span className="material-symbols-outlined">add_circle</span>
-              </button>
 
-              {showUploadMenu && (
-                <div
-                  ref={uploadMenuRef}
-                  className="absolute bottom-20 left-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadMenu(!showUploadMenu)}
+                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.accept = "image/*";
-                        fileInputRef.current.click();
-                      }
-                      setShowUploadMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined">image</span>
-                    <span>Hình ảnh</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.accept = "*/*";
-                        fileInputRef.current.click();
-                      }
-                      setShowUploadMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined">
-                      description
-                    </span>
-                    <span>Tệp tin</span>
-                  </button>
-                </div>
-              )}
+                  <span className="material-symbols-outlined text-[24px]">
+                    add
+                  </span>
+                </button>
 
-              <div className="flex-1 relative">
+                {showUploadMenu && (
+                  <div
+                    ref={uploadMenuRef}
+                    className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "image/*";
+                          fileInputRef.current.click();
+                        }
+                        setShowUploadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                    >
+                      <span className="material-symbols-outlined text-primary">
+                        image
+                      </span>
+                      <span className="text-sm">Images</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "*/*";
+                          fileInputRef.current.click();
+                        }
+                        setShowUploadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                    >
+                      <span className="material-symbols-outlined text-secondary">
+                        description
+                      </span>
+                      <span className="text-sm">Files</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 relative group">
                 <input
-                  className="w-full pl-4 pr-10 py-2 border border-gray-200 dark:border-gray-700 rounded-full bg-gray-50 dark:bg-gray-800 text-black dark:text-white"
-                  placeholder="Nhập tin nhắn..."
+                  className="w-full pl-6 pr-14 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-xs h-9"
+                  placeholder="Type a message..."
                   type="text"
                   value={inputValue}
                   onChange={handleInputChange}
@@ -742,26 +839,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-xl hover:bg-accent/10"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     sentiment_satisfied
                   </span>
                 </button>
-                <EmojiPicker
-                  isOpen={showEmojiPicker}
-                  onClose={() => setShowEmojiPicker(false)}
-                  onEmojiSelect={(emoji) => {
-                    setInputValue((prev) => prev + emoji);
-                  }}
-                />
+                <div className="absolute right-0 bottom-full mb-4">
+                  <EmojiPicker
+                    isOpen={showEmojiPicker}
+                    onClose={() => setShowEmojiPicker(false)}
+                    onEmojiSelect={(emoji) => {
+                      setInputValue((prev) => prev + emoji);
+                    }}
+                  />
+                </div>
               </div>
               <button
                 type="submit"
                 disabled={!inputValue.trim() || uploadingFiles}
-                className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-50 hover:brightness-110 transition-all shrink-0"
+                className="w-9 h-9 flex items-center justify-center text-white bg-primary rounded-xl disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
               >
-                <span className="material-symbols-outlined">send</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  send
+                </span>
               </button>
             </form>
           )}

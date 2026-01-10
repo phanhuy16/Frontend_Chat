@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
 import { conversationApi } from "../../api/conversation.api";
 import { friendApi } from "../../api/friend.api";
+import { FriendDto, StatusUser, User } from "../../types";
+import { getAvatarUrl } from "../../utils/helpers";
+import {
+  getStatusUserColor,
+  getStatusUserLabel,
+} from "../../utils/enum-helpers";
+import toast from "react-hot-toast";
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -19,26 +26,40 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const { setConversations, conversations } = useChat();
 
   const [groupName, setGroupName] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [friends, setFriends] = useState<FriendDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadAvailableUsers = useCallback(async () => {
+  const loadFriends = useCallback(async () => {
     try {
       const users = await friendApi.getFriendsList();
-      setAvailableUsers(users.filter((u) => u.id !== user?.id));
+      // friendApi.getFriendsList() might return FriendDto which has similar fields or User
+      setFriends(users.filter((u) => u.id !== user?.id));
     } catch (err) {
       console.error("Failed to load users:", err);
-      setError("Không thể tải danh sách người dùng");
+      setError("Không thể tải danh sách bạn bè");
     }
   }, [user?.id]);
 
   useEffect(() => {
     if (isOpen) {
-      loadAvailableUsers();
+      loadFriends();
+      setGroupName("");
+      setSearchTerm("");
+      setSelectedMembers([]);
+      setError("");
     }
-  }, [isOpen, loadAvailableUsers]);
+  }, [isOpen, loadFriends]);
+
+  const filteredFriends = useMemo(() => {
+    return friends.filter(
+      (f) =>
+        f.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.userName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [friends, searchTerm]);
 
   const handleToggleMember = (userId: number) => {
     setSelectedMembers((prev) =>
@@ -48,19 +69,18 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     );
   };
 
-  const handleCreateGroup = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCreateGroup = async () => {
     setError("");
 
     if (!groupName.trim()) {
       setError("Tên nhóm không được trống");
+      toast.error("Vui lòng nhập tên nhóm");
       return;
     }
 
     if (selectedMembers.length < 2) {
-      setError(
-        "Chọn ít nhất 2 thành viên khác (tổng cộng 3 người bao gồm bạn) để tạo nhóm"
-      );
+      setError("Chọn ít nhất 2 thành viên khác");
+      toast.error("Chọn ít nhất 2 thành viên khác để tạo nhóm");
       return;
     }
 
@@ -79,9 +99,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
       setConversations([newConversation, ...conversations]);
 
+      toast.success(`Nhóm "${groupName}" đã được tạo!`);
       onClose();
-      setGroupName("");
-      setSelectedMembers([]);
       onGroupCreated?.();
     } catch (err: any) {
       setError(err.response?.data?.message || "Lỗi tạo nhóm chat");
@@ -94,72 +113,172 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-[#111418] rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4 text-black dark:text-white">
-          Tạo nhóm chat
-        </h2>
+    <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 lg:p-8 animate-fade-in">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-        <div className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
-              {error}
+      <div className="relative w-full max-w-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-white/20 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-slide-up text-slate-900 dark:text-white">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+          <h2 className="text-xl font-black tracking-tight">Tạo nhóm chat</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
+          >
+            <span className="material-symbols-outlined !text-[20px]">
+              close
+            </span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+          {/* Group Info Section */}
+          <div className="flex items-center gap-6">
+            <div className="relative shrink-0">
+              <div className="size-16 lg:size-20 rounded-[2rem] bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border-4 border-white dark:border-slate-800 shadow-premium flex items-center justify-center text-slate-400">
+                <span className="material-symbols-outlined text-3xl">
+                  groups
+                </span>
+              </div>
+              <div className="absolute -bottom-1 -right-1 size-7 bg-primary rounded-xl flex items-center justify-center text-white border-2 border-white dark:border-slate-800 shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[12px]">
+                  add_a_photo
+                </span>
+              </div>
             </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-black dark:text-white mb-2">
-              Tên nhóm
-            </label>
-            <input
-              type="text"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Nhập tên nhóm chat"
-              className="w-full px-3 py-2 bg-input-light dark:bg-input-dark border border-gray-300 dark:border-gray-700 rounded-lg text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-black dark:text-white mb-2">
-              Chọn thành viên ({selectedMembers.length})
-            </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-700 rounded-lg p-3">
-              {availableUsers.map((u) => (
-                <label
-                  key={u.id}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 p-2 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedMembers.includes(u.id)}
-                    onChange={() => handleToggleMember(u.id)}
-                    className="w-4 h-4 cursor-pointer"
-                  />
-                  <span className="text-sm text-black dark:text-white flex-1">
-                    {u.displayName}
-                  </span>
-                  <span className="text-xs text-gray-500">@{u.userName}</span>
-                </label>
-              ))}
+            <div className="flex-1 space-y-1.5">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                Tên nhóm
+              </label>
+              <input
+                type="text"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Nhập tên nhóm..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border-none text-sm font-bold placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all shadow-sm h-9"
+              />
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium"
-            >
-              Hủy
-            </button>
-            <button
-              onClick={handleCreateGroup}
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium"
-            >
-              {loading ? "Đang tạo..." : "Tạo nhóm"}
-            </button>
+          {/* Member Selection Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                Thêm thành viên
+              </label>
+              <span className="text-[10px] font-black px-2 py-0.5 bg-primary/10 text-primary rounded-full uppercase tracking-tighter">
+                Đã chọn {selectedMembers.length}
+              </span>
+            </div>
+
+            <div className="relative group">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm kiếm bạn bè..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border-none text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all font-medium text-xs shadow-sm h-9"
+              />
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+                search
+              </span>
+            </div>
+
+            <div className="space-y-2 mt-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 mb-2">
+                Gợi ý
+              </p>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredFriends.length > 0 ? (
+                  filteredFriends.map((friend) => (
+                    <div
+                      key={friend.id}
+                      onClick={() => handleToggleMember(friend.id)}
+                      className={`group flex items-center justify-between gap-4 p-3 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                        selectedMembers.includes(friend.id)
+                          ? "bg-primary/10 border-primary/20"
+                          : "bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <div
+                            className="size-10 rounded-2xl bg-center bg-no-repeat bg-cover border border-white dark:border-slate-800 shadow-sm"
+                            style={{
+                              backgroundImage: `url("${getAvatarUrl(
+                                friend.avatar
+                              )}")`,
+                            }}
+                          />
+                          <div
+                            className="absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
+                            style={{
+                              backgroundColor: getStatusUserColor(
+                                friend.status as StatusUser
+                              ),
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-sm truncate">
+                            {friend.displayName}
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">
+                            {getStatusUserLabel(friend.status as StatusUser)}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          selectedMembers.includes(friend.id)
+                            ? "bg-primary border-primary text-white scale-110"
+                            : "border-slate-200 dark:border-slate-700 bg-transparent group-hover:border-primary/40"
+                        }`}
+                      >
+                        {selectedMembers.includes(friend.id) && (
+                          <span className="material-symbols-outlined text-[16px] font-black">
+                            done
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center opacity-40">
+                    <span className="material-symbols-outlined text-4xl mb-2">
+                      person_search
+                    </span>
+                    <p className="text-xs font-bold">
+                      Không tìm thấy bạn bè nào
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-8 border-t border-slate-200/50 dark:border-slate-800/50 flex gap-4 shrink-0">
+          <button
+            onClick={onClose}
+            className="flex-1 h-9 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest text-[9px] hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleCreateGroup}
+            disabled={
+              loading || selectedMembers.length < 2 || !groupName.trim()
+            }
+            className="flex-[1.5] h-9 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/25 hover:bg-primary-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 transition-all"
+          >
+            {loading ? "Đang tạo..." : "Tạo nhóm"}
+          </button>
         </div>
       </div>
     </div>

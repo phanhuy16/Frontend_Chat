@@ -82,72 +82,95 @@ const ConversationList: React.FC<ConversationListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-2">
-      <div className="flex flex-col px-2 gap-1">
-        {conversations.map((conversation) => (
-          <div
-            key={conversation.id}
-            onClick={() => onSelectConversation(conversation)}
-            className={`flex items-center gap-4 px-4 min-h-[72px] py-2 justify-between cursor-pointer transition-colors ${
-              currentConversation?.id === conversation.id
-                ? "bg-primary/20 dark:bg-primary/20"
-                : "hover:bg-gray-100 dark:hover:bg-white/5"
-            }`}
-          >
-            {/* Avatar Container */}
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
-                <div
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12"
-                  style={{
-                    backgroundImage: `url("${getConversationAvatar(
-                      conversation
-                    )}")`,
-                  }}
-                />
-                {isUserOnline(conversation) && (
-                  <div className="absolute bottom-0 right-0 size-3 rounded-full bg-[#0bda5b] border-2 border-white dark:border-[#111418]" />
-                )}
-              </div>
-
-              {/* Conversation Info */}
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-black dark:text-white text-base font-medium leading-normal line-clamp-1">
-                  {getConversationName(conversation)}
-                </p>
-                <p
-                  className={`text-sm font-normal leading-normal line-clamp-1 ${
-                    (unreadCounts[conversation.id] || 0) > 0
-                      ? "text-black dark:text-white font-semibold"
-                      : "text-[#64748b] dark:text-[#9dabb9]"
-                  }`}
-                >
-                  {getConversationPreview(conversation)}
-                </p>
-              </div>
+    <div className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 space-y-1">
+      {conversations.map((conversation) => (
+        <div
+          key={conversation.id}
+          onClick={() => onSelectConversation(conversation)}
+          className={`group flex items-center gap-4 px-4 min-h-[64px] py-2.5 rounded-2xl cursor-pointer transition-all duration-300 ${
+            currentConversation?.id === conversation.id
+              ? "bg-primary text-white shadow-lg shadow-primary/30"
+              : "hover:bg-slate-100 dark:hover:bg-white/5"
+          }`}
+        >
+          {/* Avatar Container */}
+          <div className="relative shrink-0">
+            <div className="relative">
+              <div
+                className={`absolute -inset-0.5 rounded-full blur opacity-50 transition duration-300 ${
+                  currentConversation?.id === conversation.id
+                    ? "bg-white/50"
+                    : "bg-primary opacity-0 group-hover:opacity-30"
+                }`}
+              />
+              <div
+                className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white/10"
+                style={{
+                  backgroundImage: `url("${getConversationAvatar(
+                    conversation
+                  )}")`,
+                }}
+              />
             </div>
+            {isUserOnline(conversation) && (
+              <div className="absolute bottom-0 right-0 size-3.5 rounded-full bg-[#0bda5b] border-2 border-white dark:border-[#111418] shadow-sm" />
+            )}
+          </div>
 
-            {/* Time & Badge */}
-            <div className="shrink-0 flex flex-col items-end gap-1">
-              <p className="text-[#64748b] dark:text-[#9dabb9] text-xs font-normal leading-normal">
+          {/* Conversation Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-0.5">
+              <h4
+                className={`text-sm font-bold truncate ${
+                  currentConversation?.id === conversation.id
+                    ? "text-white"
+                    : "text-slate-900 dark:text-white"
+                }`}
+              >
+                {getConversationName(conversation)}
+              </h4>
+              <span
+                className={`text-[10px] font-medium shrink-0 ml-2 ${
+                  currentConversation?.id === conversation.id
+                    ? "text-white/70"
+                    : "text-slate-400 dark:text-slate-500"
+                }`}
+              >
                 {formatDate(
                   conversation.messages[0]?.createdAt || conversation.createdAt
                 )}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <p
+                className={`text-xs truncate ${
+                  currentConversation?.id === conversation.id
+                    ? "text-white/80"
+                    : (unreadCounts[conversation.id] || 0) > 0
+                    ? "text-slate-900 dark:text-white font-bold"
+                    : "text-slate-500 dark:text-slate-400 font-medium"
+                }`}
+              >
+                {getConversationPreview(conversation)}
               </p>
               {/* Unread badge */}
               {(unreadCounts[conversation.id] || 0) > 0 && (
-                <div className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
-                  <p className="text-white text-xs font-bold">
-                    {(unreadCounts[conversation.id] || 0) > 9
-                      ? "9+"
-                      : unreadCounts[conversation.id]}
-                  </p>
+                <div
+                  className={`flex h-4.5 min-w-[18px] px-1 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ml-2 ${
+                    currentConversation?.id === conversation.id
+                      ? "bg-white text-primary shadow-sm"
+                      : "bg-primary text-white"
+                  }`}
+                >
+                  {unreadCounts[conversation.id] > 9
+                    ? "9+"
+                    : unreadCounts[conversation.id]}
                 </div>
               )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { Conversation, CreateDirectConversationRequest, CreateGroupConversationRequest } from "../types/conversation.types";
+import { AttachmentDto } from "../types/message.types";
 import axiosInstance from "./axios";
 
 export const conversationApi = {
@@ -33,4 +34,7 @@ export const conversationApi = {
         requestingUserId
       },
     }).then((res) => res.data),
+
+  getConversationAttachments: (id: number): Promise<AttachmentDto[]> =>
+    axiosInstance.get(`/conversations/${id}/attachments`).then((res) => res.data),
 }

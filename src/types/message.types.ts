@@ -11,6 +11,7 @@ export interface Message {
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;
+  isDeletedForMe?: boolean;
   reactions: Reaction[];
   attachments: Attachment[];
 }
@@ -29,6 +30,16 @@ export interface Attachment {
   fileName: string;
   fileUrl: string;
   fileSize: number;
+}
+
+export interface AttachmentDto {
+  id: number;
+  messageId: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedAt: string;
 }
 
 export interface SendMessageRequest {

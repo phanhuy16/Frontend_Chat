@@ -18,6 +18,9 @@ export const messageApi = {
   deleteMessage: (messageId: number): Promise<any> =>
     axiosInstance.delete(`/messages/${messageId}`).then((res) => res.data),
 
+  deleteMessageForMe: (messageId: number): Promise<any> =>
+    axiosInstance.delete(`/messages/${messageId}/me`).then((res) => res.data),
+
   addReaction: (messageId: number, data: AddReactionRequest): Promise<any> =>
     axiosInstance.post(`/messages/${messageId}/reactions`, data).then((res) => res.data),
 

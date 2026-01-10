@@ -218,234 +218,253 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div>
-      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-        <div
-          ref={modalRef}
-          className="bg-white dark:bg-[#111418] rounded-xl shadow-lg w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-            <h2 className="text-xl font-bold text-black dark:text-white">
-              {selectedUser ? "Chat Preview" : "Start a Chat"}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-            >
-              <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">
-                close
-              </span>
-            </button>
-          </div>
+    <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 lg:p-8 animate-fade-in">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-          {/* Search or User Preview */}
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            {!selectedUser ? (
-              <>
-                {/* Search Input */}
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-                  <div className="relative">
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-white/20 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            {selectedUser ? "User Profile" : "Find People"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
+          >
+            <span className="material-symbols-outlined !text-[20px]">
+              close
+            </span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          {!selectedUser ? (
+            <>
+              {/* Search Bar */}
+              <div className="px-8 py-6 shrink-0">
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-300"></div>
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => handleSearch(e.target.value)}
-                      placeholder="Search by username or name..."
-                      className="w-full pl-10 pr-4 py-2 rounded-lg bg-input-light dark:bg-input-dark border border-gray-300 dark:border-gray-700 text-black dark:text-white placeholder-gray-500 focus:ring-primary focus:border-primary transition-all"
+                      placeholder="Search name or @username..."
+                      className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-800 border-none text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all font-medium text-xs shadow-sm h-9"
                       autoFocus
                     />
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                    <span className="material-symbols-outlined absolute left-3 text-slate-400 group-focus-within:text-primary transition-colors text-[18px]">
                       search
                     </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200 rounded-lg text-sm">
-                    {error}
+              {/* Error */}
+              {error && (
+                <div className="mx-8 mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-2xl text-sm font-bold flex items-center gap-3 animate-shake">
+                  <span className="material-symbols-outlined">error</span>
+                  {error}
+                </div>
+              )}
+
+              {/* Search States & Results */}
+              <div className="flex-1 px-8 pb-8">
+                {searchTerm === "" ? (
+                  <div className="py-12 text-center opacity-40">
+                    <div className="mb-4">
+                      <span className="material-symbols-outlined text-7xl">
+                        face
+                      </span>
+                    </div>
+                    <p className="text-lg font-bold">Discover new friends</p>
+                    <p className="text-sm">Type a name to start searching</p>
                   </div>
-                )}
-
-                {/* Search Results */}
-                <div className="flex-1">
-                  {searchTerm === "" ? (
-                    <div className="px-6 py-8 text-center">
-                      <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 block mb-2">
-                        search
+                ) : loading ? (
+                  <div className="py-12 text-center">
+                    <div className="animate-spin inline-block mb-4">
+                      <span className="material-symbols-outlined text-4xl text-primary">
+                        sync
                       </span>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Search for users to start chatting
-                      </p>
                     </div>
-                  ) : loading ? (
-                    <div className="px-6 py-8 text-center">
-                      <div className="animate-spin mb-2">
-                        <span className="material-symbols-outlined text-2xl text-primary block">
-                          sync
-                        </span>
-                      </div>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Searching...
-                      </p>
-                    </div>
-                  ) : results.length === 0 ? (
-                    <div className="px-6 py-8 text-center">
-                      <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 block mb-2">
-                        person_off
-                      </span>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        No users found matching "{searchTerm}"
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      {results.map((resultUser) => (
-                        <div
-                          key={resultUser.id}
-                          className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-colors cursor-pointer"
-                          onClick={() => handleSelectUser(resultUser)}
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <p className="text-slate-500 dark:text-slate-400 font-bold tracking-wide uppercase text-xs">
+                      Looking for users...
+                    </p>
+                  </div>
+                ) : results.length === 0 ? (
+                  <div className="py-12 text-center opacity-40">
+                    <span className="material-symbols-outlined text-7xl mb-4">
+                      search_off
+                    </span>
+                    <p className="text-lg font-bold">No results found</p>
+                    <p className="text-sm">
+                      We couldn't find anyone matching "{searchTerm}"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {results.map((resultUser) => (
+                      <div
+                        key={resultUser.id}
+                        className="group flex items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-white/5 hover:bg-primary hover:text-white rounded-2xl border border-slate-100 dark:border-white/5 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-primary/20"
+                        onClick={() => handleSelectUser(resultUser)}
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="relative">
+                            <div className="absolute -inset-0.5 bg-white rounded-full blur-[1px] opacity-30 group-hover:opacity-60 transition duration-300"></div>
                             <div
-                              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shrink-0"
+                              className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-11 border-2 border-white/20"
                               style={{
-                                backgroundImage: `url("${
-                                  getAvatarUrl(resultUser.avatar) || ""
-                                }")`,
+                                backgroundImage: `url("${getAvatarUrl(
+                                  resultUser.avatar
+                                )}")`,
                               }}
                             />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-black dark:text-white font-medium text-sm truncate">
-                                {resultUser.displayName}
-                              </p>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs truncate">
-                                @{resultUser.userName}
-                              </p>
-                            </div>
                           </div>
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-base truncate leading-tight">
+                              {resultUser.displayName}
+                            </p>
+                            <p className="text-slate-500 dark:text-slate-400 group-hover:text-white/80 text-sm font-bold truncate">
+                              @{resultUser.userName}
+                            </p>
+                          </div>
+                        </div>
 
-                          {/* Status indicator */}
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full border border-white/10 group-hover:border-white/20">
                             <div
-                              className="h-2 w-2 rounded-full"
+                              className="h-2 w-2 rounded-full shadow-[0_0_8px] shadow-current"
                               style={{
                                 backgroundColor: getStatusUserColor(
                                   resultUser.status as StatusUser
                                 ),
+                                color: getStatusUserColor(
+                                  resultUser.status as StatusUser
+                                ),
                               }}
                             />
-                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
                               {getStatusUserLabel(
                                 resultUser.status as StatusUser
                               )}
                             </span>
                           </div>
-
-                          {/* Arrow icon */}
-                          <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 ml-2">
-                            arrow_forward
+                          <span className="material-symbols-outlined text-slate-300 group-hover:text-white transition-colors !text-[18px]">
+                            arrow_forward_ios
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              /* User Preview Card */
-              <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
-                {/* Avatar */}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* User Profile Preview */
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-fade-in">
+              <div className="relative mb-8">
+                <div className="absolute -inset-4 bg-gradient-to-tr from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-subtle"></div>
                 <div
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-32"
+                  className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-[2rem] size-32 border-4 border-white dark:border-slate-800 shadow-premium"
                   style={{
-                    backgroundImage: `url("${
-                      getAvatarUrl(selectedUser.avatar) || ""
-                    }")`,
+                    backgroundImage: `url("${getAvatarUrl(
+                      selectedUser.avatar
+                    )}")`,
                   }}
                 />
-
-                {/* User Info */}
-                <div className="text-center">
-                  <h3 className="text-2xl font-bold text-black dark:text-white">
-                    {selectedUser.displayName}
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                    @{selectedUser.userName}
-                  </p>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{
-                        backgroundColor: getStatusUserColor(
-                          selectedUser.status as StatusUser
-                        ),
-                      }}
-                    />
-                    <span
-                      className="text-sm font-medium"
-                      style={{
-                        color: getStatusUserColor(
-                          selectedUser.status as StatusUser
-                        ),
-                      }}
-                    >
-                      {getStatusUserLabel(selectedUser.status as StatusUser)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 w-full max-w-xs">
-                  <button
-                    onClick={handleOpenChat}
-                    disabled={addingFriend}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  >
-                    <span className="material-symbols-outlined">chat</span>
-                    <span>Nhắn tin</span>
-                  </button>
-                  {(() => {
-                    const state = getFriendButton(selectedUser.id);
-                    let buttonClass =
-                      "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-colors";
-
-                    if (state.variant === "success") {
-                      buttonClass +=
-                        " bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400";
-                    } else if (state.variant === "pending") {
-                      buttonClass +=
-                        " bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400";
-                    } else {
-                      buttonClass +=
-                        " bg-primary/20 text-primary hover:bg-primary/30";
-                    }
-
-                    return (
-                      <button
-                        onClick={handleAddFriend}
-                        disabled={state.disabled || addingFriend}
-                        className={buttonClass}
-                      >
-                        <span className="material-symbols-outlined">
-                          {state.variant === "success" ? "done" : "person_add"}
-                        </span>
-                        <span>{state.text}</span>
-                      </button>
-                    );
-                  })()}
-                </div>
-
-                {/* Back Button */}
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm font-medium"
+                <div
+                  className="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700"
+                  style={{
+                    color: getStatusUserColor(
+                      selectedUser.status as StatusUser
+                    ),
+                  }}
                 >
-                  ← Back to Search
-                </button>
+                  <span className="material-symbols-outlined text-[32px] block">
+                    {selectedUser.status === StatusUser.Online
+                      ? "bolt"
+                      : "bedtime"}
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="space-y-2 mb-10">
+                <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                  {selectedUser.displayName}
+                </h3>
+                <p className="text-primary font-black text-base tracking-wide uppercase">
+                  @{selectedUser.userName}
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 mt-4">
+                  <div
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: getStatusUserColor(
+                        selectedUser.status as StatusUser
+                      ),
+                    }}
+                  />
+                  <span className="text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400">
+                    {getStatusUserLabel(selectedUser.status as StatusUser)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+                <button
+                  onClick={handleOpenChat}
+                  disabled={addingFriend}
+                  className="flex-1 group h-9 flex items-center justify-center gap-2 px-4 rounded-xl bg-primary text-white font-bold text-xs shadow-lg shadow-primary/25 hover:bg-primary-hover hover:-translate-y-1 transition-all duration-300"
+                >
+                  <span className="material-symbols-outlined !text-[18px] group-hover:animate-bounce-subtle">
+                    chat
+                  </span>
+                  <span>Message</span>
+                </button>
+
+                {(() => {
+                  const state = getFriendButton(selectedUser.id);
+                  return (
+                    <button
+                      onClick={handleAddFriend}
+                      disabled={state.disabled || addingFriend}
+                      className={`flex-1 group h-9 flex items-center justify-center gap-2 px-4 rounded-xl font-bold text-xs transition-all duration-300 ${
+                        state.variant === "friend"
+                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                          : state.variant === "pending"
+                          ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                          : "bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-white/10 hover:-translate-y-1"
+                      } disabled:opacity-50 disabled:hover:translate-y-0`}
+                    >
+                      <span className="material-symbols-outlined">
+                        {state.icon}
+                      </span>
+                      <span>{state.text}</span>
+                    </button>
+                  );
+                })()}
+              </div>
+
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="mt-10 text-slate-400 hover:text-primary text-sm font-black uppercase tracking-widest transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">
+                  arrow_back
+                </span>
+                Back to search
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

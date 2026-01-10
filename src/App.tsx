@@ -3,6 +3,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
+import { FriendRequestProvider } from "./context/FriendRequestContext";
 import AppRoutes from "./routes/Routes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -18,7 +19,9 @@ function App() {
           <ThemeProvider>
             <AuthProvider>
               <ChatProvider>
-                <AppRoutes />
+                <FriendRequestProvider>
+                  <AppRoutes />
+                </FriendRequestProvider>
               </ChatProvider>
             </AuthProvider>
           </ThemeProvider>

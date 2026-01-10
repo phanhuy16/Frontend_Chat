@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { Conversation, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
+import ConversationMedia from "./ConversationMedia";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -273,241 +274,236 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
       )}
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative flex flex-col w-full max-w-sm border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111418] h-full transition-transform duration-300 ease-in-out z-50
+        className={`fixed md:relative flex flex-col w-full max-w-sm glass-effect md:rounded-l-none lg:rounded-3xl h-full transition-transform duration-500 ease-in-out z-50 overflow-hidden
         ${isOpen ? "translate-x-0" : "translate-x-full"}
         md:translate-x-0 ${isOpen ? "md:block" : "md:hidden"}`}
       >
         {/* Header */}
-        <header className="flex items-center justify-between gap-4 p-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-          <h3 className="text-lg font-semibold text-black dark:text-white">
-            {activeTab === "info" ? "Thông tin liên hệ" : "Media & Files"}
+        <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
+          <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {activeTab === "info" ? "Thông tin" : "Kho lưu trữ"}
           </h3>
           <button
             onClick={onClose}
-            className="md:hidden w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+            className="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined !text-[20px]">
+              close
+            </span>
           </button>
         </header>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 shrink-0">
+        <div className="flex px-6 py-1.5 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 gap-2">
           <button
             onClick={() => setActiveTab("info")}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300 rounded-lg ${
               activeTab === "info"
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                ? "text-primary bg-primary/10 shadow-sm shadow-primary/10"
+                : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-white/5"
             }`}
           >
-            Thông tin
+            Hồ sơ
           </button>
           <button
             onClick={() => setActiveTab("media")}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors relative ${
+            className={`flex-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300 rounded-lg relative ${
               activeTab === "media"
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                ? "text-primary bg-primary/10 shadow-sm shadow-primary/10"
+                : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-white/5"
             }`}
           >
-            Media ({allAttachments.length})
+            Media
+            {allAttachments.length > 0 && (
+              <span className="ml-2 px-1 py-0.5 text-[9px] bg-primary text-white rounded">
+                {allAttachments.length}
+              </span>
+            )}
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeTab === "info" ? (
-            <>
-              {/* Contact Info */}
-              <div className="flex flex-col items-center p-6 gap-4 border-b border-gray-200 dark:border-gray-800">
+            <div className="animate-fade-in">
+              {/* Contact Info Card */}
+              <div className="flex flex-col items-center p-8 gap-5 border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-white/[0.02]">
                 {/* Avatar */}
-                <div
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-24"
-                  style={{
-                    backgroundImage: `url("${
-                      getAvatarUrl(otherMember?.avatar) || ""
-                    }")`,
-                  }}
-                />
-
-                {/* Name and Status */}
-                <div className="flex flex-col items-center text-center">
-                  <h2 className="text-xl font-bold text-black dark:text-white">
-                    {otherMember?.displayName || conversation?.groupName}
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {otherMember?.status === StatusUser.Online
-                      ? "Đang hoạt động"
-                      : formatLastActive(otherMember?.lastActiveAt)}
-                  </p>
+                <div className="relative group">
+                  <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary to-secondary rounded-[2rem] blur-md opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                  <div
+                    className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-[1.5rem] size-28 border-4 border-white dark:border-slate-800 shadow-premium"
+                    style={{
+                      backgroundImage: `url("${
+                        getAvatarUrl(otherMember?.avatar) || ""
+                      }")`,
+                    }}
+                  />
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4">
+                {/* Name and Status */}
+                <div className="flex flex-col items-center text-center space-y-1">
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                    {otherMember?.displayName || conversation?.groupName}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    {otherMember?.status === StatusUser.Online && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                    )}
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      {otherMember?.status === StatusUser.Online
+                        ? "Active Now"
+                        : formatLastActive(otherMember?.lastActiveAt)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex items-center gap-2.5 w-full">
                   <button
                     onClick={onStartAudioCall}
                     disabled={isBlocked}
-                    className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex-1 h-9 flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 disabled:opacity-30 disabled:hover:shadow-none"
                   >
-                    <span className="material-symbols-outlined">call</span>
-                    <span className="text-xs">Gọi</span>
+                    <span className="material-symbols-outlined !text-[18px]">
+                      call
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      Gọi
+                    </span>
                   </button>
                   <button
                     onClick={onStartVideoCall}
                     disabled={isBlocked}
-                    className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex-1 h-9 flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 disabled:opacity-30 disabled:hover:shadow-none"
                   >
-                    <span className="material-symbols-outlined">videocam</span>
-                    <span className="text-xs">Video</span>
-                  </button>
-                  <button className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors">
-                    <span className="material-symbols-outlined">search</span>
-                    <span className="text-xs">Tìm kiếm</span>
+                    <span className="material-symbols-outlined !text-[18px]">
+                      videocam
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      Video
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* Options */}
-              <div className="p-4 space-y-4">
-                {/* Tùy chọn */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 px-2">
-                    Tùy chọn
+              {/* Options Section */}
+              <div className="p-6 space-y-6">
+                {/* Preferences */}
+                <div className="space-y-3">
+                  <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase px-2">
+                    CƠ BẢN
                   </h4>
 
-                  {/* Notifications */}
-                  <button
-                    onClick={() => setNotificationModalOpen(true)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
-                      notifications
-                    </span>
-                    <div className="text-left flex-1">
-                      <p className="text-black dark:text-white text-base">
-                        Thông báo
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {notificationSettings.mute ? "Đã tắt" : "Bật"}
-                      </p>
-                    </div>
-                    <span className="material-symbols-outlined text-gray-400">
-                      chevron_right
-                    </span>
-                  </button>
+                  <div className="space-y-0.5">
+                    {/* Notifications */}
+                    <button
+                      onClick={() => setNotificationModalOpen(true)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100/80 dark:hover:bg-white/[0.05] group transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-amber-100/50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="material-symbols-outlined !text-[18px]">
+                          notifications
+                        </span>
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="text-slate-900 dark:text-white font-bold text-[13px]">
+                          Thông báo
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate">
+                          {notificationSettings.mute ? "Đã tắt" : "Đang bật"}
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform !text-[18px]">
+                        chevron_right
+                      </span>
+                    </button>
 
-                  {/* Theme */}
-                  <button
-                    onClick={() => setThemeModalOpen(true)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">
-                      palette
-                    </span>
-                    <div className="text-left flex-1">
-                      <p className="text-black dark:text-white text-base">
-                        Chủ đề
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {selectedTheme === "default"
-                          ? "Mặc định"
-                          : selectedTheme === "dark"
-                          ? "Tối"
-                          : selectedTheme === "light"
-                          ? "Sáng"
-                          : "Tuỳ chỉnh"}
-                      </p>
-                    </div>
-                    <span className="material-symbols-outlined text-gray-400">
-                      chevron_right
-                    </span>
-                  </button>
+                    {/* Theme */}
+                    <button
+                      onClick={() => setThemeModalOpen(true)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100/80 dark:hover:bg-white/[0.05] group transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="material-symbols-outlined !text-[18px]">
+                          palette
+                        </span>
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="text-slate-900 dark:text-white font-bold text-[13px]">
+                          Chủ đề
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate">
+                          {selectedTheme.charAt(0).toUpperCase() +
+                            selectedTheme.slice(1)}
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform !text-[18px]">
+                        chevron_right
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Quyền riêng tư & hỗ trợ */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 px-2">
-                    Quyền riêng tư & hỗ trợ
+                {/* Privacy & Safety */}
+                <div className="space-y-3">
+                  <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase px-2">
+                    BẢO MẬT & HỖ TRỢ
                   </h4>
-                  <button
-                    onClick={handleBlockUser}
-                    disabled={blockLoading}
-                    className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                      isBlocked
-                        ? "hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                        : "hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <span className="material-symbols-outlined">
-                      {isBlocked ? "check_circle" : "block"}
-                    </span>
-                    <span className="text-black dark:text-white text-base">
-                      {isBlocked ? "Đã chặn" : "Chặn"}
-                    </span>
-                  </button>
 
-                  {/* Report Button */}
-                  <button
-                    onClick={() => setReportModalOpen(true)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
-                  >
-                    <span className="material-symbols-outlined">report</span>
-                    <span className="text-red-500 text-base">Báo cáo</span>
-                  </button>
+                  <div className="space-y-0.5">
+                    <button
+                      onClick={handleBlockUser}
+                      disabled={blockLoading}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl group transition-all duration-200 ${
+                        isBlocked
+                          ? "bg-red-50 dark:bg-red-900/10 text-red-600"
+                          : "hover:bg-slate-100/80 dark:hover:bg-white/[0.05] text-slate-600 dark:text-slate-300"
+                      } disabled:opacity-50`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform ${
+                          isBlocked
+                            ? "bg-red-100 text-red-600"
+                            : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined !text-[18px]">
+                          {isBlocked ? "verified_user" : "block"}
+                        </span>
+                      </div>
+                      <span className="flex-1 text-left font-bold text-[13px]">
+                        {isBlocked ? "Bỏ chặn" : "Chặn người dùng"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setReportModalOpen(true)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 group transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="material-symbols-outlined !text-[18px]">
+                          report_gmailerrorred
+                        </span>
+                      </div>
+                      <span className="flex-1 text-left font-bold text-[13px]">
+                        Báo cáo vi phạm
+                      </span>
+                      <span className="material-symbols-outlined text-red-300 group-hover:translate-x-1 transition-transform !text-[18px]">
+                        chevron_right
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             // Media Tab
-            <div className="p-4">
-              {allAttachments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
-                  <span className="material-symbols-outlined text-4xl mb-2">
-                    image
-                  </span>
-                  <p className="text-sm">Không có media nào</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {allAttachments.map((attachment) => (
-                    <a
-                      key={attachment.id}
-                      href={getFileUrl(attachment.fileUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={attachment.fileName}
-                      className="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-700"
-                    >
-                      {attachment.type === "image" ? (
-                        <>
-                          <img
-                            src={getFileUrl(attachment.fileUrl)}
-                            alt={attachment.fileName}
-                            className="w-full h-32 object-cover rounded mb-2"
-                          />
-                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                            {attachment.fileName}
-                          </p>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-lg text-primary">
-                            description
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-black dark:text-white truncate">
-                              {attachment.fileName}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatFileSize(attachment.fileSize)}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </a>
-                  ))}
-                </div>
-              )}
+            <div className="flex flex-col h-full overflow-hidden animate-fade-in">
+              <ConversationMedia conversationId={conversation?.id || 0} />
             </div>
           )}
         </div>

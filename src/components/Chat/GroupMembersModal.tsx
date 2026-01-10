@@ -131,11 +131,11 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-[#111418] rounded-xl p-6 w-96 max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="bg-white dark:bg-[#111418] rounded-xl p-5 w-[340px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
           {/* Header */}
           <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-black dark:text-white">
+              <h2 className="text-lg font-bold text-black dark:text-white">
                 👥 Thành viên nhóm
               </h2>
               <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
@@ -152,12 +152,12 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
             {updatedConversation.members?.map((member: any) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1">
                   {/* Avatar */}
                   <div
-                    className="w-10 h-10 rounded-full bg-center bg-cover ring-2 ring-blue-200 dark:ring-blue-900"
+                    className="w-9 h-9 rounded-full bg-center bg-cover ring-2 ring-blue-200 dark:ring-blue-900"
                     style={{
                       backgroundImage: `url("${getAvatarUrl(member.avatar)}")`,
                     }}
@@ -251,7 +251,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
               <button
                 onClick={() => setShowAddMembers(true)}
                 disabled={loading}
-                className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-xs"
               >
                 ➕ Thêm thành viên
               </button>
@@ -260,7 +260,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors text-xs"
               >
                 Đóng
               </button>
@@ -281,7 +281,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                     })
                   }
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 font-medium transition-colors text-xs"
                 >
                   🗑️ Xoá nhóm
                 </button>

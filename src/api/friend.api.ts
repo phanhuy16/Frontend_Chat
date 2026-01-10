@@ -28,6 +28,12 @@ export const friendApi = {
       .get("/friends/requests/pending")
       .then((res) => res.data),
 
+  // Get sent friend requests
+  getSentRequests: (): Promise<FriendRequestDto[]> =>
+    axiosInstance
+      .get("/friends/requests/sent")
+      .then((res) => res.data),
+
   // Get friends list
   getFriendsList: (): Promise<FriendDto[]> =>
     axiosInstance.get("/friends/list").then((res) => res.data),

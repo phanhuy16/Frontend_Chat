@@ -153,115 +153,89 @@ const SettingsPage: React.FC = () => {
     window.location.href = "/auth";
   };
   return (
-    <div className="flex h-screen w-full bg-background-light dark:bg-background-dark">
-      {/* SideNavBar */}
-      <aside className="flex w-64 flex-col border-r border-gray-200 dark:border-white/10 bg-white/50 dark:bg-background-dark/50 p-4">
+    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full">
+      {/* Column 2: Settings Sidebar */}
+      <aside className="hidden md:flex flex-col w-full max-w-[280px] lg:max-w-[320px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden p-4 transition-all duration-300">
         <div className="flex flex-col justify-between h-full">
-          <div className="flex flex-col gap-4">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 mb-2 text-gray-500 hover:text-primary transition-colors"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-              <span className="text-sm font-medium">Trở về</span>
-            </button>
-
+          <div className="flex flex-col gap-6">
             {/* User Info */}
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-3 items-center p-3 rounded-2xl bg-slate-100/50 dark:bg-white/5 border border-white/20 dark:border-white/10">
               <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+                className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-10 shadow-premium"
                 style={{ backgroundImage: `url("${getAvatarUrl(avatar)}")` }}
               />
 
-              <div className="flex flex-col">
-                <h1 className="text-gray-900 dark:text-white text-base font-medium leading-normal">
+              <div className="flex flex-col min-w-0">
+                <h1 className="text-slate-900 dark:text-white text-base font-bold truncate">
                   {user?.displayName}
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">
+                <p className="text-slate-500 dark:text-slate-400 text-xs truncate">
                   {user?.email}
                 </p>
               </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex flex-col gap-2 mt-4">
+            <nav className="flex flex-col gap-1.5">
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary cursor-pointer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 cursor-pointer transition-all"
                 href="#profile"
               >
-                <span className="material-symbols-outlined text-2xl">
+                <span className="material-symbols-outlined text-xl font-fill">
                   person
                 </span>
-                <p className="text-sm font-medium leading-normal">
-                  Hồ sơ & Tài khoản
-                </p>
+                <p className="text-xs font-bold">Hồ sơ & Tài khoản</p>
               </a>
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-primary transition-all cursor-pointer"
                 href="#notifications"
               >
-                <span className="material-symbols-outlined text-2xl">
+                <span className="material-symbols-outlined text-xl">
                   notifications
                 </span>
-                <p className="text-sm font-medium leading-normal">Thông báo</p>
+                <p className="text-xs font-bold">Thông báo</p>
               </a>
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-primary transition-all cursor-pointer"
                 href="#privacy"
               >
-                <span className="material-symbols-outlined text-2xl">lock</span>
-                <p className="text-sm font-medium leading-normal">
-                  Quyền riêng tư & Bảo mật
-                </p>
+                <span className="material-symbols-outlined text-xl">lock</span>
+                <p className="text-xs font-bold">Quyền riêng tư & Bảo mật</p>
               </a>
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-primary transition-all cursor-pointer"
                 href="#theme"
               >
-                <span className="material-symbols-outlined text-2xl">
+                <span className="material-symbols-outlined text-xl">
                   palette
                 </span>
-                <p className="text-sm font-medium leading-normal">Giao diện</p>
-              </a>
-              <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
-                href="#help"
-              >
-                <span className="material-symbols-outlined text-2xl">help</span>
-                <p className="text-sm font-medium leading-normal">
-                  Trợ giúp & Phản hồi
-                </p>
+                <p className="text-xs font-bold">Giao diện</p>
               </a>
             </nav>
           </div>
 
           {/* Logout Button */}
-          <div className="flex flex-col gap-1">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-            >
-              <span className="material-symbols-outlined text-2xl">logout</span>
-              <p className="text-sm font-medium leading-normal">Đăng xuất</p>
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-bold"
+          >
+            <span className="material-symbols-outlined text-xl">logout</span>
+            <p className="text-xs">Đăng xuất</p>
+          </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8 mx-auto max-w-4xl">
+      {/* Column 3: Settings Content */}
+      <main className="flex-1 overflow-y-auto glass-effect lg:rounded-3xl transition-all duration-300">
+        <div className="p-8 lg:p-12 mx-auto max-w-4xl">
           {/* Page Heading */}
-          <div className="flex flex-wrap justify-between gap-3 mb-8">
-            <div className="flex min-w-72 flex-col gap-2">
-              <h1 className="text-gray-900 dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">
-                Hồ sơ & Tài khoản
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal">
-                Quản lý thông tin cá nhân và tài khoản của bạn.
-              </p>
-            </div>
+          <div className="mb-10">
+            <h1 className="text-slate-900 dark:text-white text-3xl font-black tracking-tight mb-2">
+              Hồ sơ & Tài khoản
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-base">
+              Quản lý thông tin cá nhân và tài khoản của bạn.
+            </p>
           </div>
 
           {/* Messages */}
@@ -281,7 +255,7 @@ const SettingsPage: React.FC = () => {
             <div className="flex w-full flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
               <div className="flex gap-4 items-center">
                 <div
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24"
+                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-20 w-20"
                   style={{
                     backgroundImage: `url("${
                       avatarPreview || getAvatarUrl(avatar) || ""
@@ -315,13 +289,13 @@ const SettingsPage: React.FC = () => {
               {/* Display Name */}
               <div className="flex flex-col">
                 <label
-                  className="text-gray-800 dark:text-white text-base font-medium leading-normal pb-2"
+                  className="text-gray-800 dark:text-white text-sm font-medium leading-normal pb-1.5"
                   htmlFor="displayName"
                 >
                   Tên hiển thị
                 </label>
                 <input
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-5 py-3 text-base font-normal leading-normal"
                   id="displayName"
                   value={formData.displayName}
                   onChange={handleInputChange}
@@ -331,13 +305,13 @@ const SettingsPage: React.FC = () => {
               {/* Email */}
               <div className="flex flex-col">
                 <label
-                  className="text-gray-800 dark:text-white text-base font-medium leading-normal pb-2"
+                  className="text-gray-800 dark:text-white text-sm font-medium leading-normal pb-1.5"
                   htmlFor="email"
                 >
                   Email
                 </label>
                 <input
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-5 py-3 text-base font-normal leading-normal"
                   id="email"
                   type="email"
                   value={formData.email}
@@ -350,13 +324,13 @@ const SettingsPage: React.FC = () => {
             {/* Bio */}
             <div className="flex flex-col">
               <label
-                className="text-gray-800 dark:text-white text-base font-medium leading-normal pb-2"
+                className="text-gray-800 dark:text-white text-sm font-medium leading-normal pb-1.5"
                 htmlFor="bio"
               >
                 Tiểu sử ngắn
               </label>
               <textarea
-                className="form-input flex w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                className="form-input flex w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 px-5 py-4 text-base font-normal leading-normal"
                 id="bio"
                 rows={4}
                 value={formData.bio}
@@ -379,13 +353,13 @@ const SettingsPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col">
                   <label
-                    className="text-gray-800 dark:text-white text-base font-medium leading-normal pb-2"
+                    className="text-gray-800 dark:text-white text-sm font-medium leading-normal pb-1.5"
                     htmlFor="currentPassword"
                   >
                     Mật khẩu hiện tại
                   </label>
                   <input
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-5 py-3 text-base font-normal leading-normal"
                     id="currentPassword"
                     placeholder="••••••••"
                     type="password"
@@ -395,13 +369,13 @@ const SettingsPage: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <label
-                    className="text-gray-800 dark:text-white text-base font-medium leading-normal pb-2"
+                    className="text-gray-800 dark:text-white text-sm font-medium leading-normal pb-1.5"
                     htmlFor="newPassword"
                   >
                     Mật khẩu mới
                   </label>
                   <input
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-base font-normal leading-normal"
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-white/20 bg-input-light dark:bg-input-dark focus:border-primary h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-5 py-3 text-base font-normal leading-normal"
                     id="newPassword"
                     placeholder="••••••••"
                     type="password"

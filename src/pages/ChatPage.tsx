@@ -11,7 +11,6 @@ import { conversationApi } from "../api/conversation.api";
 import { friendApi } from "../api/friend.api";
 import { userApi } from "../api/user.api";
 import ChatEmptyState from "../components/Chat/ChatEmptyState";
-import ChatPageDropdownMenu from "../components/Chat/ChatPageDropdownMenu";
 import ChatPageSearchResults from "../components/Chat/ChatPageSearchResults";
 import ChatWindow from "../components/Chat/ChatWindow";
 import ConversationList from "../components/Chat/ConversationList";
@@ -20,6 +19,7 @@ import SearchUsersModal from "../components/Chat/SearchUsersModal";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
+import { useFriendRequest } from "../context/FriendRequestContext";
 import { FriendDto, Conversation } from "../types";
 import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 
@@ -37,19 +37,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setCurrentConversation,
   } = useChat();
   const { isConnected, on } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
+  const { incrementCount, refreshCount } = useFriendRequest();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [avatar, setAvatar] = useState("");
   const [unreadCounts, setUnreadCounts] = useState<{ [key: number]: number }>(
     {}
   );
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const reloadConversations = useCallback(async () => {
@@ -64,27 +62,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       console.error("Failed to reload conversations:", err);
     }
   }, [user?.id, setConversations]);
-
-  const handleMenuClick = (action: string) => {
-    setIsDropdownOpen(false);
-    switch (action) {
-      case "friends":
-        navigate("/friends/list");
-        break;
-      case "requests":
-        navigate("/friends/requests");
-        break;
-      case "settings":
-        navigate("/settings");
-        break;
-      case "new-chat":
-        setShowSearchModal(true);
-        break;
-      case "create-group":
-        setShowCreateGroup(true);
-        break;
-    }
-  };
 
   const loadFriends = async () => {
     try {
@@ -174,24 +151,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }
-  }, [isDropdownOpen]);
-
-  useEffect(() => {
     const loadConversations = async () => {
       if (user?.id) {
         try {
@@ -210,26 +169,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   useEffect(() => {
     on("ReceiveMessage", async (data: any) => {
       await reloadConversations();
-
-      // Update unread count if not in current conversation AND message exists
-      // Note: message might be just a notification, ideally we check message.conversationId
-      // The previous on("ReceiveMessage") callback didn't have arguments in the original code,
-      // but SignalR typically sends arguments. We assume message object here.
-      // If the event doesn't pass data, we can't know which conv it is.
-      // Checking original ChatPage.tsx: it was `on("ReceiveMessage", async () => { ... })`.
-      // Usage in implementation plan assumed message arg.
-      // Let's modify to `on("ReceiveMessage", async (data: any) => { ... })`
-
-      if (
-        data &&
-        data.conversationId &&
-        currentConversation?.id !== data.conversationId
-      ) {
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [data.conversationId]: (prev[data.conversationId] || 0) + 1,
-        }));
-      }
+      // Note: reloadConversations already fetches updated conversation data with correct unread counts
     });
 
     on("NewConversationCreated", async () => {
@@ -282,17 +222,27 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     reloadConversations,
   ]);
 
-  // Fix: The 'data' variable in ReceiveMessage above might be undefined if not defined in callback parameters
-  // I need to correct that part of the code before writing.
-
+  // Listen for friend request notifications
   useEffect(() => {
-    const loadAvatar = async () => {
-      const data = await userApi.getUserById(user!.id);
-      setAvatar(`${REACT_APP_AVATAR_URL}${data.avatar}`);
-    };
+    if (!isConnected) return;
 
-    loadAvatar();
-  }, [user]);
+    on(
+      "FriendRequestReceived",
+      (data: {
+        SenderId: number;
+        SenderName: string;
+        SenderAvatar: string;
+      }) => {
+        console.log("Friend request received:", data);
+        incrementCount();
+        refreshCount();
+        toast.success(`${data.SenderName} đã gửi lời mời kết bạn!`, {
+          duration: 4000,
+          icon: "👋",
+        });
+      }
+    );
+  }, [isConnected, on, incrementCount, refreshCount]);
 
   if (!user) {
     return (
@@ -316,145 +266,69 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   });
 
   return (
-    <div className="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-hidden">
-      <div className="flex h-full w-full">
-        {/* Sidebar Navigation */}
-        <aside className="flex flex-col w-full max-w-xs border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111418] shrink-0">
-          <div className="flex flex-col gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
-            {/* User Profile */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-                  style={{ backgroundImage: `url("${avatar}")` }}
-                />
-                <div className="flex flex-col">
-                  <h1 className="text-black dark:text-white text-base font-medium leading-normal">
-                    {user.displayName}
-                  </h1>
-                  <p className="text-[#64748b] dark:text-[#9dabb9] text-sm font-normal leading-normal">
-                    {user.status === 1
-                      ? "Online"
-                      : user.status === 2
-                      ? "Offline"
-                      : "Away"}
-                  </p>
-                </div>
-              </div>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                  title="Menu"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-
-                {/* Dropdown Menu Component */}
-                <ChatPageDropdownMenu
-                  isOpen={isDropdownOpen}
-                  pendingRequestCount={pendingRequestCount}
-                  onMenuClick={handleMenuClick}
-                />
-              </div>
-            </div>
-
-            {/* Search */}
-            <div className="relative w-full" ref={searchRef}>
-              <input
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-input-light dark:bg-input-dark text-black dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-primary focus:border-primary transition-all"
-                placeholder="Search chats..."
-                type="search"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowSearchResults(e.target.value.trim() !== "");
-                }}
-                onFocus={() => setShowSearchResults(searchTerm.trim() !== "")}
-              />
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                search
-              </span>
-              {loadingFriends ? (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <div className="animate-spin mb-4">
-                      <span className="material-symbols-outlined text-4xl">
-                        sync
-                      </span>
-                    </div>
-                    <p className="text-lg">Đang tìm kiếm...</p>
-                  </div>
-                </div>
-              ) : (
-                showSearchResults && (
-                  <ChatPageSearchResults
-                    searchResults={searchResults}
-                    user={user}
-                    onSelectConversation={handleSelectConversation}
-                    onSelectFriend={handleOpenChatWithFriend}
-                  />
-                )
-              )}
-            </div>
+    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full">
+      {/* Column 2: Conversation List */}
+      <aside className="flex flex-col w-full max-w-[320px] lg:max-w-[360px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300">
+        <div className="flex flex-col gap-6 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              Conversations
+            </h2>
           </div>
 
-          {/* Conversation List */}
-          <ConversationList
-            conversations={filteredConversations}
-            currentConversation={currentConversation}
-            onSelectConversation={(conv) => {
-              setCurrentConversation(conv);
-              // Reset unread count
-              setUnreadCounts((prev) => ({
-                ...prev,
-                [conv.id]: 0,
-              }));
-            }}
-            user={user}
-            unreadCounts={unreadCounts}
-          />
-        </aside>
+          {/* Search */}
+          <div className="relative w-full group" ref={searchRef}>
+            <input
+              className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300"
+              placeholder="Search conversations..."
+              type="search"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowSearchResults(e.target.value.trim() !== "");
+              }}
+              onFocus={() => setShowSearchResults(searchTerm.trim() !== "")}
+            />
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+              search
+            </span>
+            {showSearchResults && (
+              <ChatPageSearchResults
+                searchResults={searchResults}
+                user={user}
+                onSelectConversation={handleSelectConversation}
+                onSelectFriend={handleOpenChatWithFriend}
+              />
+            )}
+          </div>
+        </div>
 
-        {/* Main Chat Area */}
-        <main className="flex flex-1 flex-col h-full">
-          {isConnected && currentConversation ? (
-            <ChatWindow conversation={currentConversation} />
-          ) : !isConnected ? (
-            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-              <div className="text-center">
-                <div className="animate-spin mb-4">
-                  <span className="material-symbols-outlined text-4xl">
-                    sync
-                  </span>
-                </div>
-                <p className="text-lg">Đang kết nối...</p>
-              </div>
-            </div>
-          ) : (
-            /* Empty State Component */
-            <ChatEmptyState onStartNewChat={() => setShowSearchModal(true)} />
-          )}
-        </main>
-      </div>
+        {/* Conversation List */}
+        <ConversationList
+          conversations={filteredConversations}
+          currentConversation={currentConversation}
+          onSelectConversation={(conv) => {
+            setCurrentConversation(conv);
+            setUnreadCounts((prev) => ({ ...prev, [conv.id]: 0 }));
+          }}
+          user={user}
+          unreadCounts={unreadCounts}
+        />
+      </aside>
 
-      {/* Search Users Modal */}
-      <SearchUsersModal
-        isOpen={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-      />
-
-      <CreateGroupModal
-        isOpen={showCreateGroup}
-        onClose={() => setShowCreateGroup(false)}
-        onGroupCreated={async () => {
-          // Reload conversations
-          if (user?.id) {
-            const data = await conversationApi.getUserConversations(user.id);
-            setConversations(data);
-          }
-        }}
-      />
+      {/* Column 3: Main Chat Area */}
+      <main className="flex-1 flex flex-col glass-effect lg:rounded-3xl overflow-hidden relative transition-all duration-300">
+        {isConnected && currentConversation ? (
+          <ChatWindow conversation={currentConversation} />
+        ) : !isConnected ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500">
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
+            <p className="font-bold">Connecting...</p>
+          </div>
+        ) : (
+          <ChatEmptyState onStartNewChat={() => setShowSearchModal(true)} />
+        )}
+      </main>
     </div>
   );
 };
