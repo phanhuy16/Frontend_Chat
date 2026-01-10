@@ -5,7 +5,6 @@ import { useCall } from './useCall';
 import { CallType } from '../types';
 import { IncomingCallData } from '../types/call.type';
 import toast from 'react-hot-toast';
-import callApi from '../api/call.api';
 
 export const useCallIntegration = (hubUrl: string) => {
   const { user } = useAuth();
@@ -21,15 +20,41 @@ export const useCallIntegration = (hubUrl: string) => {
     webrtcService,
     setConnectionEstablished,
     addParticipant,
-    removeParticipant,
     setCallState,
   } = useCall();
 
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const callIdRef = useRef<string>('');
+
+  const playRingtone = () => {
+    if (!ringtoneRef.current) {
+      ringtoneRef.current = new Audio('/sounds/ringtone.mp3');
+      ringtoneRef.current.loop = true;
+    }
+    ringtoneRef.current.play().catch(() => { });
+  };
+
+  const stopRingtone = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+  };
+
+  // Reject call handler (used internally and exported)
+  const handleRejectCall = useCallback(async () => {
+    stopRingtone();
+    if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
+
+    // Use callState if incomingCall is not available (e.g. from timeout)
+    if (incomingCall && !incomingCall.isGroup) {
+      await invoke('RejectCall', incomingCall.callerId);
+    }
+
+    rejectCall();
+    setIncomingCall(null);
+  }, [incomingCall, invoke, rejectCall]);
 
   // Register user on mount
   useEffect(() => {
@@ -41,12 +66,14 @@ export const useCallIntegration = (hubUrl: string) => {
   // Handle incoming signaling messages
   useEffect(() => {
     const handleIncomingCall = (data: any) => {
+      console.log('Incoming call received:', data);
       setIncomingCall({ ...data, isGroup: false });
       playRingtone();
       callTimeoutRef.current = setTimeout(() => handleRejectCall(), 30000);
     };
 
     const handleIncomingGroupCall = (data: any) => {
+      console.log('Incoming group call received:', data);
       setIncomingCall({ ...data, isGroup: true });
       playRingtone();
       callTimeoutRef.current = setTimeout(() => handleRejectCall(), 30000);
@@ -60,7 +87,6 @@ export const useCallIntegration = (hubUrl: string) => {
 
       addParticipant(userId, displayName || `User ${userId}`);
 
-      // We are an existing participant, so we send the offer to the newcomer
       try {
         const offer = await webrtcService.createOffer(userId);
         await invoke('SendCallOffer', userId, offer);
@@ -71,25 +97,35 @@ export const useCallIntegration = (hubUrl: string) => {
 
     const handleReceiveCallOffer = async (data: any) => {
       const { callerId, offer } = data;
-      if (!webrtcService) return;
+      console.log(`Received call offer from ${callerId}`);
+      if (!webrtcService) {
+        console.error('WebRTC service not available on handleReceiveCallOffer');
+        return;
+      }
 
+      // For 1-on-1, ensure participant is added if not already there
       addParticipant(callerId, `User ${callerId}`);
 
       try {
         const answer = await webrtcService.createAnswer(callerId, offer);
+        console.log(`Created answer for ${callerId}, sending...`);
         await invoke('SendCallAnswer', callerId, answer);
+        console.log(`Sent answer to ${callerId}. Setting connection established.`);
         setConnectionEstablished();
       } catch (err) {
         console.error(`Failed to handle offer from user ${callerId}:`, err);
+        toast.error('Lỗi khi thiết lập kết nối cuộc gọi');
       }
     };
 
     const handleReceiveCallAnswer = async (data: any) => {
       const { receiverId, answer } = data;
+      console.log(`Received call answer from ${receiverId}`);
       if (!webrtcService) return;
 
       try {
         await webrtcService.handleAnswer(receiverId, answer);
+        console.log(`Handled answer from ${receiverId}. Setting connection established.`);
         setConnectionEstablished();
       } catch (err) {
         console.error(`Failed to handle answer from user ${receiverId}:`, err);
@@ -104,6 +140,7 @@ export const useCallIntegration = (hubUrl: string) => {
     };
 
     const handleCallRejected = () => {
+      console.log('Call was rejected');
       stopRingtone();
       toast.error('Cuộc gọi bị từ chối');
       endCall();
@@ -111,26 +148,56 @@ export const useCallIntegration = (hubUrl: string) => {
     };
 
     const handleCallEnded = (data: any) => {
+      console.log('Call ended:', data);
       stopRingtone();
       toast(`Cuộc gọi kết thúc (${data.duration}s)`);
       endCall();
       setIncomingCall(null);
     };
 
-    const handleCallInitiated = (data: any) => {
-      const { callId, status, isGroup } = data;
-      console.log('Call initiated:', data);
+    const handleCallAccepted = async (data: any) => {
+      const { acceptedBy } = data;
+      console.log(`Call accepted by ${acceptedBy}. Initiating offer...`);
 
-      if (isGroup) {
-        setConnectionEstablished(); // Transition to connected immediately for initiator
+      if (!webrtcService) {
+        console.error('WebRTC service not available on handleCallAccepted');
+        return;
       }
 
-      setCallState(prev => ({
-        ...prev,
-        callId: callId,
-        callStatus: isGroup ? 'connected' : (status === 'Ringing' ? 'ringing' : 'idle'),
-        isGroup: !!isGroup
-      }));
+      // Transition to connected status so the Calling modal closes for initiator
+      setConnectionEstablished();
+
+      try {
+        const offer = await webrtcService.createOffer(acceptedBy);
+        console.log(`Created offer for ${acceptedBy}, sending...`);
+        await invoke('SendCallOffer', acceptedBy, offer);
+        console.log(`Sent offer to ${acceptedBy}`);
+      } catch (err) {
+        console.error(`Failed to send offer to user ${acceptedBy}:`, err);
+        toast.error('Không thể bắt đầu kết nối WebRTC');
+      }
+    };
+
+    const handleCallInitiated = (data: any) => {
+      const { callId, status, isGroup } = data;
+      console.log('Call initiated event received:', data);
+
+      if (isGroup) {
+        setConnectionEstablished();
+      }
+
+      setCallState(prev => {
+        // If we already transitioned to connected via CallAccepted, don't go back to ringing
+        if (prev.callStatus === 'connected' && !isGroup) {
+          return { ...prev, callId };
+        }
+        return {
+          ...prev,
+          callId: callId,
+          callStatus: isGroup ? 'connected' : (status === 'Ringing' ? 'ringing' : 'idle'),
+          isGroup: !!isGroup
+        };
+      });
     };
 
     on('IncomingCall', handleIncomingCall);
@@ -142,6 +209,7 @@ export const useCallIntegration = (hubUrl: string) => {
     on('CallRejected', handleCallRejected);
     on('CallEnded', handleCallEnded);
     on('CallInitiated', handleCallInitiated);
+    on('CallAccepted', handleCallAccepted);
 
     return () => {
       off('IncomingCall');
@@ -153,8 +221,9 @@ export const useCallIntegration = (hubUrl: string) => {
       off('CallRejected');
       off('CallEnded');
       off('CallInitiated');
+      off('CallAccepted');
     };
-  }, [on, off, webrtcService, invoke, addParticipant, setConnectionEstablished, endCall]);
+  }, [on, off, webrtcService, invoke, addParticipant, setConnectionEstablished, endCall, handleRejectCall, setCallState]);
 
   // Forward local ICE candidates to relevant peers
   useEffect(() => {
@@ -186,10 +255,6 @@ export const useCallIntegration = (hubUrl: string) => {
 
       const callTypeStr = callType === CallType.Video ? 'Video' : 'Audio';
       await invoke('InitiateCall', conversationId, recipientId, callTypeStr);
-
-      // For 1-on-1, initiator sends initial offer
-      const offer = await webrtcService.createOffer(recipientId);
-      await invoke('SendCallOffer', recipientId, offer);
 
       toast.success('Đang gọi...');
     } catch (err) {
@@ -234,11 +299,10 @@ export const useCallIntegration = (hubUrl: string) => {
 
       if (incomingCall.isGroup) {
         await answerCall(callType, 0, 'Nhóm', undefined, true);
-        // Inform others that we joined so they can send us offers
-        // The backend now tracks participants, so we don't need to pass them
         await invoke('JoinGroupCall', incomingCall.conversationId, incomingCall.callId);
       } else {
         await answerCall(callType, incomingCall.callerId, incomingCall.callerName, incomingCall.callerAvatar, false);
+        await invoke('AcceptCall', incomingCall.callerId);
       }
 
       setIncomingCall(null);
@@ -248,17 +312,7 @@ export const useCallIntegration = (hubUrl: string) => {
       toast.error('Lỗi khi chấp nhận cuộc gọi');
       handleRejectCall();
     }
-  }, [incomingCall, webrtcService, answerCall, invoke, user?.id]);
-
-  const handleRejectCall = useCallback(async () => {
-    stopRingtone();
-    if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
-    if (incomingCall && !incomingCall.isGroup) {
-      await invoke('RejectCall', incomingCall.callerId);
-    }
-    rejectCall();
-    setIncomingCall(null);
-  }, [incomingCall, invoke, rejectCall]);
+  }, [incomingCall, webrtcService, answerCall, invoke, handleRejectCall]);
 
   const handleEndCall = useCallback(async () => {
     const duration = callState.duration;
@@ -268,21 +322,6 @@ export const useCallIntegration = (hubUrl: string) => {
     endCall();
     toast(`Cuộc gọi kết thúc (${duration}s)`);
   }, [callState, invoke, endCall]);
-
-  const playRingtone = () => {
-    if (!ringtoneRef.current) {
-      ringtoneRef.current = new Audio('/sounds/ringtone.mp3');
-      ringtoneRef.current.loop = true;
-    }
-    ringtoneRef.current.play().catch(() => { });
-  };
-
-  const stopRingtone = () => {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
-  };
 
   return {
     callState,

@@ -127,8 +127,21 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
         </div>
       </div>
 
+      {/* No Video Indicator (Background when video is off) */}
+      {!videoEnabled && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10">
+          <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center mb-4">
+            <span className="material-symbols-outlined text-4xl text-gray-400">
+              videocam_off
+            </span>
+          </div>
+          <p className="text-white text-lg font-semibold">{remoteUserName}</p>
+          <p className="text-gray-400 text-sm">Camera đã bị tắt</p>
+        </div>
+      )}
+
       {/* Bottom Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 flex justify-center gap-6">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 flex justify-center gap-6 z-20">
         {/* Mute/Unmute Audio Button */}
         <button
           onClick={onToggleAudio}
@@ -168,19 +181,6 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
           <span className="material-symbols-outlined text-2xl">call_end</span>
         </button>
       </div>
-
-      {/* No Video Indicator */}
-      {!videoEnabled && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-          <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-4xl text-gray-400">
-              videocam_off
-            </span>
-          </div>
-          <p className="text-white text-lg font-semibold">{remoteUserName}</p>
-          <p className="text-gray-400 text-sm">Camera đã bị tắt</p>
-        </div>
-      )}
     </div>
   );
 };

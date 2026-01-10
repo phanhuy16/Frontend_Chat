@@ -138,9 +138,8 @@ export class WebRTCService {
   async addIceCandidate(userId: number, candidate: RTCIceCandidate): Promise<void> {
     try {
       const pc = this.peerConnections.get(userId);
-      if (!pc) return;
 
-      if (!pc.remoteDescription) {
+      if (!pc || !pc.remoteDescription) {
         if (!this.candidateQueues.has(userId)) {
           this.candidateQueues.set(userId, []);
         }

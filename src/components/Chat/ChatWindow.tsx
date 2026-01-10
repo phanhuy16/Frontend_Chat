@@ -74,6 +74,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showContactSidebar, setShowContactSidebar] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [chatWallpaper, setChatWallpaper] = useState(
+    localStorage.getItem("chat-wallpaper") || "default"
+  );
+
+  const getWallpaperStyle = () => {
+    switch (chatWallpaper) {
+      case "solid-dark":
+        return { backgroundColor: "#0f172a" };
+      case "gradient-blue":
+        return { background: "linear-gradient(135deg, #1e3a8a, #1d4ed8)" };
+      case "gradient-purple":
+        return { background: "linear-gradient(135deg, #4c1d95, #7c3aed)" };
+      case "pattern-dots":
+        return {
+          backgroundColor: "#1e293b",
+          backgroundImage: "radial-gradient(#ffffff11 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        };
+      default:
+        return {};
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -719,7 +741,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         </header>
 
         {/* Messages Pane */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500"
+          style={getWallpaperStyle()}
+        >
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
               <div className="animate-spin text-primary">

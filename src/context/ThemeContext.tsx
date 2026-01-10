@@ -26,13 +26,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     // Apply theme to document element
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
     // Save to localStorage
-    localStorage.setItem('theme', theme);
+    localStorage.setItem("theme", theme);
+
+    // Apply accent color
+    const savedAccent = localStorage.getItem("theme-accent");
+    if (savedAccent) {
+      document.documentElement.style.setProperty("--primary", savedAccent);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
