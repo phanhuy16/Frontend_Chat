@@ -223,9 +223,7 @@ const FriendRequestsPage: React.FC = () => {
                         disabled={processing[request.id]}
                         className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 text-[11px]"
                       >
-                        {processing[request.id]
-                          ? "Đang xử lý..."
-                          : "Chấp nhận ngay"}
+                        {processing[request.id] ? "Đang xử lý..." : "Chấp nhận"}
                       </button>
                       <button
                         onClick={() => handleReject(request.id)}

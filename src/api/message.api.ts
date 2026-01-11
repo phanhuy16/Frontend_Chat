@@ -1,4 +1,4 @@
-import { AddReactionRequest, EditMessageRequest, Message, SendMessageRequest } from "../types/message.types";
+import { AddReactionRequest, EditMessageRequest, Message, SendMessageRequest, MessageReader } from "../types/message.types";
 import axiosInstance from "./axios";
 
 export const messageApi = {
@@ -37,4 +37,7 @@ export const messageApi = {
 
   getPinnedMessages: (conversationId: number): Promise<Message[]> =>
     axiosInstance.get(`/messages/conversation/${conversationId}/pinned`).then((res) => res.data),
+
+  getMessageReaders: (messageId: number): Promise<MessageReader[]> =>
+    axiosInstance.get(`/messages/${messageId}/readers`).then((res) => res.data),
 };

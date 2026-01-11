@@ -37,4 +37,7 @@ export const conversationApi = {
 
   getConversationAttachments: (id: number): Promise<AttachmentDto[]> =>
     axiosInstance.get(`/conversations/${id}/attachments`).then((res) => res.data),
+
+  togglePin: (conversationId: number, userId: number): Promise<{ isPinned: boolean }> =>
+    axiosInstance.post(`/conversations/${conversationId}/pin/${userId}`).then((res) => res.data),
 }

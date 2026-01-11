@@ -10,6 +10,7 @@ interface ConversationListProps {
   conversations: Conversation[];
   currentConversation: Conversation | null;
   onSelectConversation: (conversation: Conversation) => void;
+  onTogglePin?: (conversation: Conversation) => void;
   user: User;
   unreadCounts?: { [key: number]: number };
 }
@@ -18,9 +19,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
   currentConversation,
   onSelectConversation,
+  onTogglePin,
   user,
   unreadCounts = {},
 }) => {
+  const sortedConversations = [...conversations].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+
+    const timeA = new Date(a.messages[0]?.createdAt || a.createdAt).getTime();
+    const timeB = new Date(b.messages[0]?.createdAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
   const getConversationName = (conversation: Conversation): string => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = conversation.members.find((m) => m.id !== user.id);
@@ -53,7 +63,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   const getConversationAvatar = (conversation: Conversation): string => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = conversation.members.find((m) => m.id !== user.id);
-      return getAvatarUrl(otherMember?.avatar);
+      return getAvatarUrl(otherMember?.avatar || "") || "";
     }
     return "";
   };
@@ -83,11 +93,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 space-y-1">
-      {conversations.map((conversation) => (
+      {sortedConversations.map((conversation) => (
         <div
           key={conversation.id}
           onClick={() => onSelectConversation(conversation)}
-          className={`group flex items-center gap-4 px-4 min-h-[64px] py-2.5 rounded-2xl cursor-pointer transition-all duration-300 ${
+          className={`group flex items-center gap-4 px-4 min-h-[64px] py-2.5 rounded-2xl cursor-pointer transition-all duration-300 relative ${
             currentConversation?.id === conversation.id
               ? "bg-primary text-white shadow-lg shadow-primary/30"
               : "hover:bg-slate-100 dark:hover:bg-white/5"
@@ -114,6 +124,15 @@ const ConversationList: React.FC<ConversationListProps> = ({
             </div>
             {isUserOnline(conversation) && (
               <div className="absolute bottom-0 right-0 size-3.5 rounded-full bg-[#0bda5b] border-2 border-white dark:border-[#111418] shadow-sm" />
+            )}
+
+            {/* Pin Badge */}
+            {conversation.isPinned && (
+              <div className="absolute -top-1 -left-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white dark:border-[#111418] shadow-sm">
+                <span className="material-symbols-outlined text-[12px] font-bold">
+                  push_pin
+                </span>
+              </div>
             )}
           </div>
 
@@ -169,6 +188,30 @@ const ConversationList: React.FC<ConversationListProps> = ({
               )}
             </div>
           </div>
+
+          {/* Pin Toggle Button (Hover) */}
+          {onTogglePin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(conversation);
+              }}
+              className={`absolute right-2 top-2 size-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 ${
+                currentConversation?.id === conversation.id
+                  ? "hover:bg-white/20 text-white"
+                  : "hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400"
+              }`}
+              title={conversation.isPinned ? "Unpin chat" : "Pin chat"}
+            >
+              <span
+                className={`material-symbols-outlined text-[18px] ${
+                  conversation.isPinned ? "font-fill" : ""
+                }`}
+              >
+                push_pin
+              </span>
+            </button>
+          )}
         </div>
       ))}
     </div>

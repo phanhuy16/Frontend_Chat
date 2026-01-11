@@ -19,6 +19,7 @@ interface AuthContextType {
   refreshAuthToken: (data: RefreshTokenRequest) => Promise<boolean>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   isAuthenticated: boolean;
+  updateUser: (updatedUser: UserAuth) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -165,6 +166,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: !!token,
         refreshAuthToken,
         loginWithGoogle,
+        updateUser: (updatedUser: UserAuth) => {
+          setUser(updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        },
       }}
     >
       {children}

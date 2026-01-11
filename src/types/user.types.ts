@@ -10,6 +10,9 @@ export interface User {
   bio?: string;
   customStatus?: string;
   lastActiveAt?: string;
+  lastSeenPrivacy: string;
+  onlineStatusPrivacy: string;
+  readReceiptsEnabled: boolean;
 }
 
 export interface UserSearchResponse {

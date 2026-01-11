@@ -68,3 +68,10 @@ export interface AddReactionRequest {
   userId: number;
   emoji: string;
 }
+
+export interface MessageReader {
+  userId: number;
+  displayName: string;
+  avatar: string;
+  readAt: string;
+}

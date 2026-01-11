@@ -7,8 +7,10 @@ export interface Conversation {
   conversationType: ConversationType;
   groupName?: string;
   members: User[];
-  createdAt: string;
   messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+  isPinned?: boolean;
 }
 
 export interface ConversationMember {

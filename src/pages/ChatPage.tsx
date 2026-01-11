@@ -35,8 +35,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     currentConversation,
     setConversations,
     setCurrentConversation,
+    updateConversation,
   } = useChat();
-  const { isConnected, on } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
+  const { isConnected, on, off } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const { incrementCount, refreshCount } = useFriendRequest();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -139,11 +140,22 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setSearchTerm("");
     setShowSearchResults(false);
 
-    // Reset unread count for this conversation
     setUnreadCounts((prev) => ({
       ...prev,
       [conv.id]: 0,
     }));
+  };
+
+  const handleTogglePin = async (conv: Conversation) => {
+    if (!user) return;
+    try {
+      const { isPinned } = await conversationApi.togglePin(conv.id, user.id);
+      updateConversation(conv.id, { isPinned });
+      toast.success(isPinned ? "Chat pinned" : "Chat unpinned");
+    } catch (err) {
+      toast.error("Failed to toggle pin");
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -213,13 +225,27 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
         }
       }
     });
+
+    on("ConversationPinStatusChanged", (data: any) => {
+      updateConversation(data.ConversationId, { isPinned: data.IsPinned });
+    });
+
+    return () => {
+      off("ReceiveMessage");
+      off("NewConversationCreated");
+      off("AddedToConversation");
+      off("RemovedFromConversation");
+      off("ConversationPinStatusChanged");
+    };
   }, [
     on,
+    off,
     user?.id,
     setConversations,
     currentConversation,
     setCurrentConversation,
     reloadConversations,
+    updateConversation,
   ]);
 
   // Listen for friend request notifications
@@ -311,6 +337,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
             setCurrentConversation(conv);
             setUnreadCounts((prev) => ({ ...prev, [conv.id]: 0 }));
           }}
+          onTogglePin={handleTogglePin}
           user={user}
           unreadCounts={unreadCounts}
         />

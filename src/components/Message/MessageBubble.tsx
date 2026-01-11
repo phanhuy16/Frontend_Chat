@@ -1,9 +1,10 @@
 // src/components/Chat/MessageBubble.tsx
 import React from "react";
-import { Message } from "../../types/message.types";
+import { Message, MessageReader } from "../../types/message.types";
 import { formatTime } from "../../utils/formatters";
 import { getAvatarUrl } from "../../utils/helpers";
 import { MessageType } from "../../types";
+import { messageApi } from "../../api/message.api";
 
 interface MessageBubbleProps {
   message: Message;
@@ -32,6 +33,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
+  const [showReaders, setShowReaders] = React.useState(false);
+  const [readers, setReaders] = React.useState<MessageReader[]>([]);
+  const [loadingReaders, setLoadingReaders] = React.useState(false);
 
   // Audio player states
   const [isPlaying, setIsPlaying] = React.useState(false);
@@ -63,6 +67,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  const handleFetchReaders = async () => {
+    if (!isOwn || (message.readCount || 0) === 0) return;
+    setShowReaders(true);
+    setLoadingReaders(true);
+    try {
+      const data = await messageApi.getMessageReaders(message.id);
+      setReaders(data);
+    } catch (err) {
+      console.error("Failed to fetch message readers:", err);
+    } finally {
+      setLoadingReaders(false);
+    }
+  };
+
   return (
     <div
       className={`group flex ${
@@ -72,12 +90,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={`flex items-end gap-3 ${isOwn ? "flex-row-reverse" : ""}`}
       >
-        {/* Avatar for received messages */}
+        {/* Avatar for received messages - Aligned to bottom */}
         {!isOwn && (
-          <div className="relative shrink-0 mb-1">
-            <div className="absolute -inset-0.5 bg-gradient-to-tr from-primary to-secondary rounded-full blur-[2px] opacity-40"></div>
+          <div className="relative shrink-0 mb-0">
             <div
-              className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-white/20 shadow-sm"
+              className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 border border-white/10 shadow-sm"
               style={{
                 backgroundImage: `url("${getAvatarUrl(
                   message.sender?.avatar
@@ -252,6 +269,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
 
+          {/* Sender name above bubble */}
+          {!isOwn && message.sender && (
+            <div className="flex items-center gap-1.5 ml-1 mb-1">
+              <span className="text-[12px] font-bold text-slate-300">
+                {message.sender.displayName}
+              </span>
+              {/* Optional: Add status emoji if available in future */}
+            </div>
+          )}
+
           {/* Message Content Bubble */}
           {((message.content && message.messageType !== MessageType.Voice) ||
             (!isOwn &&
@@ -260,12 +287,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             message.isDeleted ||
             message.isDeletedForMe) && (
             <div
-              className={`relative px-4 py-2 rounded-2xl ${
+              className={`relative px-4 py-2.5 rounded-[1.25rem] ${
                 message.isDeleted || message.isDeletedForMe
                   ? "bg-transparent shadow-none border-none"
                   : isOwn
-                  ? "bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl rounded-br-none shadow-premium shadow-primary/20"
-                  : "bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white rounded-2xl rounded-bl-none border border-slate-200/50 dark:border-white/5 shadow-sm"
+                  ? "bg-primary text-white rounded-br-none shadow-premium"
+                  : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
               }`}
             >
               {message.forwardedFromId && (
@@ -305,13 +332,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
               )}
 
-              {/* Sender name for group chats */}
-              {!isOwn && message.sender && (
-                <p className="text-[11px] font-black mb-1.5 text-primary tracking-wide uppercase">
-                  {message.sender.displayName}
-                </p>
-              )}
-
               {/* Message content */}
               {message.isDeleted || message.isDeletedForMe ? (
                 <div className="py-1 px-4 border border-slate-200 dark:border-white/20 rounded-full bg-slate-50/50 dark:bg-white/5 mx-auto">
@@ -345,24 +365,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               {/* Reactions Display overlay */}
               {message.reactions && message.reactions.length > 0 && (
                 <div
-                  className={`absolute -bottom-3 ${
-                    isOwn ? "right-2" : "left-2"
-                  } flex gap-1 items-center bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded-full shadow-premium border border-slate-100 dark:border-slate-600 animate-fade-in`}
+                  className={`absolute -bottom-2 ${
+                    isOwn ? "left-2" : "right-1"
+                  } flex items-center bg-[#3b333b] px-1 py-0 rounded-full shadow-lg border border-white/20 animate-fade-in z-20 hover:scale-110 transition-transform cursor-pointer`}
+                  title={message.reactions
+                    .map((r) => `${r.username}: ${r.emojiType}`)
+                    .join("\n")}
                 >
-                  {message.reactions.map((reaction, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs"
-                      title={reaction.username}
-                    >
-                      {reaction.emojiType}
-                    </span>
-                  ))}
-                  {message.reactions.length > 1 && (
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-0.5">
-                      {message.reactions.length}
-                    </span>
-                  )}
+                  <div className="flex -space-x-1">
+                    {Array.from(
+                      new Set(message.reactions.map((r) => r.emojiType))
+                    )
+                      .slice(0, 1)
+                      .map((emoji, idx) => (
+                        <span key={idx} className="text-[10px] leading-none">
+                          {emoji}
+                        </span>
+                      ))}
+                  </div>
+                  <span className="text-[9px] font-black text-white ml-0.5 pr-0.5">
+                    {message.reactions.length}
+                  </span>
                 </div>
               )}
             </div>
@@ -430,6 +453,40 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </a>
                   </div>
                 ))}
+
+                {/* Reactions for attachment-only messages (when no text bubble is present) */}
+                {!message.content &&
+                  !message.isDeleted &&
+                  !message.isDeletedForMe &&
+                  message.reactions &&
+                  message.reactions.length > 0 && (
+                    <div
+                      className={`absolute -bottom-2 ${
+                        isOwn ? "left-1" : "right-1"
+                      } flex items-center bg-[#3b333b] px-1 py-0 rounded-full shadow-lg border border-white/20 animate-fade-in z-20 hover:scale-110 transition-transform cursor-pointer`}
+                      title={message.reactions
+                        .map((r) => `${r.username}: ${r.emojiType}`)
+                        .join("\n")}
+                    >
+                      <div className="flex -space-x-1">
+                        {Array.from(
+                          new Set(message.reactions.map((r) => r.emojiType))
+                        )
+                          .slice(0, 1)
+                          .map((emoji, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] leading-none"
+                            >
+                              {emoji}
+                            </span>
+                          ))}
+                      </div>
+                      <span className="text-[9px] font-black text-white ml-0.5 pr-0.5">
+                        {message.reactions.length}
+                      </span>
+                    </div>
+                  )}
               </div>
             )}
 
@@ -440,12 +497,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             message.attachments.length > 0 && (
               <div className={`mt-1 ${isOwn ? "mr-0" : "ml-0"}`}>
                 <div
-                  className={`flex items-center gap-3 p-3 rounded-2xl border ${
+                  className={`relative flex items-center gap-3 p-3 rounded-2xl border ${
                     isOwn
                       ? "bg-gradient-to-br from-primary to-primary-dark border-white/20 text-white shadow-premium"
                       : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   } shadow-sm min-w-[260px]`}
                 >
+                  {/* Reactions Display overlay for Voice Messages */}
+                  {message.reactions && message.reactions.length > 0 && (
+                    <div
+                      className={`absolute -bottom-2 ${
+                        isOwn ? "left-1" : "right-1"
+                      } flex items-center bg-[#3b333b] px-1 py-0 rounded-full shadow-lg border border-white/20 animate-fade-in z-20 hover:scale-110 transition-transform cursor-pointer`}
+                      title={message.reactions
+                        .map((r) => `${r.username}: ${r.emojiType}`)
+                        .join("\n")}
+                    >
+                      <div className="flex -space-x-1">
+                        {Array.from(
+                          new Set(message.reactions.map((r) => r.emojiType))
+                        )
+                          .slice(0, 1)
+                          .map((emoji, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] leading-none"
+                            >
+                              {emoji}
+                            </span>
+                          ))}
+                      </div>
+                      <span className="text-[9px] font-black text-white ml-0.5 pr-0.5">
+                        {message.reactions.length}
+                      </span>
+                    </div>
+                  )}
                   <button
                     className={`w-10 h-10 flex items-center justify-center rounded-full ${
                       isOwn ? "bg-white text-primary" : "bg-primary text-white"
@@ -535,14 +621,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </p>
             {isOwn && (
               <span
-                className={`material-symbols-outlined !text-[14px] ${
+                className={`material-symbols-outlined !text-[14px] cursor-pointer hover:scale-110 transition-transform ${
                   (message.readCount || 0) > 0
                     ? "text-blue-400"
                     : "text-slate-400"
                 }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFetchReaders();
+                }}
                 title={
                   message.readCount
-                    ? `Đã xem bởi ${message.readCount} người`
+                    ? `Đã xem bởi ${message.readCount} người - Nhấn để xem chi tiết`
                     : "Chưa xem"
                 }
               >
@@ -557,6 +647,72 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Reader List Modal */}
+      {showReaders && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowReaders(false)}
+          />
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-zoom-in">
+            <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Người đã xem
+              </h3>
+              <button
+                onClick={() => setShowReaders(false)}
+                className="size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <div className="p-2 max-h-[300px] overflow-y-auto">
+              {loadingReaders ? (
+                <div className="p-8 flex flex-col items-center gap-3">
+                  <div className="size-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm font-bold text-slate-400">
+                    Đang tải...
+                  </p>
+                </div>
+              ) : readers.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 font-medium">
+                  Chưa có ai xem tin nhắn này
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {readers.map((reader) => (
+                    <div
+                      key={reader.userId}
+                      className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <div className="relative size-10 rounded-full border-2 border-primary/20 p-0.5">
+                        <img
+                          src={getAvatarUrl(reader.avatar)}
+                          alt={reader.displayName}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-white truncate">
+                          {reader.displayName}
+                        </p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Đã xem lúc {formatTime(reader.readAt)}
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined text-blue-400 text-lg">
+                        done_all
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

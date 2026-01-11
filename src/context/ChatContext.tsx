@@ -20,6 +20,10 @@ interface ChatContextType {
   setOnlineUsers: (users: any[]) => void;
   addTypingUser: (userId: number) => void;
   removeTypingUser: (userId: number) => void;
+  updateConversation: (
+    conversationId: number,
+    updates: Partial<Conversation>
+  ) => void;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(
@@ -74,6 +78,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
+  const updateConversation = useCallback(
+    (conversationId: number, updates: Partial<Conversation>) => {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId ? { ...conv, ...updates } : conv
+        )
+      );
+      setCurrentConversation((prev) =>
+        prev?.id === conversationId ? { ...prev, ...updates } : prev
+      );
+    },
+    []
+  );
+
   return (
     <ChatContext.Provider
       value={{
@@ -92,6 +110,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         setOnlineUsers,
         addTypingUser,
         removeTypingUser,
+        updateConversation,
       }}
     >
       {children}

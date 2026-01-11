@@ -5,6 +5,9 @@ export interface UpdateProfileRequest {
   displayName: string;
   bio?: string;
   avatar?: string;
+  lastSeenPrivacy?: string;
+  onlineStatusPrivacy?: string;
+  readReceiptsEnabled?: boolean;
 }
 
 export interface ChangePasswordRequest {

@@ -105,6 +105,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
   const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
 
+  // Jump to bottom state
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Drafts management
+  const [drafts, setDrafts] = useState<{ [key: number]: string }>({});
+  const prevConversationId = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Save draft for previous conversation
+    if (
+      prevConversationId.current !== null &&
+      prevConversationId.current !== conversation.id
+    ) {
+      const oldId = prevConversationId.current;
+      setDrafts((prev) => ({
+        ...prev,
+        [oldId]: inputValue,
+      }));
+    }
+
+    // Load draft for new conversation
+    const newDraft = drafts[conversation.id] || "";
+    setInputValue(newDraft);
+
+    // Update previous ID for next switch
+    prevConversationId.current = conversation.id;
+  }, [conversation.id]);
+
   const fetchPinnedMessages = async () => {
     if (!conversation?.id) return;
     try {
@@ -483,6 +512,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowJumpToBottom(!isAtBottom);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1138,7 +1173,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
         {/* Messages Pane */}
         <div
-          className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500"
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500 relative"
           style={getWallpaperStyle()}
         >
           {loading ? (
@@ -1233,6 +1270,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
               <div ref={messagesEndRef} />
             </>
+          )}
+
+          {/* Jump to Bottom Button */}
+          {showJumpToBottom && (
+            <button
+              onClick={scrollToBottom}
+              className="fixed bottom-32 right-12 z-50 size-12 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
+              title="Cuộn xuống dưới cùng"
+            >
+              <span className="material-symbols-outlined text-2xl font-black">
+                keyboard_double_arrow_down
+              </span>
+            </button>
           )}
         </div>
 
