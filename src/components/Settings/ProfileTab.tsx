@@ -17,7 +17,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
   const [formData, setFormData] = useState({
     displayName: user?.displayName || "",
     email: user?.email || "",
-    bio: "",
+    bio: user?.bio || "", // Initialize bio from user data
+    customStatus: user?.customStatus || "", // Initialize customStatus from user data
     currentPassword: "",
     newPassword: "",
   });
@@ -65,10 +66,16 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
         displayName: formData.displayName,
         bio: formData.bio,
       });
+
+      if (formData.customStatus !== user?.customStatus) {
+        await userApi.updateCustomStatus(formData.customStatus || null);
+      }
+
       toast.success("Thay đổi đã được lưu thành công!");
-    } catch (err) {
+    } catch (error) {
+      // Changed err to error for consistency
       toast.error("Lỗi khi lưu thay đổi");
-      console.error(err);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -171,7 +178,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
       <form onSubmit={handleSaveChanges} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
           <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1" htmlFor="displayName">
+            <label
+              className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+              htmlFor="displayName"
+            >
               Tên hiển thị
             </label>
             <input
@@ -183,7 +193,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1" htmlFor="email">
+            <label
+              className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+              htmlFor="email"
+            >
               Email
             </label>
             <input
@@ -197,7 +210,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
         </div>
 
         <div className="flex flex-col gap-2 text-left">
-          <label className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1" htmlFor="bio">
+          <label
+            className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+            htmlFor="bio"
+          >
             Tiểu sử ngắn
           </label>
           <textarea
@@ -207,6 +223,31 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             onChange={handleInputChange}
             placeholder="Giới thiệu về bạn..."
           />
+        </div>
+
+        {/* Custom Status */}
+        <div className="flex flex-col gap-2 text-left">
+          <label
+            className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+            htmlFor="customStatus"
+          >
+            Trạng thái tùy chỉnh
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+              <span className="material-symbols-outlined text-lg">
+                sentiment_satisfied
+              </span>
+            </div>
+            <input
+              id="customStatus"
+              type="text"
+              placeholder="Bạn đang nghĩ gì?"
+              className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
+              value={formData.customStatus}
+              onChange={handleInputChange}
+            />
+          </div>
         </div>
 
         <div className="flex justify-start">
@@ -224,15 +265,20 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
 
       {/* Security Section */}
       <div className="text-left">
-        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">Đổi mật khẩu</h2>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+          Đổi mật khẩu
+        </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
           Để bảo mật, vui lòng nhập mật khẩu hiện tại của bạn để thay đổi.
         </p>
-        
+
         <form onSubmit={handleChangePassword} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
-              <label className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1" htmlFor="currentPassword">
+              <label
+                className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+                htmlFor="currentPassword"
+              >
                 Mật khẩu hiện tại
               </label>
               <input
@@ -245,7 +291,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1" htmlFor="newPassword">
+              <label
+                className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
+                htmlFor="newPassword"
+              >
                 Mật khẩu mới
               </label>
               <input
@@ -258,7 +307,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               />
             </div>
           </div>
-          
+
           <div className="flex justify-start">
             <button
               type="submit"
@@ -275,9 +324,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
 
       {/* Danger Zone */}
       <div className="text-left bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
-        <h2 className="text-xl font-black text-red-600 dark:text-red-500 mb-2">Vùng nguy hiểm</h2>
+        <h2 className="text-xl font-black text-red-600 dark:text-red-500 mb-2">
+          Vùng nguy hiểm
+        </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
-          Một khi bạn xóa tài khoản, sẽ không có cách nào để khôi phục. Vui lòng cân nhắc kỹ.
+          Một khi bạn xóa tài khoản, sẽ không có cách nào để khôi phục. Vui lòng
+          cân nhắc kỹ.
         </p>
         <button
           type="button"

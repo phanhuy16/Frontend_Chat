@@ -10,10 +10,16 @@ export interface Message {
   messageType: MessageType;
   createdAt: string;
   updatedAt: string;
-  isDeleted: boolean;
-  isDeletedForMe?: boolean;
   reactions: Reaction[];
   attachments: Attachment[];
+  isDeleted: boolean;
+  isDeletedForMe: boolean;
+  isPinned: boolean;
+  parentMessageId?: number;
+  parentMessage?: Message;
+  forwardedFromId?: number;
+  isReadByMe?: boolean;
+  readCount?: number;
 }
 
 export interface Reaction {
@@ -36,17 +42,21 @@ export interface AttachmentDto {
   id: number;
   messageId: number;
   fileName: string;
-  fileUrl: string;
-  fileSize: number;
-  fileType: string;
-  uploadedAt: string;
+  reactions: Reaction[];
+  attachments: Attachment[];
+  isDeleted: boolean;
+  isDeletedForMe: boolean;
+  isPinned: boolean;
+  parentMessageId?: number;
+  parentMessage?: Message;
 }
 
 export interface SendMessageRequest {
   conversationId: number;
   senderId: number;
-  content?: string | null;
-  messageType: MessageType;
+  content: string;
+  messageType: number;
+  parentMessageId?: number;
 }
 
 export interface EditMessageRequest {

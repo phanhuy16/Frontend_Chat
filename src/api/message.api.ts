@@ -26,4 +26,7 @@ export const messageApi = {
 
   removeReaction: (reactionId: number): Promise<any> =>
     axiosInstance.delete(`/messages/reactions/${reactionId}`).then((res) => res.data),
+
+  togglePin: (messageId: number): Promise<boolean> =>
+    axiosInstance.post(`/messages/${messageId}/pin`).then((res) => res.data),
 }

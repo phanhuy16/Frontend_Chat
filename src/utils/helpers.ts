@@ -50,8 +50,8 @@ export const isValidUrl = (url: string): boolean => {
   }
 };
 
-export const getAvatarUrl = (avatarPath: string | null | undefined): string => {
-  if (!avatarPath) return "";
+export const getAvatarUrl = (avatarPath: string | null | undefined): string | undefined => {
+  if (!avatarPath) return undefined;
   if (avatarPath.startsWith("http")) return avatarPath;
   const baseUrl = process.env.REACT_APP_AVATAR_URL || "";
   return `${baseUrl}${avatarPath}`;

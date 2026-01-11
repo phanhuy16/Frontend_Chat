@@ -7,6 +7,8 @@ export interface User {
   displayName: string;
   avatar: string;
   status: StatusUser;
+  bio?: string;
+  customStatus?: string;
   lastActiveAt?: string;
 }
 

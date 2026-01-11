@@ -6,7 +6,32 @@ import { ChatProvider } from "./context/ChatContext";
 import { FriendRequestProvider } from "./context/FriendRequestContext";
 import AppRoutes from "./routes/Routes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+
+import { ConfigProvider } from "antd";
+
+const AppContent = () => {
+  const { accentColor } = useTheme();
+
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: accentColor,
+          borderRadius: 12,
+        },
+      }}
+    >
+      <AuthProvider>
+        <ChatProvider>
+          <FriendRequestProvider>
+            <AppRoutes />
+          </FriendRequestProvider>
+        </ChatProvider>
+      </AuthProvider>
+    </ConfigProvider>
+  );
+};
 
 function App() {
   return (
@@ -17,13 +42,7 @@ function App() {
           clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID as string}
         >
           <ThemeProvider>
-            <AuthProvider>
-              <ChatProvider>
-                <FriendRequestProvider>
-                  <AppRoutes />
-                </FriendRequestProvider>
-              </ChatProvider>
-            </AuthProvider>
+            <AppContent />
           </ThemeProvider>
         </GoogleOAuthProvider>
       </Router>

@@ -10,6 +10,9 @@ interface MessageBubbleProps {
   onReact?: (messageId: number, emoji: string) => void;
   onDeleteForMe?: (messageId: number) => void;
   onDeleteForEveryone?: (messageId: number) => void;
+  onReply?: (message: Message) => void;
+  onPin?: (messageId: number) => void;
+  onForward?: (message: Message) => void;
 }
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -20,6 +23,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onReact,
   onDeleteForMe,
   onDeleteForEveryone,
+  onReply,
+  onPin,
+  onForward,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
@@ -114,6 +120,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
               </div>
 
+              {/* Reply Button */}
+              <button
+                onClick={() => onReply?.(message)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-slate-500 hover:text-primary shadow-premium border border-slate-200 dark:border-slate-700 transition-colors"
+                title="Trả lời"
+              >
+                <span className="material-symbols-outlined text-lg font-bold">
+                  reply
+                </span>
+              </button>
+
               {/* More Options Button */}
               <div className="relative">
                 <button
@@ -141,6 +158,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     >
                       <button
                         onClick={() => {
+                          onPin?.(message.id);
+                          setShowOptions(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          push_pin
+                        </span>
+                        {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
+                      </button>
+                      <button
+                        onClick={() => {
                           onDeleteForMe?.(message.id);
                           setShowOptions(false);
                         }}
@@ -150,6 +179,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           delete
                         </span>
                         Xoá ở phía bạn
+                      </button>
+                      <button
+                        onClick={() => {
+                          onForward?.(message);
+                          setShowOptions(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          forward
+                        </span>
+                        Chuyển tiếp
                       </button>
                       {isOwn && (
                         <button
@@ -186,6 +227,43 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   : "bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white rounded-2xl rounded-bl-none border border-slate-200/50 dark:border-white/5 shadow-sm"
               }`}
             >
+              {message.forwardedFromId && (
+                <div className="flex items-center gap-1 text-[11px] opacity-70 mb-1 italic">
+                  <span className="material-symbols-outlined text-sm">
+                    forward
+                  </span>
+                  <span>Đã chuyển tiếp</span>
+                </div>
+              )}
+              {/* Replying to display */}
+              {message.parentMessage && (
+                <div
+                  className={`mb-2 p-2 rounded-lg border-l-4 ${
+                    isOwn
+                      ? "bg-white/10 border-white/40"
+                      : "bg-slate-200 dark:bg-slate-700 border-primary"
+                  } text-[12px] opacity-80 cursor-pointer`}
+                  onClick={() => {
+                    const el = document.getElementById(
+                      `message-${message.parentMessageId}`
+                    );
+                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el?.classList.add("highlight-message");
+                    setTimeout(
+                      () => el?.classList.remove("highlight-message"),
+                      2000
+                    );
+                  }}
+                >
+                  <p className="font-bold mb-0.5">
+                    {message.parentMessage.sender?.displayName || "User"}
+                  </p>
+                  <p className="truncate line-clamp-1">
+                    {message.parentMessage.content || "Tin nhắn"}
+                  </p>
+                </div>
+              )}
+
               {/* Sender name for group chats */}
               {!isOwn && message.sender && (
                 <p className="text-[11px] font-black mb-1.5 text-primary tracking-wide uppercase">
@@ -206,7 +284,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
               ) : (
                 message.content && (
-                  <p className="text-[14px] leading-normal whitespace-pre-wrap break-words font-medium">
+                  <p
+                    className="leading-normal whitespace-pre-wrap break-words font-medium"
+                    style={{ fontSize: "var(--message-text)" }}
+                  >
                     {message.content}
                   </p>
                 )
@@ -312,8 +393,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               {formatTime(message.createdAt)}
             </p>
             {isOwn && (
-              <span className="material-symbols-outlined !text-[14px] text-primary opacity-80">
-                done_all
+              <span
+                className={`material-symbols-outlined !text-[14px] ${
+                  (message.readCount || 0) > 0
+                    ? "text-blue-400"
+                    : "text-slate-400"
+                }`}
+                title={
+                  message.readCount
+                    ? `Đã xem bởi ${message.readCount} người`
+                    : "Chưa xem"
+                }
+              >
+                {(message.readCount || 0) > 0 ? "done_all" : "done"}
+              </span>
+            )}
+            {message.isPinned && (
+              <span className="material-symbols-outlined !text-[14px] text-amber-500">
+                push_pin
               </span>
             )}
           </div>

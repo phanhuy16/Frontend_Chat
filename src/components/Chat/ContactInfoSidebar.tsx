@@ -15,6 +15,7 @@ interface ContactInfoSidebarProps {
   otherMember?: User | null;
   conversation?: Conversation | null;
   messages?: Message[];
+  onPinMessage?: (messageId: number) => void;
   onBlockChange?: (isBlocked: boolean) => void;
   onStartAudioCall: () => void;
   onStartVideoCall: () => void;
@@ -247,6 +248,12 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     );
   }, [messages]);
 
+  const pinnedMessages = useMemo(() => {
+    return messages.filter(
+      (m) => m.isPinned && !m.isDeleted && !m.isDeletedForMe
+    );
+  }, [messages]);
+
   const getFileUrl = (fileUrl: string) => {
     if (fileUrl.startsWith("http")) {
       return fileUrl;
@@ -447,6 +454,60 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Pinned Messages Section */}
+                {pinnedMessages.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between px-2">
+                      <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase">
+                        TIN NHẮN ĐÃ GHIM
+                      </h4>
+                      <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 text-[9px] font-black rounded-md">
+                        {pinnedMessages.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {pinnedMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className="group/pin p-3 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-900/30 hover:border-amber-400/50 transition-all cursor-pointer relative overflow-hidden"
+                          onClick={() => {
+                            const el = document.getElementById(
+                              `message-${msg.id}`
+                            );
+                            el?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            el?.classList.add("highlight-message");
+                            setTimeout(
+                              () => el?.classList.remove("highlight-message"),
+                              2000
+                            );
+                          }}
+                        >
+                          <div className="flex items-start gap-3 min-w-0">
+                            <span className="material-symbols-outlined !text-[16px] text-amber-500 mt-0.5">
+                              push_pin
+                            </span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <p className="text-[11px] font-black text-amber-600 uppercase tracking-wide">
+                                {msg.sender?.displayName || "User"}
+                              </p>
+                              <p className="text-[13px] text-slate-700 dark:text-slate-300 font-medium truncate line-clamp-2">
+                                {msg.content ||
+                                  (msg.attachments?.length
+                                    ? "Đã gửi một tập tin"
+                                    : "Tin nhắn")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Privacy & Safety */}
                 <div className="space-y-3">

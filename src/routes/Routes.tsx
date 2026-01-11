@@ -23,8 +23,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export default function AppRoutes() {
-  const { isAuthenticated, loading, user } = useAuth();
-  const [pendingRequestCount, setPendingRequestCount] = useState(0);
+  const { isAuthenticated } = useAuth();
+  const [pendingRequestCount] = useState(0);
 
   // ... (effect stays the same)
 

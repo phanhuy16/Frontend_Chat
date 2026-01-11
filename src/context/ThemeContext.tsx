@@ -4,25 +4,36 @@ type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
+  accentColor: string;
+  fontSize: string;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  updateAccentColor: (color: string) => void;
+  updateFontSize: (size: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // 1. Check localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme === 'light' || savedTheme === 'dark') {
+    const savedTheme = localStorage.getItem("theme") as Theme;
+    if (savedTheme === "light" || savedTheme === "dark") {
       return savedTheme;
     }
-    // 2. Check system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
     }
-    return 'light';
+    return "light";
   });
+
+  const [accentColor, setAccentColor] = useState(
+    localStorage.getItem("theme-accent") || "#6366f1"
+  );
+  const [fontSize, setFontSizeState] = useState(
+    localStorage.getItem("font-size") || "normal"
+  );
 
   useEffect(() => {
     // Apply theme to document element
@@ -31,26 +42,62 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       document.documentElement.classList.remove("dark");
     }
-    // Save to localStorage
     localStorage.setItem("theme", theme);
-
-    // Apply accent color
-    const savedAccent = localStorage.getItem("theme-accent");
-    if (savedAccent) {
-      document.documentElement.style.setProperty("--primary", savedAccent);
-    }
   }, [theme]);
 
+  useEffect(() => {
+    // Apply accent color
+    const root = document.documentElement;
+    root.style.setProperty("--primary", accentColor);
+
+    // Generate variants if needed (simple hex manipulation or just using the same color)
+    // For simplicity, we'll just set the primary and use opacity in tailwind for hover/light
+    root.style.setProperty("--primary-hover", `${accentColor}ee`);
+    root.style.setProperty("--primary-light", `${accentColor}88`);
+    root.style.setProperty("--primary-dark", `${accentColor}cc`);
+
+    localStorage.setItem("theme-accent", accentColor);
+  }, [accentColor]);
+
+  useEffect(() => {
+    // Apply font size
+    const root = document.documentElement;
+    let sizeValue = "14px";
+    if (fontSize === "small") sizeValue = "13px";
+    if (fontSize === "large") sizeValue = "16px";
+
+    root.style.setProperty("--message-text", sizeValue);
+    localStorage.setItem("font-size", fontSize);
+  }, [fontSize]);
+
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeState((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
   };
 
+  const updateAccentColor = (color: string) => {
+    setAccentColor(color);
+  };
+
+  const updateFontSize = (size: string) => {
+    setFontSizeState(size);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        accentColor,
+        fontSize,
+        toggleTheme,
+        setTheme,
+        updateAccentColor,
+        updateFontSize,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

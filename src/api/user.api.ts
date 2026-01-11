@@ -43,4 +43,7 @@ export const userApi = {
 
   deleteAccount: (): Promise<{ message: string }> =>
     axiosInstance.delete('/users/account').then((res) => res.data),
+
+  updateCustomStatus: (customStatus: string | null): Promise<any> =>
+    axiosInstance.put('/users/custom-status', { customStatus }).then((res) => res.data),
 }

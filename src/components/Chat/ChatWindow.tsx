@@ -31,6 +31,7 @@ import VideoCallWindow from "../Call/VideoCallWindow";
 import AudioCallWindow from "../Call/AudioCallWindow";
 import GroupCallWindow from "../Call/GroupCallWindow";
 import { CallType } from "../../types";
+import { ForwardMessageModal } from "./ForwardMessageModal";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -77,6 +78,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [chatWallpaper, setChatWallpaper] = useState(
     localStorage.getItem("chat-wallpaper") || "default"
   );
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(
+    null
+  );
+  const [forwardingLoading, setForwardingLoading] = useState(false);
 
   const getWallpaperStyle = () => {
     switch (chatWallpaper) {
@@ -171,6 +177,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         );
         const sortedMessages = [...data].reverse();
         setMessages(sortedMessages);
+
+        // Mark latest message as read if it's from someone else
+        if (user?.id && sortedMessages.length > 0) {
+          const latestMessage = sortedMessages[sortedMessages.length - 1];
+          if (latestMessage.senderId !== user.id) {
+            invoke("MarkAsRead", conversation.id, latestMessage.id, user.id);
+          }
+        }
       } catch (error) {
         console.error("Failed to load messages:", error);
       } finally {
@@ -180,6 +194,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
     if (conversation.id) {
       loadMessage();
+      // Mark as read when entering
+      if (user?.id) {
+        // Logic: find latest message from other person that isn't read
+        // For simplicity, we can just mark the whole conversation as read
+        // by sending the last message ID to the server.
+      }
     }
   }, [conversation.id, setMessages]);
 
@@ -250,13 +270,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             createdAt: createdAt,
             updatedAt: createdAt,
             isDeleted: false,
+            isDeletedForMe: false,
+            isPinned: data.isPinned ?? data.IsPinned ?? false,
+            parentMessageId: data.parentMessageId ?? data.ParentMessageId,
+            parentMessage: data.parentMessage ?? data.ParentMessage,
             reactions: [],
             attachments: [],
           };
 
           addMessage(mappedMessage);
           scrollToBottom();
+          // Mark as read if we are in the chat
+          if (senderId !== user?.id) {
+            invoke("MarkAsRead", conversation.id, messageId, user?.id);
+          }
         }
+      }
+    });
+
+    on("MessageRead", (data: any) => {
+      const messageId = data.messageId ?? data.MessageId;
+      const conversationId =
+        data.conversationId ?? (data.ConversationId || convId);
+
+      if (conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, readCount: (m.readCount || 0) + 1 } : m
+          )
+        );
       }
     });
 
@@ -286,6 +328,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           )
         );
       }
+    });
+
+    on("MessagePinnedStatusChanged", (messageId: number) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, isPinned: !m.isPinned } : m
+        )
+      );
     });
 
     return () => {
@@ -349,15 +399,45 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         conversation.id,
         user.id,
         inputValue.trim(),
-        MessageType.Text
+        MessageType.Text,
+        replyingTo?.id
       );
       setInputValue("");
+      setReplyingTo(null);
       invoke("StopTyping", conversation.id, user.id);
       if (reloadConversations) {
         await reloadConversations();
       }
     } catch (err) {
       console.error("Failed to send message:", err);
+    }
+  };
+
+  const handlePinMessage = async (messageId: number) => {
+    try {
+      await invoke("PinMessage", messageId, conversation.id);
+    } catch (err) {
+      console.error("Failed to pin message:", err);
+      toast.error("Không thể ghim tin nhắn");
+    }
+  };
+
+  const handleForwardMessage = async (targetConversationIds: number[]) => {
+    if (!forwardingMessage || !user?.id) return;
+    setForwardingLoading(true);
+    try {
+      for (const targetId of targetConversationIds) {
+        await invoke("ForwardMessage", forwardingMessage.id, targetId, user.id);
+      }
+      toast.success(
+        `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`
+      );
+      setForwardingMessage(null);
+    } catch (err) {
+      console.error("Forward error:", err);
+      toast.error("Có lỗi xảy ra khi chuyển tiếp");
+    } finally {
+      setForwardingLoading(false);
     }
   };
 
@@ -798,6 +878,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                         toast.error("Failed to add reaction");
                       }
                     }}
+                    onReply={(msg) => setReplyingTo(msg)}
+                    onPin={handlePinMessage}
+                    onForward={(msg) => setForwardingMessage(msg)}
                   />
                 </div>
               ))}
@@ -806,6 +889,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             </>
           )}
         </div>
+
+        {/* Reply Preview */}
+        {replyingTo && (
+          <div className="px-8 py-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 animate-slide-up flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-1 bg-primary h-10 rounded-full" />
+              <div className="flex flex-col min-w-0">
+                <p className="text-xs font-bold text-primary">
+                  Đang trả lời {replyingTo.sender.displayName}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                  {replyingTo.content || "Tin nhắn"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+        )}
 
         {/* Input Area */}
         <div className="px-8 py-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
@@ -967,6 +1073,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         onClose={() => setShowAddMembers(false)}
         onMembersAdded={handleMembersChanged}
       />
+      {/* Forward Message Modal */}
+      {user?.id && (
+        <ForwardMessageModal
+          visible={!!forwardingMessage}
+          onCancel={() => setForwardingMessage(null)}
+          onForward={handleForwardMessage}
+          userId={user.id}
+          loading={forwardingLoading}
+        />
+      )}
     </div>
   );
 };
