@@ -29,4 +29,12 @@ export const messageApi = {
 
   togglePin: (messageId: number): Promise<boolean> =>
     axiosInstance.post(`/messages/${messageId}/pin`).then((res) => res.data),
-}
+
+  searchMessages: (conversationId: number, query: string): Promise<Message[]> =>
+    axiosInstance.get('/messages/search', {
+      params: { conversationId, query },
+    }).then((res) => res.data),
+
+  getPinnedMessages: (conversationId: number): Promise<Message[]> =>
+    axiosInstance.get(`/messages/conversation/${conversationId}/pinned`).then((res) => res.data),
+};

@@ -10,8 +10,9 @@ import {
   StatusUser,
   MessageType,
 } from "../../types";
-import { Message } from "../../types/message.types";
+import { Message, Reaction } from "../../types/message.types";
 import { SIGNALR_HUB_URL_CHAT, TYPING_TIMEOUT } from "../../utils/constants";
+import { formatTime } from "../../utils/formatters";
 import MessageBubble from "../Message/MessageBubble";
 import { conversationApi } from "../../api/conversation.api";
 import { GroupMembersModal } from "./GroupMembersModal";
@@ -45,6 +46,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     addMessage,
     addTypingUser,
     removeTypingUser,
+    typingUsers,
     setConversations,
     setCurrentConversation,
   } = useChat();
@@ -82,7 +84,58 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(
     null
   );
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [forwardingLoading, setForwardingLoading] = useState(false);
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Search states
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Message[]>([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+
+  // Pinned messages
+  const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
+  const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
+
+  const fetchPinnedMessages = async () => {
+    if (!conversation?.id) return;
+    try {
+      const pinned = await messageApi.getPinnedMessages(conversation.id);
+      setPinnedMessages(pinned);
+    } catch (err) {
+      console.error("Failed to fetch pinned messages:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPinnedMessages();
+  }, [conversation?.id]);
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim() || !conversation?.id) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearchLoading(true);
+    try {
+      const results = await messageApi.searchMessages(conversation.id, query);
+      setSearchResults(results);
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setIsSearchLoading(false);
+    }
+  };
 
   const getWallpaperStyle = () => {
     switch (chatWallpaper) {
@@ -330,12 +383,80 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }
     });
 
+    on("MessageEdited", (data: any) => {
+      const messageId = data.messageId ?? data.MessageId;
+      const newContent = data.newContent ?? data.NewContent;
+      const conversationId =
+        data.conversationId ?? data.ConversationId ?? convId;
+
+      if (conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, content: newContent, isModified: true }
+              : m
+          )
+        );
+      }
+    });
+
     on("MessagePinnedStatusChanged", (messageId: number) => {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId ? { ...m, isPinned: !m.isPinned } : m
         )
       );
+      fetchPinnedMessages();
+    });
+
+    on("ReactionAdded", (data: any) => {
+      const messageId = data.messageId ?? data.MessageId;
+      const userId = data.userId ?? data.UserId;
+      const username = data.username ?? data.Username;
+      const emoji = data.emoji ?? data.Emoji;
+      const conversationId =
+        data.conversationId ?? data.ConversationId ?? convId;
+
+      if (conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === messageId) {
+              const newReaction: Reaction = {
+                id: Math.random(), // Temporal ID for local display
+                userId: userId,
+                username: username,
+                emojiType: emoji,
+                messageId: messageId,
+              };
+              return { ...m, reactions: [...(m.reactions || []), newReaction] };
+            }
+            return m;
+          })
+        );
+      }
+    });
+
+    on("ReactionRemoved", (data: any) => {
+      const messageId = data.messageId ?? data.MessageId;
+      const userId = data.userId ?? data.UserId;
+      const conversationId =
+        data.conversationId ?? data.ConversationId ?? convId;
+
+      if (conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === messageId) {
+              return {
+                ...m,
+                reactions: (m.reactions || []).filter(
+                  (r) => r.userId !== userId
+                ),
+              };
+            }
+            return m;
+          })
+        );
+      }
     });
 
     return () => {
@@ -344,6 +465,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       off("UserTyping");
       off("UserStoppedTyping");
       off("MessageDeleted");
+      off("MessageEdited");
+      off("MessageRead");
+      off("MessagePinnedStatusChanged");
+      off("ReactionAdded");
+      off("ReactionRemoved");
     };
   }, [conversation?.id, addMessage, addTypingUser, removeTypingUser, on, off]);
 
@@ -394,14 +520,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
 
     try {
-      await invoke(
-        "SendMessage",
-        conversation.id,
-        user.id,
-        inputValue.trim(),
-        MessageType.Text,
-        replyingTo?.id
-      );
+      if (editingMessage) {
+        await invoke(
+          "EditMessage",
+          editingMessage.id,
+          conversation.id,
+          inputValue.trim(),
+          user.id
+        );
+        setEditingMessage(null);
+      } else {
+        await invoke(
+          "SendMessage",
+          conversation.id,
+          user.id,
+          inputValue.trim(),
+          MessageType.Text,
+          replyingTo?.id
+        );
+      }
       setInputValue("");
       setReplyingTo(null);
       invoke("StopTyping", conversation.id, user.id);
@@ -536,6 +673,92 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     } finally {
       setUploadingFiles(false);
       setUploadProgress(0);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        const file = new File([audioBlob], `voice_message_${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
+
+        // Upload voice message
+        await handleVoiceUpload(file);
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      toast.error("Không thể truy cập micro");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.onstop = null; // Prevent upload
+      mediaRecorder.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      toast.error("Đã hủy ghi âm");
+    }
+  };
+
+  const handleVoiceUpload = async (file: File) => {
+    const conversationIdAtStart = conversation.id;
+    const userIdAtStart = user?.id;
+    if (!userIdAtStart) return;
+
+    setUploadingFiles(true);
+    try {
+      const sentMessage = await messageApi.sendMessage({
+        conversationId: conversationIdAtStart,
+        senderId: userIdAtStart,
+        content: "[Voice Message]",
+        messageType: MessageType.Voice,
+      });
+
+      if (sentMessage.id) {
+        await attachmentApi.uploadAttachment(file, sentMessage.id.toString());
+
+        const updatedMessages = await messageApi.getConversationMessages(
+          conversationIdAtStart,
+          1,
+          50
+        );
+        setMessages([...updatedMessages].reverse());
+      }
+    } catch (err) {
+      console.error("Failed to upload voice message:", err);
+      toast.error("Lỗi khi gửi tin nhắn thoại");
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -728,7 +951,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           />
         )}
 
-        {/* Chat Header */}
         <header className="flex items-center justify-between gap-4 px-8 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
           <div className="flex items-center gap-4">
             <div
@@ -787,6 +1009,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 </button>
               )}
               <button
+                onClick={() => setIsSearching(!isSearching)}
+                className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                  isSearching
+                    ? "text-primary bg-white dark:bg-slate-800 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800"
+                }`}
+                title="Search Messages"
+              >
+                <span className="material-symbols-outlined !text-[20px]">
+                  search
+                </span>
+              </button>
+              <button
                 onClick={handleStartVideoCall}
                 disabled={isBlocked}
                 className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-30"
@@ -820,6 +1055,87 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           </div>
         </header>
 
+        {/* Pinned Message Banner */}
+        {pinnedMessages.length > 0 && (
+          <div className="relative z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-8 py-2 flex items-center justify-between gap-4 animate-fade-in shadow-sm">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className="material-symbols-outlined text-amber-500 scale-90">
+                push_pin
+              </span>
+              <div
+                className="flex flex-col min-w-0 cursor-pointer"
+                onClick={() => {
+                  const msg = pinnedMessages[currentPinnedIndex];
+                  const el = document.getElementById(`message-${msg.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el.classList.add("highlight-message");
+                    setTimeout(
+                      () => el.classList.remove("highlight-message"),
+                      2000
+                    );
+                  }
+                }}
+              >
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest leading-tight">
+                  Ghim tin nhắn{" "}
+                  {pinnedMessages.length > 1
+                    ? `(${currentPinnedIndex + 1}/${pinnedMessages.length})`
+                    : ""}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 truncate font-medium leading-normal">
+                  {pinnedMessages[currentPinnedIndex].messageType ===
+                  MessageType.Voice
+                    ? "Tin nhắn thoại"
+                    : pinnedMessages[currentPinnedIndex].content ||
+                      (pinnedMessages[currentPinnedIndex].attachments?.length
+                        ? "Tệp đính kèm"
+                        : "Tin nhắn")}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {pinnedMessages.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setCurrentPinnedIndex((prev) =>
+                        prev > 0 ? prev - 1 : pinnedMessages.length - 1
+                      )
+                    }
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      chevron_left
+                    </span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPinnedIndex((prev) =>
+                        prev < pinnedMessages.length - 1 ? prev + 1 : 0
+                      )
+                    }
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      chevron_right
+                    </span>
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setPinnedMessages([])}
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors ml-1"
+                title="Ẩn"
+              >
+                <span className="material-symbols-outlined text-base">
+                  close
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Messages Pane */}
         <div
           className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500"
@@ -851,7 +1167,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               </div>
               {messages.map((message, index) => (
                 <div
-                  key={index}
+                  key={message.id}
+                  id={`message-${message.id}`}
                   className={`flex animate-fade-in ${
                     message.senderId === user?.id
                       ? "justify-end"
@@ -881,14 +1198,135 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                     onReply={(msg) => setReplyingTo(msg)}
                     onPin={handlePinMessage}
                     onForward={(msg) => setForwardingMessage(msg)}
+                    onEdit={(msg) => {
+                      setEditingMessage(msg);
+                      setInputValue(msg.content || "");
+                      setReplyingTo(null);
+                    }}
                   />
                 </div>
               ))}
+
+              {Array.from(typingUsers).map((typingUserId) => {
+                const typingUser = conversation.members.find(
+                  (m) => m.id === typingUserId
+                );
+                if (!typingUser || typingUserId === user?.id) return null;
+                return (
+                  <div
+                    key={typingUserId}
+                    className="flex justify-start animate-fade-in"
+                  >
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-200/30 dark:border-white/5">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></span>
+                      </div>
+                      <span className="text-xs font-bold">
+                        {typingUser.displayName} đang nhập...
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
 
               <div ref={messagesEndRef} />
             </>
           )}
         </div>
+
+        {/* Search Bar Overlay */}
+        {isSearching && (
+          <div className="absolute top-[80px] left-0 right-0 z-40 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
+            <div className="relative max-w-2xl mx-auto">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm tin nhắn..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                autoFocus
+                className="w-full pl-12 pr-12 py-3 bg-slate-100 dark:bg-white/5 border-none rounded-2xl focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => handleSearch("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    cancel
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Quick Search Results List */}
+            {searchQuery.trim() && (
+              <div className="max-w-2xl mx-auto mt-4 max-h-[400px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2">
+                {isSearchLoading ? (
+                  <div className="py-8 text-center text-slate-400">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    Đang tìm kiếm...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="space-y-1">
+                    {searchResults.map((msg) => (
+                      <button
+                        key={msg.id}
+                        onClick={() => {
+                          const el = document.getElementById(
+                            `message-${msg.id}`
+                          );
+                          if (el) {
+                            el.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            el.classList.add("highlight-message");
+                            setTimeout(
+                              () => el.classList.remove("highlight-message"),
+                              2000
+                            );
+                          }
+                          setIsSearching(false);
+                        }}
+                        className="w-full flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors text-left group"
+                      >
+                        <img
+                          src={getAvatarUrl(msg.sender?.avatar)}
+                          className="w-10 h-10 rounded-full object-cover shrink-0"
+                          alt=""
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-0.5">
+                            <span className="font-bold text-sm truncate">
+                              {msg.sender?.displayName}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {formatTime(msg.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 break-words">
+                            {msg.messageType === MessageType.Voice
+                              ? "Tin nhắn thoại"
+                              : msg.content}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-slate-400 text-sm italic">
+                    Không tìm thấy tin nhắn nào khớp với "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Reply Preview */}
         {replyingTo && (
@@ -907,6 +1345,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             <button
               onClick={() => setReplyingTo(null)}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+        )}
+
+        {/* Editing Preview */}
+        {editingMessage && (
+          <div className="px-8 py-3 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-900/30 animate-slide-up flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-1 bg-amber-500 h-10 rounded-full" />
+              <div className="flex flex-col min-w-0">
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-500">
+                  Đang chỉnh sửa tin nhắn
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                  {editingMessage.content}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setEditingMessage(null);
+                setInputValue("");
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 transition-colors"
             >
               <span className="material-symbols-outlined text-lg">close</span>
             </button>
@@ -941,94 +1405,142 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 onChange={handleFileInput}
               />
 
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadMenu(!showUploadMenu)}
-                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[24px]">
-                    add
-                  </span>
-                </button>
-
-                {showUploadMenu && (
-                  <div
-                    ref={uploadMenuRef}
-                    className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fileInputRef.current) {
-                          fileInputRef.current.accept = "image/*";
-                          fileInputRef.current.click();
-                        }
-                        setShowUploadMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-primary">
-                        image
-                      </span>
-                      <span className="text-sm">Images</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fileInputRef.current) {
-                          fileInputRef.current.accept = "*/*";
-                          fileInputRef.current.click();
-                        }
-                        setShowUploadMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-secondary">
-                        description
-                      </span>
-                      <span className="text-sm">Files</span>
-                    </button>
+              {isRecording ? (
+                <div className="flex-1 flex items-center gap-4 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-2xl animate-fade-in">
+                  <div className="flex items-center gap-2 text-red-500 animate-pulse">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="text-sm font-bold">
+                      {Math.floor(recordingTime / 60)}:
+                      {(recordingTime % 60).toString().padStart(2, "0")}
+                    </span>
                   </div>
-                )}
-              </div>
-
-              <div className="flex-1 relative group">
-                <input
-                  className="w-full pl-6 pr-14 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-xs h-9"
-                  placeholder="Type a message..."
-                  type="text"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-xl hover:bg-accent/10"
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    sentiment_satisfied
-                  </span>
-                </button>
-                <div className="absolute right-0 bottom-full mb-4">
-                  <EmojiPicker
-                    isOpen={showEmojiPicker}
-                    onClose={() => setShowEmojiPicker(false)}
-                    onEmojiSelect={(emoji) => {
-                      setInputValue((prev) => prev + emoji);
-                    }}
-                  />
+                  <div className="flex-1 text-slate-500 text-xs italic truncate">
+                    Đang ghi âm...
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelRecording}
+                    className="text-slate-400 hover:text-red-500 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      delete
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopRecording}
+                    className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      send
+                    </span>
+                  </button>
                 </div>
-              </div>
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || uploadingFiles}
-                className="w-9 h-9 flex items-center justify-center text-white bg-primary rounded-xl disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  send
-                </span>
-              </button>
+              ) : (
+                <>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadMenu(!showUploadMenu)}
+                      className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[24px]">
+                        add
+                      </span>
+                    </button>
+
+                    {showUploadMenu && (
+                      <div
+                        ref={uploadMenuRef}
+                        className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (fileInputRef.current) {
+                              fileInputRef.current.accept = "image/*";
+                              fileInputRef.current.click();
+                            }
+                            setShowUploadMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                        >
+                          <span className="material-symbols-outlined text-primary">
+                            image
+                          </span>
+                          <span className="text-sm">Images</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (fileInputRef.current) {
+                              fileInputRef.current.accept = "*/*";
+                              fileInputRef.current.click();
+                            }
+                            setShowUploadMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                        >
+                          <span className="material-symbols-outlined text-secondary">
+                            description
+                          </span>
+                          <span className="text-sm">Files</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 relative group">
+                    <input
+                      className="w-full pl-6 pr-14 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-xs h-9"
+                      placeholder="Type a message..."
+                      type="text"
+                      value={inputValue}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-xl hover:bg-accent/10"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        sentiment_satisfied
+                      </span>
+                    </button>
+                    <div className="absolute right-0 bottom-full mb-4">
+                      <EmojiPicker
+                        isOpen={showEmojiPicker}
+                        onClose={() => setShowEmojiPicker(false)}
+                        onEmojiSelect={(emoji) => {
+                          setInputValue((prev) => prev + emoji);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {inputValue.trim() ? (
+                    <button
+                      type="submit"
+                      disabled={!inputValue.trim() || uploadingFiles}
+                      className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-2xl disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[24px]">
+                        send
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[24px]">
+                        mic
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
             </form>
           )}
         </div>
@@ -1086,5 +1598,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     </div>
   );
 };
+
 
 export default ChatWindow;

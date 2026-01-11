@@ -3,6 +3,7 @@ import React from "react";
 import { Message } from "../../types/message.types";
 import { formatTime } from "../../utils/formatters";
 import { getAvatarUrl } from "../../utils/helpers";
+import { MessageType } from "../../types";
 
 interface MessageBubbleProps {
   message: Message;
@@ -13,6 +14,7 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void;
   onPin?: (messageId: number) => void;
   onForward?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
 }
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -26,9 +28,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onReply,
   onPin,
   onForward,
+  onEdit,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
+
+  // Audio player states
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
 
   const getFileUrl = (fileUrl: string) => {
     if (fileUrl.startsWith("http")) {
@@ -36,6 +45,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
     const baseUrl = process.env.REACT_APP_API_URL?.replace("/api", "");
     return `${baseUrl}${fileUrl}`;
+  };
+
+  const formatAudioTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+    }
   };
 
   return (
@@ -206,6 +231,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           Thu hồi cho mọi người
                         </button>
                       )}
+                      {isOwn && !message.isDeleted && (
+                        <button
+                          onClick={() => {
+                            onEdit?.(message);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            edit
+                          </span>
+                          Chỉnh sửa
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -214,8 +253,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
 
           {/* Message Content Bubble */}
-          {(message.content ||
-            (!isOwn && message.sender) ||
+          {((message.content && message.messageType !== MessageType.Voice) ||
+            (!isOwn &&
+              message.sender &&
+              message.messageType !== MessageType.Voice) ||
             message.isDeleted ||
             message.isDeletedForMe) && (
             <div
@@ -293,6 +334,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )
               )}
 
+              {message.isModified &&
+                !message.isDeleted &&
+                !message.isDeletedForMe && (
+                  <p className="text-[10px] opacity-50 mt-1 italic text-right">
+                    Đã chỉnh sửa
+                  </p>
+                )}
+
               {/* Reactions Display overlay */}
               {message.reactions && message.reactions.length > 0 && (
                 <div
@@ -321,6 +370,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
           {/* Attachments */}
           {!(message.isDeleted || message.isDeletedForMe) &&
+            message.messageType !== MessageType.Voice &&
             message.attachments &&
             message.attachments.length > 0 && (
               <div
@@ -380,6 +430,97 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </a>
                   </div>
                 ))}
+              </div>
+            )}
+
+          {/* Voice Message Player */}
+          {!(message.isDeleted || message.isDeletedForMe) &&
+            message.messageType === MessageType.Voice &&
+            message.attachments &&
+            message.attachments.length > 0 && (
+              <div className={`mt-1 ${isOwn ? "mr-0" : "ml-0"}`}>
+                <div
+                  className={`flex items-center gap-3 p-3 rounded-2xl border ${
+                    isOwn
+                      ? "bg-gradient-to-br from-primary to-primary-dark border-white/20 text-white shadow-premium"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  } shadow-sm min-w-[260px]`}
+                >
+                  <button
+                    className={`w-10 h-10 flex items-center justify-center rounded-full ${
+                      isOwn ? "bg-white text-primary" : "bg-primary text-white"
+                    } hover:scale-105 active:scale-95 transition-all shrink-0 shadow-sm`}
+                    onClick={togglePlayPause}
+                  >
+                    <span className="material-symbols-outlined text-2xl">
+                      {isPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    {!isOwn && message.sender && (
+                      <p className="text-[10px] font-black text-primary tracking-wide uppercase mb-0.5">
+                        {message.sender.displayName}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 h-6 px-1">
+                      {[
+                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                        17, 18, 19, 20,
+                      ].map((i) => {
+                        const progress =
+                          duration > 0 ? (currentTime / duration) * 20 : 0;
+                        const isActive = i <= progress;
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-full transition-all duration-300 ${
+                              isActive
+                                ? isOwn
+                                  ? "bg-white"
+                                  : "bg-primary"
+                                : isOwn
+                                ? "bg-white/30"
+                                : "bg-slate-200 dark:bg-slate-700"
+                            }`}
+                            style={{
+                              height: `${30 + (Math.sin(i * 1.5) * 15 + 15)}%`,
+                              opacity: isActive ? 1 : 0.6,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest opacity-80">
+                      <span>
+                        {formatAudioTime(currentTime)} /{" "}
+                        {formatAudioTime(duration)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">
+                          mic
+                        </span>
+                        VOICE
+                      </span>
+                    </div>
+                    <audio
+                      ref={audioRef}
+                      src={getFileUrl(message.attachments[0].fileUrl)}
+                      className="hidden"
+                      onPlay={() => setIsPlaying(true)}
+                      onPause={() => setIsPlaying(false)}
+                      onEnded={() => {
+                        setIsPlaying(false);
+                        setCurrentTime(0);
+                      }}
+                      onTimeUpdate={(e) =>
+                        setCurrentTime(e.currentTarget.currentTime)
+                      }
+                      onLoadedMetadata={(e) =>
+                        setDuration(e.currentTarget.duration)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             )}
 

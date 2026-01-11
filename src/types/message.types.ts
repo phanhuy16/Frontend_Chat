@@ -15,6 +15,7 @@ export interface Message {
   isDeleted: boolean;
   isDeletedForMe: boolean;
   isPinned: boolean;
+  isModified?: boolean;
   parentMessageId?: number;
   parentMessage?: Message;
   forwardedFromId?: number;
