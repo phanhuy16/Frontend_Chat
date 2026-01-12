@@ -1,38 +1,41 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
+import attachmentApi from "../../api/attachment.api";
+import blockApi from "../../api/block.api";
+import { conversationApi } from "../../api/conversation.api";
 import { messageApi } from "../../api/message.api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCallIntegration } from "../../hooks/useCallIntegration";
 import { useChat } from "../../hooks/useChat";
 import { useSignalR } from "../../hooks/useSignalR";
 import "../../styles/chat.css";
 import {
+  CallType,
   Conversation,
   ConversationType,
-  StatusUser,
   MessageType,
+  StatusUser,
 } from "../../types";
 import { Message, Reaction } from "../../types/message.types";
-import { SIGNALR_HUB_URL_CHAT, TYPING_TIMEOUT } from "../../utils/constants";
-import { formatTime } from "../../utils/formatters";
-import MessageBubble from "../Message/MessageBubble";
-import { conversationApi } from "../../api/conversation.api";
-import { GroupMembersModal } from "./GroupMembersModal";
-import { AddMembersModal } from "./AddMembersModal";
-import toast from "react-hot-toast";
-import blockApi from "../../api/block.api";
-import { EmojiPicker } from "./EmojiPicker";
-import ContactInfoSidebar from "./ContactInfoSidebar";
-import attachmentApi from "../../api/attachment.api";
-import { Progress, Spin } from "antd";
-import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
-import { useCallIntegration } from "../../hooks/useCallIntegration";
-import { SIGNALR_HUB_URL_CALL } from "../../utils/constants";
-import IncomingCallModal from "../Call/IncomingCallModal";
-import CallModal from "../Call/CallModal";
-import VideoCallWindow from "../Call/VideoCallWindow";
+import {
+  SIGNALR_HUB_URL_CALL,
+  SIGNALR_HUB_URL_CHAT,
+  TYPING_TIMEOUT,
+} from "../../utils/constants";
+import { formatLastActive, getAvatarUrl } from "../../utils/helpers";
 import AudioCallWindow from "../Call/AudioCallWindow";
+import CallModal from "../Call/CallModal";
 import GroupCallWindow from "../Call/GroupCallWindow";
-import { CallType } from "../../types";
+import IncomingCallModal from "../Call/IncomingCallModal";
+import VideoCallWindow from "../Call/VideoCallWindow";
+import { AddMembersModal } from "./AddMembersModal";
+import ChatHeader from "./ChatHeader";
+import ChatSearchPanel from "./ChatSearchPanel";
+import ContactInfoSidebar from "./ContactInfoSidebar";
 import { ForwardMessageModal } from "./ForwardMessageModal";
+import { GroupMembersModal } from "./GroupMembersModal";
+import MessageInput from "./MessageInput";
+import MessageList from "./MessageList";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -49,6 +52,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     typingUsers,
     setConversations,
     setCurrentConversation,
+    pinnedMessages,
+    setPinnedMessages,
+    fetchPinnedMessages,
+    addReaction,
   } = useChat();
 
   const {
@@ -72,6 +79,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGiphyPicker, setShowGiphyPicker] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showContactSidebar, setShowContactSidebar] = useState(false);
@@ -100,9 +108,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Message[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // Pinned messages
-  const [pinnedMessages, setPinnedMessages] = useState<Message[]>([]);
+  // Pinned messages index
   const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
 
   // Jump to bottom state
@@ -113,40 +123,87 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [drafts, setDrafts] = useState<{ [key: number]: string }>({});
   const prevConversationId = useRef<number | null>(null);
 
+  const inputRef = useRef(inputValue);
   useEffect(() => {
-    // Save draft for previous conversation
-    if (
-      prevConversationId.current !== null &&
-      prevConversationId.current !== conversation.id
-    ) {
-      const oldId = prevConversationId.current;
-      setDrafts((prev) => ({
-        ...prev,
-        [oldId]: inputValue,
-      }));
-    }
+    inputRef.current = inputValue;
+  }, [inputValue]);
 
+  useEffect(() => {
     // Load draft for new conversation
     const newDraft = drafts[conversation.id] || "";
     setInputValue(newDraft);
+    inputRef.current = newDraft;
 
-    // Update previous ID for next switch
-    prevConversationId.current = conversation.id;
+    return () => {
+      // Save draft when leaving this conversation
+      const currentId = conversation.id;
+      const currentVal = inputRef.current;
+      setDrafts((prev) => ({
+        ...prev,
+        [currentId]: currentVal,
+      }));
+    };
   }, [conversation.id]);
 
-  const fetchPinnedMessages = async () => {
-    if (!conversation?.id) return;
-    try {
-      const pinned = await messageApi.getPinnedMessages(conversation.id);
-      setPinnedMessages(pinned);
-    } catch (err) {
-      console.error("Failed to fetch pinned messages:", err);
-    }
-  };
-
   useEffect(() => {
-    fetchPinnedMessages();
-  }, [conversation?.id]);
+    if (conversation?.id) {
+      fetchPinnedMessages(conversation.id);
+    }
+  }, [conversation?.id, fetchPinnedMessages]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    if (!conversation?.id) return;
+    setLoading(true);
+    try {
+      const data = await messageApi.getConversationMessages(
+        conversation.id,
+        1,
+        50
+      );
+      // Reverse to get [oldest -> newest] for bottom-up display
+      setMessages([...data].reverse());
+      setPage(1);
+      setHasMore(data.length === 50);
+      setTimeout(scrollToBottom, 100);
+    } catch (err) {
+      console.error("Error loading messages:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversation?.id, setMessages, scrollToBottom]);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!conversation?.id || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await messageApi.getConversationMessages(
+        conversation.id,
+        nextPage,
+        50
+      );
+      if (data.length > 0) {
+        // Reverse new batch and prepend to existing messages
+        const reversedNewData = [...data].reverse();
+        setMessages((prev) => [...reversedNewData, ...prev]);
+        setPage(nextPage);
+        setHasMore(data.length === 50);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error("Error loading more messages:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [conversation?.id, page, hasMore, loadingMore, setMessages]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -185,7 +242,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
   };
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listenerSetupRef = useRef<number | undefined>(undefined);
   const processedMessageIdsRef = useRef<Set<number>>(new Set());
@@ -248,42 +304,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   }, [conversation, user?.id]);
 
   useEffect(() => {
-    const loadMessage = async () => {
-      setLoading(true);
-
-      try {
-        const data = await messageApi.getConversationMessages(
-          conversation.id,
-          1,
-          50
-        );
-        const sortedMessages = [...data].reverse();
-        setMessages(sortedMessages);
-
-        // Mark latest message as read if it's from someone else
-        if (user?.id && sortedMessages.length > 0) {
-          const latestMessage = sortedMessages[sortedMessages.length - 1];
-          if (latestMessage.senderId !== user.id) {
-            invoke("MarkAsRead", conversation.id, latestMessage.id, user.id);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load messages:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (conversation.id) {
-      loadMessage();
-      // Mark as read when entering
-      if (user?.id) {
-        // Logic: find latest message from other person that isn't read
-        // For simplicity, we can just mark the whole conversation as read
-        // by sending the last message ID to the server.
-      }
+      loadMessages();
     }
-  }, [conversation.id, setMessages]);
+  }, [conversation.id, loadMessages]);
 
   // Join conversation via SignalR
   useEffect(() => {
@@ -303,204 +327,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     joinConversation();
   }, [user?.id, conversation?.id, invoke]);
 
-  // Setup SignalR event handlers
-  useEffect(() => {
-    const convId = conversation?.id;
-
-    if (listenerSetupRef.current && listenerSetupRef.current === convId) {
-      return;
-    }
-    listenerSetupRef.current = convId;
-
-    on("Error", (errorMessage: string) => {
-      console.error("SignalR Error:", errorMessage);
-
-      if (errorMessage.includes("chặn")) {
-        setIsBlocked(true);
-        toast.error(errorMessage);
-      } else {
-        toast.error(errorMessage);
-      }
-    });
-
-    on("ReceiveMessage", (data: any) => {
-      // Handle both camelCase and PascalCase
-      const messageId = data.messageId ?? data.MessageId;
-      const conversationId = data.conversationId ?? data.ConversationId;
-      const senderId = data.senderId ?? data.SenderId;
-      const senderName = data.senderName ?? data.SenderName;
-      const senderAvatar = data.senderAvatar ?? data.SenderAvatar;
-      const content = data.content ?? data.Content;
-      const messageType = data.messageType ?? data.MessageType;
-      const createdAt = data.createdAt ?? data.CreatedAt;
-
-      if (conversationId === convId) {
-        if (!processedMessageIdsRef.current.has(messageId)) {
-          processedMessageIdsRef.current.add(messageId);
-
-          const mappedMessage: Message = {
-            id: messageId,
-            conversationId: conversationId,
-            senderId: senderId,
-            sender: {
-              id: senderId,
-              displayName: senderName,
-              avatar: senderAvatar,
-            } as any,
-            content: content,
-            messageType: messageType,
-            createdAt: createdAt,
-            updatedAt: createdAt,
-            isDeleted: false,
-            isDeletedForMe: false,
-            isPinned: data.isPinned ?? data.IsPinned ?? false,
-            parentMessageId: data.parentMessageId ?? data.ParentMessageId,
-            parentMessage: data.parentMessage ?? data.ParentMessage,
-            reactions: [],
-            attachments: [],
-          };
-
-          addMessage(mappedMessage);
-          scrollToBottom();
-          // Mark as read if we are in the chat
-          if (senderId !== user?.id) {
-            invoke("MarkAsRead", conversation.id, messageId, user?.id);
-          }
-        }
-      }
-    });
-
-    on("MessageRead", (data: any) => {
-      const messageId = data.messageId ?? data.MessageId;
-      const conversationId =
-        data.conversationId ?? (data.ConversationId || convId);
-
-      if (conversationId === convId) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId ? { ...m, readCount: (m.readCount || 0) + 1 } : m
-          )
-        );
-      }
-    });
-
-    on("UserTyping", (typing: any) => {
-      const typingConvId = typing.conversationId ?? typing.ConversationId;
-      const typingUserId =
-        typing.userId ?? typing.UserId ?? typing.id ?? typing.Id;
-      if (typingConvId === convId) {
-        addTypingUser(typingUserId);
-      }
-    });
-
-    on("UserStoppedTyping", (userId: number) => {
-      removeTypingUser(userId);
-    });
-
-    on("MessageDeleted", (data: any) => {
-      const messageId = data.messageId ?? data.MessageId;
-      const conversationId = data.conversationId ?? data.ConversationId;
-
-      if (conversationId === convId) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId
-              ? { ...m, isDeleted: true, content: null, attachments: [] }
-              : m
-          )
-        );
-      }
-    });
-
-    on("MessageEdited", (data: any) => {
-      const messageId = data.messageId ?? data.MessageId;
-      const newContent = data.newContent ?? data.NewContent;
-      const conversationId =
-        data.conversationId ?? data.ConversationId ?? convId;
-
-      if (conversationId === convId) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId
-              ? { ...m, content: newContent, isModified: true }
-              : m
-          )
-        );
-      }
-    });
-
-    on("MessagePinnedStatusChanged", (messageId: number) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId ? { ...m, isPinned: !m.isPinned } : m
-        )
-      );
-      fetchPinnedMessages();
-    });
-
-    on("ReactionAdded", (data: any) => {
-      const messageId = data.messageId ?? data.MessageId;
-      const userId = data.userId ?? data.UserId;
-      const username = data.username ?? data.Username;
-      const emoji = data.emoji ?? data.Emoji;
-      const conversationId =
-        data.conversationId ?? data.ConversationId ?? convId;
-
-      if (conversationId === convId) {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id === messageId) {
-              const newReaction: Reaction = {
-                id: Math.random(), // Temporal ID for local display
-                userId: userId,
-                username: username,
-                emojiType: emoji,
-                messageId: messageId,
-              };
-              return { ...m, reactions: [...(m.reactions || []), newReaction] };
-            }
-            return m;
-          })
-        );
-      }
-    });
-
-    on("ReactionRemoved", (data: any) => {
-      const messageId = data.messageId ?? data.MessageId;
-      const userId = data.userId ?? data.UserId;
-      const conversationId =
-        data.conversationId ?? data.ConversationId ?? convId;
-
-      if (conversationId === convId) {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id === messageId) {
-              return {
-                ...m,
-                reactions: (m.reactions || []).filter(
-                  (r) => r.userId !== userId
-                ),
-              };
-            }
-            return m;
-          })
-        );
-      }
-    });
-
-    return () => {
-      off("Error");
-      off("ReceiveMessage");
-      off("UserTyping");
-      off("UserStoppedTyping");
-      off("MessageDeleted");
-      off("MessageEdited");
-      off("MessageRead");
-      off("MessagePinnedStatusChanged");
-      off("ReactionAdded");
-      off("ReactionRemoved");
-    };
-  }, [conversation?.id, addMessage, addTypingUser, removeTypingUser, on, off]);
+  // Listeners moved to useSignalRHandlers
 
   useEffect(() => {
     // small delay to ensure DOM painted
@@ -509,10 +336,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }, 50);
     return () => clearTimeout(t);
   }, [messages.length]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -565,11 +388,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         );
         setEditingMessage(null);
       } else {
+        const content = inputValue.trim();
+        const clientGeneratedId = `opt-${Date.now()}-${Math.random()}`;
+
+        // Optimistic Add
+        const optimisticMessage: Message = {
+          id: -Date.now(), // Temp negative ID
+          conversationId: conversation.id,
+          senderId: user.id,
+          sender: user as any,
+          content: content,
+          messageType: MessageType.Text,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isDeleted: false,
+          isDeletedForMe: false,
+          isPinned: false,
+          reactions: [],
+          attachments: [],
+          isOptimistic: true,
+          clientGeneratedId: clientGeneratedId,
+        };
+
+        addMessage(optimisticMessage);
+        scrollToBottom();
+
         await invoke(
           "SendMessage",
           conversation.id,
           user.id,
-          inputValue.trim(),
+          content,
           MessageType.Text,
           replyingTo?.id
         );
@@ -582,6 +430,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }
     } catch (err) {
       console.error("Failed to send message:", err);
+    }
+  };
+
+  const handleGifSelect = async (gif: any) => {
+    if (!user || !conversation) return;
+
+    try {
+      const gifUrl = gif.images.fixed_height.url;
+      await invoke(
+        "SendMessage",
+        conversation.id,
+        user.id,
+        gifUrl,
+        MessageType.Image, // Treat GIFs as images for rendering
+        replyingTo?.id
+      );
+      setShowGiphyPicker(false);
+      setReplyingTo(null);
+      if (reloadConversations) {
+        await reloadConversations();
+      }
+    } catch (err) {
+      console.error("Failed to send GIF:", err);
+      toast.error("Failed to send GIF");
     }
   };
 
@@ -986,109 +858,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           />
         )}
 
-        <header className="flex items-center justify-between gap-4 px-8 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
-          <div className="flex items-center gap-4">
-            <div
-              className="relative group cursor-pointer"
-              onClick={() => setShowContactSidebar(true)}
-            >
-              <div className="absolute -inset-0.5 bg-gradient-to-tr from-primary to-secondary rounded-full blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
-              {conversation.conversationType === ConversationType.Group ? (
-                <div className="relative bg-gradient-to-br from-primary to-primary-dark aspect-square rounded-full size-10 flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                  <span className="material-symbols-outlined text-[24px]">
-                    group
-                  </span>
-                </div>
-              ) : (
-                <div
-                  className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white/20 shadow-lg"
-                  style={{
-                    backgroundImage: `url("${getAvatarUrl(
-                      getOtherMember()?.avatar
-                    )}")`,
-                  }}
-                />
-              )}
-            </div>
-            <div className="flex flex-col">
-              <h2 className="text-slate-900 dark:text-white text-base font-extrabold leading-tight">
-                {getHeaderTitle()}
-              </h2>
-              <div className="flex items-center gap-1.5">
-                {conversation.conversationType === ConversationType.Direct &&
-                  getOtherMember()?.status === StatusUser.Online && (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                  )}
-                <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold">
-                  {getHeaderSubtitle()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1">
-            <div className="flex items-center bg-slate-100/50 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5">
-              {conversation.conversationType === ConversationType.Group && (
-                <button
-                  onClick={() => setShowGroupMembers(true)}
-                  className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
-                  title="Members"
-                >
-                  <span className="material-symbols-outlined !text-[20px]">
-                    group
-                  </span>
-                </button>
-              )}
-              <button
-                onClick={() => setIsSearching(!isSearching)}
-                className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                  isSearching
-                    ? "text-primary bg-white dark:bg-slate-800 shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800"
-                }`}
-                title="Search Messages"
-              >
-                <span className="material-symbols-outlined !text-[20px]">
-                  search
-                </span>
-              </button>
-              <button
-                onClick={handleStartVideoCall}
-                disabled={isBlocked}
-                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-30"
-                title="Video Call"
-              >
-                <span className="material-symbols-outlined !text-[20px]">
-                  videocam
-                </span>
-              </button>
-              <button
-                onClick={handleStartAudioCall}
-                disabled={isBlocked}
-                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-30"
-                title="Audio Call"
-              >
-                <span className="material-symbols-outlined !text-[20px]">
-                  call
-                </span>
-              </button>
-              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
-              <button
-                onClick={() => setShowContactSidebar(!showContactSidebar)}
-                className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
-                title="Info"
-              >
-                <span className="material-symbols-outlined !text-[20px]">
-                  info
-                </span>
-              </button>
-            </div>
-          </div>
-        </header>
+        <ChatHeader
+          conversation={{ ...conversation, currentUserId: user?.id } as any}
+          isBlocked={isBlocked}
+          isSearching={isSearching}
+          setIsSearching={setIsSearching}
+          setShowGroupMembers={setShowGroupMembers}
+          setShowContactSidebar={setShowContactSidebar}
+          showContactSidebar={showContactSidebar}
+          onStartVideoCall={handleStartVideoCall}
+          onStartAudioCall={handleStartAudioCall}
+        />
 
         {/* Pinned Message Banner */}
         {pinnedMessages.length > 0 && (
@@ -1171,211 +951,79 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           </div>
         )}
 
-        {/* Messages Pane */}
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500 relative"
-          style={getWallpaperStyle()}
-        >
-          {loading ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-              <div className="animate-spin text-primary">
-                <span className="material-symbols-outlined text-4xl">sync</span>
-              </div>
-              <p className="font-bold">Loading messages...</p>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-60">
-              <span className="material-symbols-outlined text-6xl">
-                chat_bubble_outline
-              </span>
-              <p className="text-xl font-bold">No messages yet</p>
-              <p className="text-sm">Be the first to say hello!</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-4 my-8">
-                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">
-                  Today
-                </span>
-                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-              </div>
-              {messages.map((message, index) => (
-                <div
-                  key={message.id}
-                  id={`message-${message.id}`}
-                  className={`flex animate-fade-in ${
-                    message.senderId === user?.id
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <MessageBubble
-                    message={message}
-                    isOwn={message.senderId === user?.id}
-                    onDeleteForMe={handleDeleteForMe}
-                    onDeleteForEveryone={handleDeleteForEveryone}
-                    onReact={async (messageId, emoji) => {
-                      try {
-                        await invoke(
-                          "AddReaction",
-                          messageId,
-                          conversation.id,
-                          user?.id,
-                          emoji,
-                          user?.displayName
-                        );
-                      } catch (err) {
-                        console.error("Failed to add reaction:", err);
-                        toast.error("Failed to add reaction");
-                      }
-                    }}
-                    onReply={(msg) => setReplyingTo(msg)}
-                    onPin={handlePinMessage}
-                    onForward={(msg) => setForwardingMessage(msg)}
-                    onEdit={(msg) => {
-                      setEditingMessage(msg);
-                      setInputValue(msg.content || "");
-                      setReplyingTo(null);
-                    }}
-                  />
-                </div>
-              ))}
+        <MessageList
+          messages={messages}
+          user={user}
+          loading={loading}
+          conversation={conversation}
+          typingUsers={typingUsers}
+          scrollRef={scrollRef}
+          messagesEndRef={messagesEndRef}
+          handleScroll={handleScroll}
+          getWallpaperStyle={getWallpaperStyle}
+          handleDeleteForMe={handleDeleteForMe}
+          handleDeleteForEveryone={handleDeleteForEveryone}
+          handleAddReaction={async (messageId, emoji) => {
+            if (!user) return;
 
-              {Array.from(typingUsers).map((typingUserId) => {
-                const typingUser = conversation.members.find(
-                  (m) => m.id === typingUserId
-                );
-                if (!typingUser || typingUserId === user?.id) return null;
-                return (
-                  <div
-                    key={typingUserId}
-                    className="flex justify-start animate-fade-in"
-                  >
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-200/30 dark:border-white/5">
-                      <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></span>
-                      </div>
-                      <span className="text-xs font-bold">
-                        {typingUser.displayName} đang nhập...
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+            // Optimistic Add Reaction
+            const optimisticReaction: Reaction = {
+              id: -Date.now(), // Temp negative ID
+              messageId: messageId,
+              userId: user.id,
+              username: user.displayName,
+              emojiType: emoji,
+              isOptimistic: true,
+            };
+            addReaction(messageId, optimisticReaction);
 
-              <div ref={messagesEndRef} />
-            </>
-          )}
+            try {
+              await invoke(
+                "AddReaction",
+                messageId,
+                conversation.id,
+                user.id,
+                emoji,
+                user.displayName
+              );
+            } catch (err) {
+              console.error("Failed to add reaction:", err);
+              toast.error("Failed to add reaction");
+              // Error handling: removing the optimistic reaction would be complex
+              // but usually SignalR handles retries or we just let it be for now.
+            }
+          }}
+          setReplyingTo={setReplyingTo}
+          handlePinMessage={handlePinMessage}
+          setForwardingMessage={setForwardingMessage}
+          setEditingMessage={setEditingMessage}
+          setInputValue={setInputValue}
+          scrollToBottom={scrollToBottom}
+          loadMoreMessages={loadMoreMessages}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+        />
 
-          {/* Jump to Bottom Button */}
-          {showJumpToBottom && (
-            <button
-              onClick={scrollToBottom}
-              className="fixed bottom-32 right-12 z-50 size-12 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
-              title="Cuộn xuống dưới cùng"
-            >
-              <span className="material-symbols-outlined text-2xl font-black">
-                keyboard_double_arrow_down
-              </span>
-            </button>
-          )}
-        </div>
+        {showJumpToBottom && (
+          <button
+            onClick={scrollToBottom}
+            className="fixed bottom-32 right-12 z-50 size-12 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
+            title="Cuộn xuống dưới cùng"
+          >
+            <span className="material-symbols-outlined text-2xl font-black">
+              keyboard_double_arrow_down
+            </span>
+          </button>
+        )}
 
-        {/* Search Bar Overlay */}
         {isSearching && (
-          <div className="absolute top-[80px] left-0 right-0 z-40 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
-            <div className="relative max-w-2xl mx-auto">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">
-                search
-              </span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm tin nhắn..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoFocus
-                className="w-full pl-12 pr-12 py-3 bg-slate-100 dark:bg-white/5 border-none rounded-2xl focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => handleSearch("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <span className="material-symbols-outlined text-sm">
-                    cancel
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {/* Quick Search Results List */}
-            {searchQuery.trim() && (
-              <div className="max-w-2xl mx-auto mt-4 max-h-[400px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2">
-                {isSearchLoading ? (
-                  <div className="py-8 text-center text-slate-400">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                    Đang tìm kiếm...
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="space-y-1">
-                    {searchResults.map((msg) => (
-                      <button
-                        key={msg.id}
-                        onClick={() => {
-                          const el = document.getElementById(
-                            `message-${msg.id}`
-                          );
-                          if (el) {
-                            el.scrollIntoView({
-                              behavior: "smooth",
-                              block: "center",
-                            });
-                            el.classList.add("highlight-message");
-                            setTimeout(
-                              () => el.classList.remove("highlight-message"),
-                              2000
-                            );
-                          }
-                          setIsSearching(false);
-                        }}
-                        className="w-full flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors text-left group"
-                      >
-                        <img
-                          src={getAvatarUrl(msg.sender?.avatar)}
-                          className="w-10 h-10 rounded-full object-cover shrink-0"
-                          alt=""
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-baseline mb-0.5">
-                            <span className="font-bold text-sm truncate">
-                              {msg.sender?.displayName}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                              {formatTime(msg.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 break-words">
-                            {msg.messageType === MessageType.Voice
-                              ? "Tin nhắn thoại"
-                              : msg.content}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-slate-400 text-sm italic">
-                    Không tìm thấy tin nhắn nào khớp với "{searchQuery}"
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <ChatSearchPanel
+            searchQuery={searchQuery}
+            handleSearch={handleSearch}
+            isSearchLoading={isSearchLoading}
+            searchResults={searchResults}
+            setIsSearching={setIsSearching}
+          />
         )}
 
         {/* Reply Preview */}
@@ -1427,173 +1075,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="px-8 py-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
-          {uploadingFiles && (
-            <div className="mb-4 bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-          )}
-
-          {isBlocked ? (
-            <div className="p-4 text-center text-red-500 bg-red-100/50 dark:bg-red-900/20 border border-red-200/50 dark:border-red-900/50 rounded-2xl font-bold animate-pulse-subtle">
-              <p>Chat is disabled due to blockade</p>
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSendMessage}
-              className="flex items-center gap-4"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileInput}
-              />
-
-              {isRecording ? (
-                <div className="flex-1 flex items-center gap-4 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-2xl animate-fade-in">
-                  <div className="flex items-center gap-2 text-red-500 animate-pulse">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                    <span className="text-sm font-bold">
-                      {Math.floor(recordingTime / 60)}:
-                      {(recordingTime % 60).toString().padStart(2, "0")}
-                    </span>
-                  </div>
-                  <div className="flex-1 text-slate-500 text-xs italic truncate">
-                    Đang ghi âm...
-                  </div>
-                  <button
-                    type="button"
-                    onClick={cancelRecording}
-                    className="text-slate-400 hover:text-red-500 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-xl">
-                      delete
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stopRecording}
-                    className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
-                  >
-                    <span className="material-symbols-outlined text-xl">
-                      send
-                    </span>
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowUploadMenu(!showUploadMenu)}
-                      className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
-                    >
-                      <span className="material-symbols-outlined text-[24px]">
-                        add
-                      </span>
-                    </button>
-
-                    {showUploadMenu && (
-                      <div
-                        ref={uploadMenuRef}
-                        className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (fileInputRef.current) {
-                              fileInputRef.current.accept = "image/*";
-                              fileInputRef.current.click();
-                            }
-                            setShowUploadMenu(false);
-                          }}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                        >
-                          <span className="material-symbols-outlined text-primary">
-                            image
-                          </span>
-                          <span className="text-sm">Images</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (fileInputRef.current) {
-                              fileInputRef.current.accept = "*/*";
-                              fileInputRef.current.click();
-                            }
-                            setShowUploadMenu(false);
-                          }}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                        >
-                          <span className="material-symbols-outlined text-secondary">
-                            description
-                          </span>
-                          <span className="text-sm">Files</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 relative group">
-                    <input
-                      className="w-full pl-6 pr-14 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-xs h-9"
-                      placeholder="Type a message..."
-                      type="text"
-                      value={inputValue}
-                      onChange={handleInputChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-xl hover:bg-accent/10"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">
-                        sentiment_satisfied
-                      </span>
-                    </button>
-                    <div className="absolute right-0 bottom-full mb-4">
-                      <EmojiPicker
-                        isOpen={showEmojiPicker}
-                        onClose={() => setShowEmojiPicker(false)}
-                        onEmojiSelect={(emoji) => {
-                          setInputValue((prev) => prev + emoji);
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {inputValue.trim() ? (
-                    <button
-                      type="submit"
-                      disabled={!inputValue.trim() || uploadingFiles}
-                      className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-2xl disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[24px]">
-                        send
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={startRecording}
-                      className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
-                    >
-                      <span className="material-symbols-outlined text-[24px]">
-                        mic
-                      </span>
-                    </button>
-                  )}
-                </>
-              )}
-            </form>
-          )}
-        </div>
+        <MessageInput
+          inputValue={inputValue}
+          handleInputChange={handleInputChange}
+          handleSendMessage={handleSendMessage}
+          isBlocked={isBlocked}
+          uploadingFiles={uploadingFiles}
+          uploadProgress={uploadProgress}
+          showUploadMenu={showUploadMenu}
+          setShowUploadMenu={setShowUploadMenu}
+          fileInputRef={fileInputRef}
+          handleFileInput={handleFileInput}
+          isRecording={isRecording}
+          recordingTime={recordingTime}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
+          cancelRecording={cancelRecording}
+          showEmojiPicker={showEmojiPicker}
+          setShowEmojiPicker={setShowEmojiPicker}
+          setInputValue={setInputValue}
+          uploadMenuRef={uploadMenuRef}
+          showGiphyPicker={showGiphyPicker}
+          setShowGiphyPicker={setShowGiphyPicker}
+          onGifSelect={handleGifSelect}
+        />
       </div>
 
       {/* Right side: Contact Info Sidebar */}
@@ -1648,6 +1153,5 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     </div>
   );
 };
-
 
 export default ChatWindow;

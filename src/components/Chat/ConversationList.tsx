@@ -5,6 +5,8 @@ import { ConversationType } from "../../types/enums";
 import { User } from "../../types/user.types";
 import { formatDate } from "../../utils/formatters";
 import { getAvatarUrl } from "../../utils/helpers";
+import { useChat } from "../../hooks/useChat";
+import { MessageType } from "../../types/enums";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -23,6 +25,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
   user,
   unreadCounts = {},
 }) => {
+  const { typingUsersByConversation } = useChat();
+
   const sortedConversations = [...conversations].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
@@ -162,7 +166,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <p
-                className={`text-xs truncate ${
+                className={`text-xs truncate transition-all duration-300 ${
                   currentConversation?.id === conversation.id
                     ? "text-white/80"
                     : (unreadCounts[conversation.id] || 0) > 0
@@ -170,7 +174,17 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     : "text-slate-500 dark:text-slate-400 font-medium"
                 }`}
               >
-                {getConversationPreview(conversation)}
+                {typingUsersByConversation[conversation.id]?.size > 0 ? (
+                  <span className="flex items-center gap-1.5 text-primary dark:text-primary-light animate-pulse font-bold">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+                    </span>
+                    Đang soạn tin...
+                  </span>
+                ) : (
+                  getConversationPreview(conversation)
+                )}
               </p>
               {/* Unread badge */}
               {(unreadCounts[conversation.id] || 0) > 0 && (

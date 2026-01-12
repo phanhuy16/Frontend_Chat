@@ -5,6 +5,7 @@ import { formatTime } from "../../utils/formatters";
 import { getAvatarUrl } from "../../utils/helpers";
 import { MessageType } from "../../types";
 import { messageApi } from "../../api/message.api";
+import LinkPreview from "./LinkPreview";
 
 interface MessageBubbleProps {
   message: Message;
@@ -38,6 +39,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [loadingReaders, setLoadingReaders] = React.useState(false);
 
   // Audio player states
+  const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:]?\s|$)/g;
+  const allUrls = message.content?.match(urlRegex) || [];
+  // Don't show link previews for Giphy URLs as they are handled separately
+  const urls = allUrls.filter((url) => !url.includes("giphy.com"));
+
+  const isPureGif =
+    message.messageType === MessageType.Image &&
+    message.content?.match(/giphy\.com/);
+
+  const isPureUrl =
+    !isPureGif &&
+    message.content &&
+    urls.length === 1 &&
+    message.content.trim() === urls[0];
+
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
@@ -287,12 +303,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             message.isDeleted ||
             message.isDeletedForMe) && (
             <div
-              className={`relative px-4 py-2.5 rounded-[1.25rem] ${
-                message.isDeleted || message.isDeletedForMe
-                  ? "bg-transparent shadow-none border-none"
-                  : isOwn
-                  ? "bg-primary text-white rounded-br-none shadow-premium"
-                  : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
+              className={`relative rounded-[1.25rem] ${
+                isPureGif || isPureUrl
+                  ? "p-0 bg-transparent shadow-none overflow-hidden"
+                  : `px-4 py-2.5 ${
+                      message.isDeleted || message.isDeletedForMe
+                        ? "bg-transparent shadow-none border-none"
+                        : isOwn
+                        ? "bg-primary text-white rounded-br-none shadow-premium"
+                        : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
+                    }`
               }`}
             >
               {message.forwardedFromId && (
@@ -345,12 +365,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
               ) : (
                 message.content && (
-                  <p
-                    className="leading-normal whitespace-pre-wrap break-words font-medium"
-                    style={{ fontSize: "var(--message-text)" }}
-                  >
-                    {message.content}
-                  </p>
+                  <>
+                    {isPureGif ? (
+                      <div className="rounded-xl overflow-hidden max-w-[260px]">
+                        <img
+                          src={message.content}
+                          alt="GIF"
+                          className="w-full h-auto block"
+                        />
+                      </div>
+                    ) : isPureUrl ? null : (
+                      <p
+                        className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                          isOwn
+                            ? "text-white"
+                            : "text-slate-800 dark:text-white"
+                        }`}
+                        style={{ fontSize: "var(--message-text)" }}
+                      >
+                        {message.content}
+                      </p>
+                    )}
+                    {urls.map((url, index) => (
+                      <LinkPreview key={index} url={url} isOwn={isOwn} />
+                    ))}
+                  </>
                 )
               )}
 

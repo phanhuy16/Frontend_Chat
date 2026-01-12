@@ -1,0 +1,109 @@
+import React from "react";
+import { Message } from "../../types/message.types";
+import { MessageType } from "../../types";
+import { getAvatarUrl } from "../../utils/helpers";
+import { formatTime } from "../../utils/formatters";
+
+interface ChatSearchPanelProps {
+  searchQuery: string;
+  handleSearch: (query: string) => void;
+  isSearchLoading: boolean;
+  searchResults: Message[];
+  setIsSearching: (isSearching: boolean) => void;
+}
+
+const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
+  searchQuery,
+  handleSearch,
+  isSearchLoading,
+  searchResults,
+  setIsSearching,
+}) => {
+  return (
+    <div className="absolute top-[80px] left-0 right-0 z-40 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
+      <div className="relative max-w-2xl mx-auto">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">
+          search
+        </span>
+        <input
+          type="text"
+          placeholder="Tìm kiếm tin nhắn..."
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          autoFocus
+          className="w-full pl-12 pr-12 py-3 bg-slate-100 dark:bg-white/5 border-none rounded-2xl focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => handleSearch("")}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            <span className="material-symbols-outlined text-sm">cancel</span>
+          </button>
+        )}
+      </div>
+
+      {searchQuery.trim() && (
+        <div className="max-w-2xl mx-auto mt-4 max-h-[400px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2">
+          {isSearchLoading ? (
+            <div className="py-8 text-center text-slate-400">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              Đang tìm kiếm...
+            </div>
+          ) : searchResults.length > 0 ? (
+            <div className="space-y-1">
+              {searchResults.map((msg) => (
+                <button
+                  key={msg.id}
+                  onClick={() => {
+                    const el = document.getElementById(`message-${msg.id}`);
+                    if (el) {
+                      el.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                      el.classList.add("highlight-message");
+                      setTimeout(
+                        () => el.classList.remove("highlight-message"),
+                        2000
+                      );
+                    }
+                    setIsSearching(false);
+                  }}
+                  className="w-full flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors text-left group"
+                >
+                  <img
+                    src={getAvatarUrl(msg.sender?.avatar)}
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                    alt=""
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-0.5">
+                      <span className="font-bold text-sm truncate">
+                        {msg.sender?.displayName}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {formatTime(msg.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 break-words">
+                      {msg.messageType === MessageType.Voice
+                        ? "Tin nhắn thoại"
+                        : msg.content}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-slate-400 text-sm italic">
+              Không tìm thấy tin nhắn nào khớp với "{searchQuery}"
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ChatSearchPanel;

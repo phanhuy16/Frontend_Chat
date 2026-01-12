@@ -1,0 +1,20 @@
+{
+  "common": {
+    "search": "Tìm kiếm",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất",
+    "profile": "Hồ sơ"
+  },
+  "chat": {
+    "typing": "đang soạn tin...",
+    "online": "Trực tuyến",
+    "offline": "Ngoại tuyến",
+    "no_conversations": "Chưa có cuộc hội thoại nào",
+    "start_chat": "Bắt đầu cuộc trò chuyện mới",
+    "input_placeholder": "Nhập tin nhắn...",
+    "voice_message": "Tin nhắn thoại",
+    "pinned": "Tin nhắn đã ghim",
+    "replying": "Đang trả lời",
+    "editing": "Đang chỉnh sửa"
+  }
+}

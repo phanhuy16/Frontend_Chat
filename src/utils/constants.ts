@@ -39,6 +39,7 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL;
 export const REACT_APP_AVATAR_URL = process.env.REACT_APP_AVATAR_URL;
 export const SIGNALR_HUB_URL_CHAT = process.env.REACT_APP_SIGNALR_URL_CHAT;
 export const SIGNALR_HUB_URL_CALL = process.env.REACT_APP_SIGNALR_URL_CALL;
+export const GIPHY_API_KEY = 'awE3x7wRlwlXfGX1DWwfGibR3CUZCZud';
 
 // Pagination
 export const DEFAULT_PAGE_SIZE = 50;

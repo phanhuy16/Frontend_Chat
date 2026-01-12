@@ -8,6 +8,8 @@ export interface Conversation {
   groupName?: string;
   members: User[];
   messages: Message[];
+  lastMessage?: Message;
+  unreadCount?: number;
   createdAt: string;
   updatedAt: string;
   isPinned?: boolean;

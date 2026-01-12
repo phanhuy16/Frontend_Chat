@@ -1,5 +1,6 @@
 import { MessageType } from "./enums";
 import { User } from "./user.types";
+export { MessageType };
 
 export interface Message {
   id: number;
@@ -21,6 +22,8 @@ export interface Message {
   forwardedFromId?: number;
   isReadByMe?: boolean;
   readCount?: number;
+  clientGeneratedId?: string;
+  isOptimistic?: boolean;
 }
 
 export interface Reaction {
@@ -30,6 +33,8 @@ export interface Reaction {
   username: string;
   emojiType: string;
   createdAt?: string;
+  clientGeneratedId?: string;
+  isOptimistic?: boolean;
 }
 
 export interface Attachment {

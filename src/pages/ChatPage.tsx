@@ -19,6 +19,7 @@ import SearchUsersModal from "../components/Chat/SearchUsersModal";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
+import { useSignalRHandlers } from "../hooks/useSignalRHandlers";
 import { useFriendRequest } from "../context/FriendRequestContext";
 import { FriendDto, Conversation } from "../types";
 import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
@@ -177,98 +178,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     loadConversations();
   }, [user, setConversations]);
 
-  // Listen for SignalR conversation updates
-  useEffect(() => {
-    on("ReceiveMessage", async (data: any) => {
-      await reloadConversations();
-      // Note: reloadConversations already fetches updated conversation data with correct unread counts
-    });
-
-    on("NewConversationCreated", async () => {
-      if (user?.id) {
-        try {
-          const updatedConversations =
-            await conversationApi.getUserConversations(user.id);
-          setConversations(updatedConversations);
-        } catch (err) {
-          console.error("Failed to reload conversations:", err);
-        }
-      }
-    });
-
-    on("AddedToConversation", async (data: any) => {
-      if (user?.id) {
-        try {
-          const updatedConversations =
-            await conversationApi.getUserConversations(user.id);
-          setConversations(updatedConversations);
-          await reloadConversations();
-        } catch (err) {
-          console.error("Failed to reload conversations:", err);
-        }
-      }
-    });
-
-    on("RemovedFromConversation", async (data: any) => {
-      if (user?.id) {
-        try {
-          const updatedConversations =
-            await conversationApi.getUserConversations(user.id);
-          setConversations(updatedConversations);
-
-          // If removed from current conversation, clear it
-          if (currentConversation?.id === data.ConversationId) {
-            setCurrentConversation(null);
-          }
-        } catch (err) {
-          console.error("Failed to reload conversations:", err);
-        }
-      }
-    });
-
-    on("ConversationPinStatusChanged", (data: any) => {
-      updateConversation(data.ConversationId, { isPinned: data.IsPinned });
-    });
-
-    return () => {
-      off("ReceiveMessage");
-      off("NewConversationCreated");
-      off("AddedToConversation");
-      off("RemovedFromConversation");
-      off("ConversationPinStatusChanged");
-    };
-  }, [
-    on,
-    off,
-    user?.id,
-    setConversations,
-    currentConversation,
-    setCurrentConversation,
-    reloadConversations,
-    updateConversation,
-  ]);
-
-  // Listen for friend request notifications
-  useEffect(() => {
-    if (!isConnected) return;
-
-    on(
-      "FriendRequestReceived",
-      (data: {
-        SenderId: number;
-        SenderName: string;
-        SenderAvatar: string;
-      }) => {
-        console.log("Friend request received:", data);
-        incrementCount();
-        refreshCount();
-        toast.success(`${data.SenderName} đã gửi lời mời kết bạn!`, {
-          duration: 4000,
-          icon: "👋",
-        });
-      }
-    );
-  }, [isConnected, on, incrementCount, refreshCount]);
+  useSignalRHandlers(); // Centralized handlers
 
   if (!user) {
     return (
