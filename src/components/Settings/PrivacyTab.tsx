@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
 import { userApi } from "../../api/user.api";
+import { useTranslation } from "react-i18next";
 
 const PrivacyTab: React.FC = () => {
   const { user, updateUser } = useAuth();
+  const { t } = useTranslation();
   const [privacySettings, setPrivacySettings] = useState({
     lastSeen: user?.lastSeenPrivacy || "everyone",
     onlineStatus: user?.onlineStatusPrivacy || "everyone",
@@ -54,10 +56,10 @@ const PrivacyTab: React.FC = () => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
       <div>
         <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">
-          Quyền riêng tư & Bảo mật
+          {t("settings.privacy.title")}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
-          Kiểm soát thông tin cá nhân nào bạn chia sẻ với những người khác.
+          {t("settings.privacy.subtitle")}
         </p>
       </div>
 
@@ -65,7 +67,7 @@ const PrivacyTab: React.FC = () => {
         {/* Last Seen */}
         <div className="space-y-3">
           <label className="text-base font-bold text-slate-900 dark:text-white">
-            Ai có thể thấy "Lần truy cập cuối"?
+            {t("settings.privacy.last_seen")}
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {["everyone", "contacts", "nobody"].map((option) => (
@@ -79,10 +81,10 @@ const PrivacyTab: React.FC = () => {
                 }`}
               >
                 {option === "everyone"
-                  ? "Mọi người"
+                  ? t("settings.privacy.everyone")
                   : option === "contacts"
-                  ? "Liên hệ"
-                  : "Không ai cả"}
+                  ? t("settings.privacy.contacts")
+                  : t("settings.privacy.nobody")}
               </button>
             ))}
           </div>
@@ -91,7 +93,7 @@ const PrivacyTab: React.FC = () => {
         {/* Online Status */}
         <div className="space-y-3">
           <label className="text-base font-bold text-slate-900 dark:text-white">
-            Ai có thể thấy khi tôi đang "Trực tuyến"?
+            {t("settings.privacy.online_status")}
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {["everyone", "contacts", "nobody"].map((option) => (
@@ -105,10 +107,10 @@ const PrivacyTab: React.FC = () => {
                 }`}
               >
                 {option === "everyone"
-                  ? "Mọi người"
+                  ? t("settings.privacy.everyone")
                   : option === "contacts"
-                  ? "Liên hệ"
-                  : "Không ai cả"}
+                  ? t("settings.privacy.contacts")
+                  : t("settings.privacy.nobody")}
               </button>
             ))}
           </div>
@@ -126,10 +128,10 @@ const PrivacyTab: React.FC = () => {
             </div>
             <div>
               <p className="text-base font-bold text-slate-900 dark:text-white">
-                Xác nhận đã đọc (Seen)
+                {t("settings.privacy.read_receipts")}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Nếu tắt, bạn cũng sẽ không thấy xác nhận đã đọc từ người khác.
+                {t("settings.privacy.read_receipts_desc")}
               </p>
             </div>
           </div>
@@ -162,15 +164,15 @@ const PrivacyTab: React.FC = () => {
               </div>
               <div>
                 <p className="text-base font-bold text-slate-900 dark:text-white">
-                  Danh sách chặn
+                  {t("settings.privacy.blocked_users")}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  Bạn hiện đang chặn 0 người dùng.
+                  {t("settings.privacy.blocked_count", { count: 0 })}
                 </p>
               </div>
             </div>
             <button className="text-sm font-bold text-primary px-4 py-2 hover:bg-primary/10 rounded-xl transition-all">
-              Quản lý
+              {t("settings.privacy.manage")}
             </button>
           </div>
         </div>

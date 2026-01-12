@@ -34,7 +34,7 @@ export const userApi = {
   changePassword: (data: ChangePasswordRequest): Promise<{ message: string }> =>
     axiosInstance.post('/users/change-password', data).then((res) => res.data),
 
-  uploadAvatar: (file: File): Promise<{ avatarUrl: string }> => {
+  uploadAvatar: (file: File): Promise<{ avatarUrl: string; message: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     return axiosInstance

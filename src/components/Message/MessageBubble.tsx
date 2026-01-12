@@ -54,6 +54,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     urls.length === 1 &&
     message.content.trim() === urls[0];
 
+  // Detect if message contains only emoji (no other text)
+  const isPureEmoji =
+    !isPureGif &&
+    !isPureUrl &&
+    message.content &&
+    message.messageType === MessageType.Text &&
+    // Simple check: no alphanumeric characters, only emoji and whitespace
+    !/[a-zA-Z0-9]/.test(message.content) &&
+    message.content.trim().length <= 20 &&
+    message.content.trim().length > 0;
+
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
@@ -304,9 +315,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             message.isDeletedForMe) && (
             <div
               className={`relative rounded-[1.25rem] ${
-                isPureGif || isPureUrl
+                isPureGif || isPureUrl || isPureEmoji
                   ? "p-0 bg-transparent shadow-none overflow-hidden"
-                  : `px-4 py-2.5 ${
+                  : `px-3 py-1.5 ${
                       message.isDeleted || message.isDeletedForMe
                         ? "bg-transparent shadow-none border-none"
                         : isOwn
@@ -359,7 +370,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     {message.isDeletedForMe
                       ? "Bạn đã xóa một tin nhắn"
                       : isOwn
-                      ? "Bạn đã xóa một tin nhắn"
+                      ? "Bạn đã thu hồi một tin nhắn"
                       : "Tin nhắn đã được thu hồi"}
                   </p>
                 </div>
@@ -374,7 +385,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           className="w-full h-auto block"
                         />
                       </div>
-                    ) : isPureUrl ? null : (
+                    ) : isPureUrl ? null : isPureEmoji ? (
+                      <div className="text-3xl leading-tight">
+                        {message.content}
+                      </div>
+                    ) : (
                       <p
                         className={`text-sm leading-relaxed whitespace-pre-wrap ${
                           isOwn

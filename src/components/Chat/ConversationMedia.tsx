@@ -9,7 +9,9 @@ import {
   subMonths,
   parseISO,
 } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
+import MediaGallery from "./MediaGallery";
+import { useTranslation } from "react-i18next";
 
 interface ConversationMediaProps {
   conversationId: number;
@@ -18,12 +20,14 @@ interface ConversationMediaProps {
 const ConversationMedia: React.FC<ConversationMediaProps> = ({
   conversationId,
 }) => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<"media" | "files" | "links">(
     "media"
   );
   const [attachments, setAttachments] = useState<AttachmentDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showGallery, setShowGallery] = useState(false);
 
   useEffect(() => {
     const fetchAttachments = async () => {
@@ -62,14 +66,18 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
   const mediaItems = filteredAttachments.filter((a) => isImage(a.fileName));
   const fileItems = filteredAttachments.filter((a) => !isImage(a.fileName));
 
+  // Dynamic Date Locale
+  const dateLocale = i18n.language === "vi" ? vi : enUS;
+
   // Group media by month
   const groupedMedia = mediaItems.reduce((groups: any, item) => {
     const date = parseISO(item.uploadedAt);
-    let groupName = format(date, "MMMM yyyy", { locale: vi });
+    let groupName = format(date, "MMMM yyyy", { locale: dateLocale });
 
-    if (isThisMonth(date)) groupName = "Tháng này";
+    if (isThisMonth(date))
+      groupName = i18n.language === "vi" ? "Tháng này" : "This Month";
     else if (isSameMonth(date, subMonths(new Date(), 1)))
-      groupName = "Tháng trước";
+      groupName = i18n.language === "vi" ? "Tháng trước" : "Last Month";
 
     if (!groups[groupName]) groups[groupName] = [];
     groups[groupName].push(item);
@@ -80,13 +88,21 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
     <div className="flex flex-col h-full animate-fade-in bg-slate-50 dark:bg-slate-900/20">
       {/* Search Header Area */}
       <div className="px-6 py-4 space-y-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-            Kho lưu trữ Media & Tệp tin
-          </h2>
-          <p className="text-[11px] text-slate-500 font-medium">
-            Tất cả hình ảnh, video và tài liệu trong cuộc hội thoại này
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
+              {t("media.title")}
+            </h2>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {t("media.subtitle", { count: filteredAttachments.length })}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowGallery(true)}
+            className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+          >
+            {t("media.view_all")}
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -95,7 +111,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm kiếm theo tên tệp..."
+            placeholder={t("media.search_placeholder")}
             className="w-full h-9 pl-9 pr-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-xs font-medium placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all shadow-sm"
           />
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors !text-[18px]">
@@ -103,53 +119,37 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
           </span>
         </div>
 
-        {/* Custom Redesigned Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 pb-1">
+        {/* Custom Redesigned Tabs (Chips) */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           <button
             onClick={() => setActiveTab("media")}
-            className={`flex items-center gap-2 pb-2 text-[11px] font-bold transition-all relative ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
               activeTab === "media"
-                ? "text-primary"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-primary text-white shadow-md shadow-primary/20"
+                : "bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700"
             }`}
           >
-            <span className="material-symbols-outlined !text-[18px]">
-              image
-            </span>
-            Hình ảnh
-            {activeTab === "media" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            )}
+            {t("media.tabs.images")}
           </button>
           <button
             onClick={() => setActiveTab("files")}
-            className={`flex items-center gap-2 pb-2 text-[11px] font-bold transition-all relative ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
               activeTab === "files"
-                ? "text-primary"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-primary text-white shadow-md shadow-primary/20"
+                : "bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700"
             }`}
           >
-            <span className="material-symbols-outlined !text-[18px]">
-              description
-            </span>
-            Tệp tin
-            {activeTab === "files" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            )}
+            {t("media.tabs.files")}
           </button>
           <button
             onClick={() => setActiveTab("links")}
-            className={`flex items-center gap-2 pb-2 text-[11px] font-bold transition-all relative ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
               activeTab === "links"
-                ? "text-primary"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-primary text-white shadow-md shadow-primary/20"
+                : "bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700"
             }`}
           >
-            <span className="material-symbols-outlined !text-[18px]">link</span>
-            Liên kết
-            {activeTab === "links" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            )}
+            {t("media.tabs.links")}
           </button>
         </div>
       </div>
@@ -163,7 +163,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
         ) : activeTab === "media" ? (
           mediaItems.length === 0 ? (
             <div className="text-center py-20 text-slate-400 text-xs font-medium italic">
-              Không có hình ảnh/video
+              {t("media.no_media")}
             </div>
           ) : (
             <div className="space-y-6">
@@ -208,16 +208,16 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                Tài liệu gần đây
+                {t("media.recent_files")}
               </h3>
               <button className="text-[10px] font-bold text-primary hover:underline">
-                Xem tất cả
+                {t("media.view_all")}
               </button>
             </div>
 
             {fileItems.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs font-medium italic">
-                Không có tập tin nào
+                {t("media.no_files")}
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -241,7 +241,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
                       <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
                         {formatFileSize(item.fileSize)} •{" "}
                         {format(parseISO(item.uploadedAt), "HH:mm a", {
-                          locale: vi,
+                          locale: dateLocale,
                         })}
                       </p>
                     </div>
@@ -254,11 +254,19 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 opacity-40">
             <span className="material-symbols-outlined text-4xl">link_off</span>
             <p className="text-xs font-bold tracking-tight">
-              Tính năng Link đang phát triển
+              {t("media.links_development")}
             </p>
           </div>
         )}
       </div>
+
+      {/* Media Gallery Modal */}
+      {showGallery && (
+        <MediaGallery
+          conversationId={conversationId}
+          onClose={() => setShowGallery(false)}
+        />
+      )}
     </div>
   );
 };

@@ -16,5 +16,103 @@
     "pinned": "Pinned Message",
     "replying": "Replying to",
     "editing": "Editing message"
+  },
+  "settings": {
+    "title": "System Settings",
+    "sidebar": {
+      "general": "General Settings",
+      "profile": "Profile & Account",
+      "notifications": "Notifications",
+      "privacy": "Privacy & Security",
+      "interface": "Interface"
+    },
+    "descriptions": {
+      "profile": "Update your personal information and manage account security.",
+      "notifications": "Configure how you receive notifications and interact with new messages.",
+      "privacy": "Control access and your personal data within the community.",
+      "interface": "Customize theme and colors to make the app your own."
+    },
+    "interface": {
+      "title": "Interface & Experience",
+      "subtitle": "Customize colors, wallpaper and display.",
+      "language": "Language",
+      "accent_color": "Accent Color",
+      "wallpaper": "Chat Wallpaper",
+      "font_size": "Message Font Size",
+      "sizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large"
+      },
+      "wallpapers": {
+        "default": "Default",
+        "minimal": "Minimal",
+        "ocean": "Ocean",
+        "dream": "Dream",
+        "pattern": "Pattern"
+      }
+    },
+    "profile": {
+      "display_name": "Display Name",
+      "email": "Email",
+      "bio": "Bio",
+      "custom_status": "Custom Status",
+      "upload_photo": "Upload Photo",
+      "save_changes": "Save Changes",
+      "saving": "Saving...",
+      "change_password": "Change Password",
+      "current_password": "Current Password",
+      "new_password": "New Password",
+      "update_password": "Update Password",
+      "danger_zone": "Danger Zone",
+      "delete_account": "Delete My Account",
+      "delete_confirm": "Are you sure? This action cannot be undone."
+    },
+    "notifications": {
+      "title": "Notification Settings",
+      "subtitle": "Manage how you receive notifications and updates.",
+      "desktop": "Desktop Notifications",
+      "desktop_desc": "Identify device and receive notifications.",
+      "sound": "Notification Sound",
+      "sound_desc": "Play a sound for incoming messages and calls.",
+      "preview": "Message Preview",
+      "preview_desc": "Show message content inside notifications.",
+      "mute_all": "Mute All Notifications",
+      "mute_all_desc": "Pause all notifications until you turn them back on.",
+      "test_sound": "Test Sound"
+    },
+    "privacy": {
+      "title": "Privacy & Security",
+      "subtitle": "Control what personal information you share with others.",
+      "last_seen": "Who can see my 'Last Seen'?",
+      "online_status": "Who can see when I'm 'Online'?",
+      "read_receipts": "Read Receipts",
+      "read_receipts_desc": "If turned off, you won't see read receipts from others.",
+      "blocked_users": "Blocked Users",
+      "blocked_count": "You are currently blocking {count} users.",
+      "manage": "Manage",
+      "everyone": "Everyone",
+      "contacts": "Contacts",
+      "nobody": "Nobody"
+    }
+  },
+  "media": {
+    "title": "Media & Files",
+    "subtitle": "{count} items in conversation",
+    "view_all": "View All",
+    "search_placeholder": "Search files...",
+    "no_media": "No media found",
+    "try_changing": "Try changing the filter or search query",
+    "recent_files": "Recent Files",
+    "no_files": "No files found",
+    "links_development": "Links feature is under development",
+    "count_items": "{count} items",
+    "tabs": {
+      "all": "All",
+      "images": "Images",
+      "videos": "Videos",
+      "files": "Files",
+      "links": "Links"
+    }
   }
 }

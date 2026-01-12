@@ -10,6 +10,9 @@ interface ChatSearchPanelProps {
   isSearchLoading: boolean;
   searchResults: Message[];
   setIsSearching: (isSearching: boolean) => void;
+  currentResultIndex: number;
+  setCurrentResultIndex: (index: number) => void;
+  scrollToMessage: (messageId: number) => void;
 }
 
 const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
@@ -18,7 +21,38 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
   isSearchLoading,
   searchResults,
   setIsSearching,
+  currentResultIndex,
+  setCurrentResultIndex,
+  scrollToMessage,
 }) => {
+  const handleNavigate = (direction: "prev" | "next") => {
+    const newIndex =
+      direction === "prev"
+        ? Math.max(0, currentResultIndex - 1)
+        : Math.min(searchResults.length - 1, currentResultIndex + 1);
+    setCurrentResultIndex(newIndex);
+    if (searchResults[newIndex]) {
+      scrollToMessage(searchResults[newIndex].id);
+    }
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark
+          key={i}
+          className="bg-yellow-200 dark:bg-yellow-600/40 px-0.5 rounded"
+        >
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   return (
     <div className="absolute top-[80px] left-0 right-0 z-40 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
       <div className="relative max-w-2xl mx-auto">
@@ -43,6 +77,35 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
         )}
       </div>
 
+      {/* Result counter and navigation */}
+      {searchQuery.trim() && searchResults.length > 0 && !isSearchLoading && (
+        <div className="max-w-2xl mx-auto mt-3 flex items-center justify-between px-2">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            {currentResultIndex + 1} / {searchResults.length} kết quả
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => handleNavigate("prev")}
+              disabled={currentResultIndex === 0}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">
+                keyboard_arrow_up
+              </span>
+            </button>
+            <button
+              onClick={() => handleNavigate("next")}
+              disabled={currentResultIndex === searchResults.length - 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">
+                keyboard_arrow_down
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {searchQuery.trim() && (
         <div className="max-w-2xl mx-auto mt-4 max-h-[400px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2">
           {isSearchLoading ? (
@@ -56,21 +119,17 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
                 <button
                   key={msg.id}
                   onClick={() => {
-                    const el = document.getElementById(`message-${msg.id}`);
-                    if (el) {
-                      el.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                      el.classList.add("highlight-message");
-                      setTimeout(
-                        () => el.classList.remove("highlight-message"),
-                        2000
-                      );
-                    }
-                    setIsSearching(false);
+                    const index = searchResults.findIndex(
+                      (m) => m.id === msg.id
+                    );
+                    setCurrentResultIndex(index);
+                    scrollToMessage(msg.id);
                   }}
-                  className="w-full flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors text-left group"
+                  className={`w-full flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors text-left group ${
+                    searchResults[currentResultIndex]?.id === msg.id
+                      ? "bg-primary/10 dark:bg-primary/20 border-l-4 border-primary"
+                      : ""
+                  }`}
                 >
                   <img
                     src={getAvatarUrl(msg.sender?.avatar)}
@@ -89,7 +148,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 break-words">
                       {msg.messageType === MessageType.Voice
                         ? "Tin nhắn thoại"
-                        : msg.content}
+                        : highlightText(msg.content || "", searchQuery)}
                     </p>
                   </div>
                 </button>

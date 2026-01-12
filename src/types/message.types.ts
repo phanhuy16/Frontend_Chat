@@ -48,13 +48,9 @@ export interface AttachmentDto {
   id: number;
   messageId: number;
   fileName: string;
-  reactions: Reaction[];
-  attachments: Attachment[];
-  isDeleted: boolean;
-  isDeletedForMe: boolean;
-  isPinned: boolean;
-  parentMessageId?: number;
-  parentMessage?: Message;
+  fileUrl: string;
+  fileSize: number;
+  uploadedAt: string;
 }
 
 export interface SendMessageRequest {

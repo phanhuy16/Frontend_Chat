@@ -108,6 +108,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Message[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [currentSearchResultIndex, setCurrentSearchResultIndex] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -216,12 +217,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     try {
       const results = await messageApi.searchMessages(conversation.id, query);
       setSearchResults(results);
+      setCurrentSearchResultIndex(0); // Reset to first result
     } catch (err) {
       console.error("Search error:", err);
     } finally {
       setIsSearchLoading(false);
     }
   };
+
+  const scrollToMessage = useCallback((messageId: number) => {
+    const el = document.getElementById(`message-${messageId}`);
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      el.classList.add("highlight-message");
+      setTimeout(() => el.classList.remove("highlight-message"), 2000);
+    }
+  }, []);
 
   const getWallpaperStyle = () => {
     switch (chatWallpaper) {
@@ -1023,6 +1037,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             isSearchLoading={isSearchLoading}
             searchResults={searchResults}
             setIsSearching={setIsSearching}
+            currentResultIndex={currentSearchResultIndex}
+            setCurrentResultIndex={setCurrentSearchResultIndex}
+            scrollToMessage={scrollToMessage}
           />
         )}
 

@@ -16,5 +16,103 @@
     "pinned": "Tin nhắn đã ghim",
     "replying": "Đang trả lời",
     "editing": "Đang chỉnh sửa"
+  },
+  "settings": {
+    "title": "Cài đặt hệ thống",
+    "sidebar": {
+      "general": "Cài đặt chung",
+      "profile": "Hồ sơ & Tài khoản",
+      "notifications": "Thông báo",
+      "privacy": "Quyền riêng tư & Bảo mật",
+      "interface": "Giao diện"
+    },
+    "descriptions": {
+      "profile": "Cập nhật thông tin cá nhân và quản lý bảo mật tài khoản của bạn.",
+      "notifications": "Thiết lập cách bạn nhận thông báo và tương tác với các tin nhắn mới.",
+      "privacy": "Kiểm soát quyền truy cập và dữ liệu cá nhân của bạn trong cộng đồng.",
+      "interface": "Tạo nét riêng cho ứng dụng với chủ đề và màu sắc bạn yêu thích."
+    },
+    "interface": {
+      "title": "Giao diện & Trải nghiệm",
+      "subtitle": "Tùy chỉnh màu sắc, hình nền và hiển thị để ứng dụng trở nên cá tính hơn.",
+      "language": "Ngôn ngữ / Language",
+      "accent_color": "Màu sắc chủ đạo",
+      "wallpaper": "Hình nền cuộc trò chuyện",
+      "font_size": "Cỡ chữ tin nhắn",
+      "sizes": {
+        "small": "Nhỏ",
+        "medium": "Vừa",
+        "large": "Lớn"
+      },
+      "wallpapers": {
+        "default": "Mặc định",
+        "minimal": "Tối giản",
+        "ocean": "Xanh biển",
+        "dream": "Tím mộng",
+        "pattern": "Họa tiết"
+      }
+    },
+    "profile": {
+      "display_name": "Tên hiển thị",
+      "email": "Email",
+      "bio": "Tiểu sử",
+      "custom_status": "Trạng thái tùy chỉnh",
+      "upload_photo": "Tải ảnh lên",
+      "save_changes": "Lưu thay đổi",
+      "saving": "Đang lưu...",
+      "change_password": "Đổi mật khẩu",
+      "current_password": "Mật khẩu hiện tại",
+      "new_password": "Mật khẩu mới",
+      "update_password": "Cập nhật mật khẩu",
+      "danger_zone": "Vùng nguy hiểm",
+      "delete_account": "Xóa tài khoản của tôi",
+      "delete_confirm": "Bạn chắc chứ? Hành động này không thể hoàn tác."
+    },
+    "notifications": {
+      "title": "Cài đặt thông báo",
+      "subtitle": "Quản lý cách ứng dụng thông báo cho bạn về tin nhắn và cuộc gọi mới.",
+      "desktop": "Thông báo máy tính",
+      "desktop_desc": "Nhận thông báo trên màn hình máy tính.",
+      "sound": "Âm báo tin nhắn",
+      "sound_desc": "Phát âm thanh khi có tin nhắn hoặc cuộc gọi đến.",
+      "preview": "Xem trước nội dung",
+      "preview_desc": "Hiển thị một phần nội dung tin nhắn trong thông báo.",
+      "mute_all": "Tắt tất cả thông báo",
+      "mute_all_desc": "Tạm dừng tất cả thông báo cho đến khi bạn bật lại.",
+      "test_sound": "Nghe thử"
+    },
+    "privacy": {
+      "title": "Quyền riêng tư & Bảo mật",
+      "subtitle": "Kiểm soát thông tin cá nhân nào bạn chia sẻ với những người khác.",
+      "last_seen": "Ai có thể thấy 'Lần truy cập cuối'?",
+      "online_status": "Ai có thể thấy khi tôi đang 'Trực tuyến'?",
+      "read_receipts": "Xác nhận đã đọc (Seen)",
+      "read_receipts_desc": "Nếu tắt, bạn cũng sẽ không thấy xác nhận đã đọc từ người khác.",
+      "blocked_users": "Danh sách chặn",
+      "blocked_count": "Bạn hiện đang chặn {count} người dùng.",
+      "manage": "Quản lý",
+      "everyone": "Mọi người",
+      "contacts": "Liên hệ",
+      "nobody": "Không ai cả"
+    }
+  },
+  "media": {
+    "title": "Media & Tệp tin",
+    "subtitle": "{count} mục trong cuộc hội thoại",
+    "view_all": "Xem tất cả",
+    "search_placeholder": "Tìm kiếm tệp...",
+    "no_media": "Không tìm thấy media",
+    "try_changing": "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm",
+    "recent_files": "Tài liệu gần đây",
+    "no_files": "Không có tập tin nào",
+    "links_development": "Tính năng Link đang phát triển",
+    "count_items": "{count} mục",
+    "tabs": {
+      "all": "Tất cả",
+      "images": "Hình ảnh",
+      "videos": "Video",
+      "files": "Tệp tin",
+      "links": "Liên kết"
+    }
   }
 }

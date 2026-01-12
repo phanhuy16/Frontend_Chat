@@ -3,6 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../hooks/useAuth";
 import { getAvatarUrl } from "../utils/helpers";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Tabs
 import ProfileTab from "../components/Settings/ProfileTab";
@@ -15,6 +16,7 @@ type TabId = "profile" | "notifications" | "privacy" | "interface";
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   const handleLogout = async () => {
@@ -23,10 +25,18 @@ const SettingsPage: React.FC = () => {
   };
 
   const tabs = [
-    { id: "profile", label: "Hồ sơ & Tài khoản", icon: "person" },
-    { id: "notifications", label: "Thông báo", icon: "notifications" },
-    { id: "privacy", label: "Quyền riêng tư & Bảo mật", icon: "lock" },
-    { id: "interface", label: "Giao diện", icon: "palette" },
+    { id: "profile", label: t("settings.sidebar.profile"), icon: "person" },
+    {
+      id: "notifications",
+      label: t("settings.sidebar.notifications"),
+      icon: "notifications",
+    },
+    { id: "privacy", label: t("settings.sidebar.privacy"), icon: "lock" },
+    {
+      id: "interface",
+      label: t("settings.sidebar.interface"),
+      icon: "palette",
+    },
   ] as const;
 
   const renderContent = () => {
@@ -72,7 +82,7 @@ const SettingsPage: React.FC = () => {
             {/* Navigation Menu */}
             <nav className="flex flex-col gap-2">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-1">
-                Cài đặt chung
+                {t("settings.sidebar.general")}
               </p>
               {tabs.map((tab) => (
                 <button
@@ -108,7 +118,7 @@ const SettingsPage: React.FC = () => {
             <span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-1">
               logout
             </span>
-            <p className="text-xs">Đăng xuất</p>
+            <p className="text-xs">{t("common.logout")}</p>
           </button>
         </div>
       </aside>
@@ -121,21 +131,19 @@ const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-3 mb-3">
               <div className="h-1 w-8 rounded-full bg-primary" />
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-                Cài đặt hệ thống
+                {t("settings.title")}
               </p>
             </div>
             <h1 className="text-slate-900 dark:text-white text-4xl font-black tracking-tight mb-3">
               {tabs.find((t) => t.id === activeTab)?.label}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-2xl">
-              {activeTab === "profile" &&
-                "Cập nhật thông tin cá nhân và quản lý bảo mật tài khoản của bạn."}
+              {activeTab === "profile" && t("settings.descriptions.profile")}
               {activeTab === "notifications" &&
-                "Thiết lập cách bạn nhận thông báo và tương tác với các tin nhắn mới."}
-              {activeTab === "privacy" &&
-                "Kiểm soát quyền truy cập và dữ liệu cá nhân của bạn trong cộng đồng."}
+                t("settings.descriptions.notifications")}
+              {activeTab === "privacy" && t("settings.descriptions.privacy")}
               {activeTab === "interface" &&
-                "Tạo nét riêng cho ứng dụng với chủ đề và màu sắc bạn yêu thích."}
+                t("settings.descriptions.interface")}
             </p>
           </div>
 
