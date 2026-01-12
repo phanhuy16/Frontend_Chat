@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
+import {
+  format,
+  isSameMonth,
+  isThisMonth,
+  parseISO,
+  subMonths,
+} from "date-fns";
+import { enUS, vi } from "date-fns/locale";
+import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { conversationApi } from "../../api/conversation.api";
 import { AttachmentDto } from "../../types/message.types";
 import { formatFileSize } from "../../utils/formatters";
-import {
-  format,
-  isThisMonth,
-  isSameMonth,
-  subMonths,
-  parseISO,
-} from "date-fns";
-import { vi, enUS } from "date-fns/locale";
 import MediaGallery from "./MediaGallery";
-import { useTranslation } from "react-i18next";
 
 interface ConversationMediaProps {
   conversationId: number;
@@ -25,6 +25,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
     "media"
   );
   const [attachments, setAttachments] = useState<AttachmentDto[]>([]);
+  const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showGallery, setShowGallery] = useState(false);
@@ -34,12 +35,14 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
       if (!conversationId) return;
       try {
         setLoading(true);
-        const data = await conversationApi.getConversationAttachments(
-          conversationId
-        );
-        setAttachments(data);
+        const [atts, conversationLinks] = await Promise.all([
+          conversationApi.getConversationAttachments(conversationId),
+          conversationApi.getConversationLinks(conversationId)
+        ]);
+        setAttachments(atts);
+        setLinks(conversationLinks);
       } catch (err) {
-        console.error("Failed to fetch attachments", err);
+        console.error("Failed to fetch media", err);
       } finally {
         setLoading(false);
       }
@@ -59,30 +62,48 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
   const isVideo = (fileName: string) =>
     /\.(mp4|mov|avi|wmv|flv|mkv)$/i.test(fileName);
 
-  const filteredAttachments = attachments.filter((a) =>
-    a.fileName.toLowerCase().includes(searchTerm.toLowerCase())
+  const mediaItems = useMemo(
+    () => attachments.filter((a) => isImage(a.fileName)),
+    [attachments]
+  );
+  const fileItems = useMemo(
+    () => attachments.filter((a) => !isImage(a.fileName)),
+    [attachments]
   );
 
-  const mediaItems = filteredAttachments.filter((a) => isImage(a.fileName));
-  const fileItems = filteredAttachments.filter((a) => !isImage(a.fileName));
+  const filteredAttachments = useMemo(() => {
+    let items: any[] = [];
+    if (activeTab === "media") items = mediaItems;
+    else if (activeTab === "files") items = fileItems;
+    else if (activeTab === "links") items = links;
+    
+    if (!searchTerm) return items;
+    
+    return items.filter((item: any) => {
+      if (item.url) return item.url.toLowerCase().includes(searchTerm.toLowerCase());
+      return item.fileName.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }, [activeTab, mediaItems, fileItems, links, searchTerm]);
 
   // Dynamic Date Locale
   const dateLocale = i18n.language === "vi" ? vi : enUS;
 
   // Group media by month
-  const groupedMedia = mediaItems.reduce((groups: any, item) => {
-    const date = parseISO(item.uploadedAt);
-    let groupName = format(date, "MMMM yyyy", { locale: dateLocale });
+  const groupedMedia = useMemo(() => {
+     return mediaItems.reduce((groups: any, item) => {
+      const date = parseISO(item.uploadedAt);
+      let groupName = format(date, "MMMM yyyy", { locale: dateLocale });
 
-    if (isThisMonth(date))
-      groupName = i18n.language === "vi" ? "Tháng này" : "This Month";
-    else if (isSameMonth(date, subMonths(new Date(), 1)))
-      groupName = i18n.language === "vi" ? "Tháng trước" : "Last Month";
+      if (isThisMonth(date))
+        groupName = i18n.language === "vi" ? "Tháng này" : "This Month";
+      else if (isSameMonth(date, subMonths(new Date(), 1)))
+        groupName = i18n.language === "vi" ? "Tháng trước" : "Last Month";
 
-    if (!groups[groupName]) groups[groupName] = [];
-    groups[groupName].push(item);
-    return groups;
-  }, {});
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(item);
+      return groups;
+    }, {});
+  }, [mediaItems, dateLocale, i18n.language]);
 
   return (
     <div className="flex flex-col h-full animate-fade-in bg-slate-50 dark:bg-slate-900/20">
@@ -251,12 +272,47 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 opacity-40">
-            <span className="material-symbols-outlined text-4xl">link_off</span>
-            <p className="text-xs font-bold tracking-tight">
-              {t("media.links_development")}
-            </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              {t("media.tabs.links")}
+            </h3>
+            <button 
+                onClick={() => setShowGallery(true)}
+                className="text-[10px] font-bold text-primary hover:underline">
+              {t("media.view_all")}
+            </button>
           </div>
+          {filteredAttachments.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-xs font-medium italic">
+              No links found
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredAttachments.slice(0, 5).map((link: any, idx: number) => (
+                <a
+                  key={idx}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-white/5 border border-transparent hover:border-slate-100 dark:hover:border-white/5 transition-all group"
+                >
+                   <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-lg">link</span>
+                   </div>
+                   <div className="min-w-0 flex-1">
+                     <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
+                       {link.url}
+                     </p>
+                     <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                       {link.senderName}
+                     </p>
+                   </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         )}
       </div>
 

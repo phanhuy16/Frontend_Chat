@@ -40,4 +40,7 @@ export const conversationApi = {
 
   togglePin: (conversationId: number, userId: number): Promise<{ isPinned: boolean }> =>
     axiosInstance.post(`/conversations/${conversationId}/pin/${userId}`).then((res) => res.data),
+
+  getConversationLinks: (id: number): Promise<any[]> =>
+    axiosInstance.get(`/conversations/${id}/links`).then((res) => res.data),
 }
