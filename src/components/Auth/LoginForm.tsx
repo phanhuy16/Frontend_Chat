@@ -32,6 +32,49 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  // WAIT. The user specifically wants "synchronous" design. Standard Google button is rectangular.
+  // Let's use `type="standard"` width="100%" (if possible) or just let them be flexible.
+  // Actually, `GoogleLogin` has a `width` prop.
+
+  // Let's proceed with simplifying the FORM fields first (removing labels), and for buttons:
+  // I will use `GoogleLogin` with `type="standard"` `theme="filled_black"` (to match dark theme if needed) or `outline`.
+  // And Style the FB button to match.
+
+  // Refined Plan:
+  // 1. Inputs: Remove top labels. Keep placeholder. Add icons inside input for better UX (User icon, Lock icon).
+  // 2. Buttons:
+  //    - Google: `<GoogleLogin theme="outline" size="large" width="100%" text="continue_with" />` (This will be a wide button)
+  //    - Facebook: Wide button "Continue with Facebook", matching style (white bg, gray border, or blue bg).
+  //    - Actually, Google's "outline" is white background with gray border.
+  //    - I'll make FB button similar: White/Gray background or Blue? Usually FB is Blue.
+  //    - If Google is "outline", FB should probably be "outline" too or "filled".
+  //    - Let's try to make them look separate but equal width.
+
+  // Let's assume user wants two columns like before but "synchronized".
+  // Before: GoogleLogin (Standard) | Custom FB Button (Small text).
+  // Problem: GoogleLogin height/style is fixed.
+
+  // Let's try to wrap GoogleLogin to hide it and click it programmatically?
+  // No, `useGoogleLogin` is best for custom UI.
+  // I will switch to `useGoogleLogin`.
+  // ISSUE: Backend validation of ID Token.
+  // IF I use `useGoogleLogin`, I get an access_token.
+  // I can use `https://www.googleapis.com/oauth2/v3/userinfo` with that access_token to get user details on CLIENT side?
+  // No, backend blindly trusts? NO.
+  // Backend needs to verify.
+  // Backend `GoogleJsonWebSignature.ValidateAsync` expects ID Token.
+
+  // Is there a way to get ID Token from `useGoogleLogin`?
+  // No, not directly in the new library for implicit flow.
+
+  // Okay, I will stick to `GoogleLogin` component but I will make the Facebook button match its height and style (Rounded, shadow, etc).
+  // And I will simplify the inputs.
+
+  // Let's look at the "unnecessary things". Labels are definitely one.
+  // Also "Welcome back" text inside form might be redundant if AuthPage has it.
+  // AuthPage DOES have it: "{activeTab === "login" ? "Welcome back" : ...}"
+  // So I will remove headers from `LoginForm` as well (I added them in previous step, now removing).
+
   const handleGoogleLogin = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
       try {
@@ -48,7 +91,7 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200 px-4 py-3 rounded-lg text-sm animate-shake">
@@ -56,15 +99,18 @@ const LoginForm: React.FC = () => {
         </div>
       )}
 
-      {/* Username Field */}
-      <label className="flex flex-col w-full">
-        <p className="text-slate-900 dark:text-white text-sm font-medium leading-normal pb-2">
-          Email hoặc Tên người dùng
-        </p>
-        <div className="relative flex w-full flex-1 items-stretch">
+      {/* Inputs Group */}
+      <div className="space-y-4">
+        {/* Username */}
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-slate-500 group-focus-within:text-white transition-colors text-xl">
+              person
+            </span>
+          </div>
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-input-light dark:bg-input-dark focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 text-xs font-normal leading-normal transition-all"
-            placeholder="Nhập email hoặc tên người dùng của bạn"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            placeholder="Email hoặc tên người dùng"
             type="text"
             name="username"
             value={formData.username}
@@ -73,17 +119,17 @@ const LoginForm: React.FC = () => {
             required
           />
         </div>
-      </label>
 
-      {/* Password Field */}
-      <label className="flex flex-col w-full">
-        <p className="text-slate-900 dark:text-white text-sm font-medium leading-normal pb-2">
-          Mật khẩu
-        </p>
-        <div className="relative flex w-full flex-1 items-stretch">
+        {/* Password */}
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-slate-500 group-focus-within:text-white transition-colors text-xl">
+              lock
+            </span>
+          </div>
           <input
-            className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-input-light dark:bg-input-dark focus:border-primary dark:focus:border-primary h-9 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-2.5 pr-9 text-xs font-normal leading-normal transition-all"
-            placeholder="Nhập mật khẩu của bạn"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-10 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            placeholder="Mật khẩu"
             type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
@@ -94,67 +140,80 @@ const LoginForm: React.FC = () => {
           <button
             type="button"
             onClick={togglePasswordVisibility}
-            className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
-            tabIndex={-1}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
           >
             <span className="material-symbols-outlined text-xl">
               {showPassword ? "visibility_off" : "visibility"}
             </span>
           </button>
         </div>
-      </label>
+      </div>
 
-      {/* Submit Button */}
+      <div className="flex justify-between items-center text-sm">
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary focus:ring-offset-0 focus:ring-primary/50 accent-primary"
+          />
+          <span className="text-slate-400 group-hover:text-white transition-colors text-xs">
+            Ghi nhớ
+          </span>
+        </label>
+        <button
+          type="button"
+          onClick={() => navigate("/forgot-password")}
+          className="font-semibold text-primary hover:text-primary-hover hover:underline text-xs"
+        >
+          Quên mật khẩu?
+        </button>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="flex items-center justify-center rounded-lg h-9 px-4 text-xs font-bold bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors w-full mt-2"
+        className="w-full h-10 bg-primary hover:bg-primary-hover text-white rounded-full font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
       >
         {loading ? (
           <>
-            <span className="animate-spin mr-2">⏳</span>
-            Đang đăng nhập...
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>Đang đăng nhập...</span>
           </>
         ) : (
           "Đăng nhập"
         )}
       </button>
 
-      {/* Divider */}
-      <div className="relative flex items-center py-4">
-        <div className="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
-        <span className="flex-shrink mx-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-          HOẶC TIẾP TỤC VỚI
+      <div className="relative flex items-center py-2">
+        <div className="flex-grow border-t border-white/10"></div>
+        <span className="flex-shrink mx-4 text-xs font-medium text-slate-500">
+          HOẶC
         </span>
-        <div className="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
+        <div className="flex-grow border-t border-white/10"></div>
       </div>
 
-      {/* Social Buttons */}
-      <div className="grid grid-cols-2 gap-4">
-        <GoogleLogin
-          onSuccess={handleGoogleLogin}
-          onError={() => console.log("Login Failed")}
-          useOneTap={false}
-          text="signin_with"
-          size="large"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        {/* Wrapper to control Google Button width/style */}
+        <div className="flex justify-center [&>div]:w-full">
+          <GoogleLogin
+            onSuccess={handleGoogleLogin}
+            onError={() => console.log("Login Failed")}
+            theme="filled_black"
+            shape="pill"
+            text="signin_with"
+            size="large"
+            width="100%"
+          />
+        </div>
+
         <button
           type="button"
           disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-lg h-9 px-3 text-[10px] font-medium bg-input-light dark:bg-input-dark text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:ring-offset-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 rounded-full h-[40px] px-4 font-medium bg-[#1877F2] text-white hover:bg-[#1864cc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed w-full shadow-lg shadow-[#1877F2]/20"
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M13.397 20.997V12.801H16.162L16.573 9.59099H13.397V7.54899C13.397 6.55199 13.658 5.92999 14.836 5.92999H16.669V3.12799C15.8421 3.03358 15.0116 2.98666 14.18 2.98699C11.822 2.98699 10.155 4.45399 10.155 7.23499V9.59099H7.336V12.801H10.155V20.997H13.397Z"
-              fill="#1877F2"
-            ></path>
+          <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+            <path d="M13.397 20.997V12.801H16.162L16.573 9.59099H13.397V7.54899C13.397 6.55199 13.658 5.92999 14.836 5.92999H16.669V3.12799C15.8421 3.03358 15.0116 2.98666 14.18 2.98699C11.822 2.98699 10.155 4.45399 10.155 7.23499V9.59099H7.336V12.801H10.155V20.997H13.397Z" />
           </svg>
-          <span>Facebook</span>
+          <span className="text-sm">Facebook</span>
         </button>
       </div>
     </form>

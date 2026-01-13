@@ -115,7 +115,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
               {t("media.title")}
             </h2>
             <p className="text-[11px] text-slate-500 font-medium">
-              {t("media.subtitle", { count: filteredAttachments.length })}
+              {t("media.subtitle", { count: attachments.length + links.length })}
             </p>
           </div>
           <button

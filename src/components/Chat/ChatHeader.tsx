@@ -1,6 +1,7 @@
 import React from "react";
 import { Conversation, StatusUser, CallType, ConversationType } from "../../types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 
 interface ChatHeaderProps {
   conversation: Conversation;
@@ -25,18 +26,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onStartVideoCall,
   onStartAudioCall,
 }) => {
+  const { user } = useAuth();
+
   const getOtherMember = () => {
     if (conversation.conversationType === ConversationType.Direct) {
-      // Note: In a real app, 'user' info might be needed here or passed from parent
-      // For now, assume it's filtered outside or we have enough info
-      return conversation.members.find((m) => m.id !== (conversation as any).currentUserId); // Abstracted
+      return conversation.members.find((m) => m.id !== user?.id);
     }
     return null;
   };
 
   const getHeaderTitle = (): string => {
     if (conversation.conversationType === ConversationType.Direct) {
-      const otherMember = conversation.members.find(m => (conversation as any).currentUserId ? m.id !== (conversation as any).currentUserId : true); // Fallback
+      const otherMember = getOtherMember();
       return otherMember?.displayName || "Direct Chat";
     }
     return conversation.groupName || "Group Chat";
@@ -44,7 +45,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   const getHeaderSubtitle = (): string => {
     if (conversation.conversationType === ConversationType.Direct) {
-      const otherMember = conversation.members.find(m => (conversation as any).currentUserId ? m.id !== (conversation as any).currentUserId : true);
+      const otherMember = getOtherMember();
       if (otherMember?.status === StatusUser.Online) {
         return "Online";
       }
@@ -70,9 +71,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-white/20 shadow-lg"
               style={{
                 backgroundImage: `url("${getAvatarUrl(
-                  conversation.conversationType === ConversationType.Direct 
-                    ? conversation.members.find(m => true)?.avatar // Needs cleanup
-                    : ""
+                  getOtherMember()?.avatar
                 )}")`,
               }}
             />
@@ -84,12 +83,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           </h2>
           <div className="flex items-center gap-1.5">
             {conversation.conversationType === ConversationType.Direct &&
-              conversation.members.some(m => m.status === StatusUser.Online) && (
+            getOtherMember()?.status === StatusUser.Online ? (
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-              )}
+            ) : null}
             <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold">
               {getHeaderSubtitle()}
             </p>

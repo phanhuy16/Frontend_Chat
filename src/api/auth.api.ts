@@ -1,4 +1,4 @@
-import { AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, UserAuth } from "../types/auth.types";
+import { AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, UserAuth, ForgotPasswordRequest, ResetPasswordRequest } from "../types/auth.types";
 import axiosInstance from "./axios";
 
 export const authApi = {
@@ -22,4 +22,10 @@ export const authApi = {
 
   verifyToken: (): Promise<any> =>
     axiosInstance.get('/auth/verify').then((res) => res.data),
+
+  forgotPassword: (data: ForgotPasswordRequest): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/forgot-password', data).then((res) => res.data),
+
+  resetPassword: (data: ResetPasswordRequest): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/reset-password', data).then((res) => res.data),
 }

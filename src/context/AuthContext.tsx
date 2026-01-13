@@ -5,6 +5,8 @@ import {
   RefreshTokenRequest,
   RegisterRequest,
   UserAuth,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
 } from "../types/auth.types";
 
 interface AuthContextType {
@@ -20,6 +22,12 @@ interface AuthContextType {
   loginWithGoogle: (idToken: string) => Promise<void>;
   isAuthenticated: boolean;
   updateUser: (updatedUser: UserAuth) => void;
+  forgotPassword: (
+    data: ForgotPasswordRequest
+  ) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (
+    data: ResetPasswordRequest
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -152,6 +160,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  const forgotPassword = useCallback(async (data: ForgotPasswordRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.forgotPassword(data);
+      return { success: response.success, message: response.message };
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Gửi yêu cầu thất bại";
+      setError(msg);
+      return { success: false, message: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (data: ResetPasswordRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.resetPassword(data);
+      return { success: response.success, message: response.message };
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Đặt lại mật khẩu thất bại";
+      setError(msg);
+      return { success: false, message: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -170,6 +208,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
         },
+        forgotPassword,
+        resetPassword,
       }}
     >
       {children}

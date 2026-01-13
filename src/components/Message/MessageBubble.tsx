@@ -138,7 +138,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           }`}
         >
           {/* Message Options Button - Shows on hover */}
-          {!message.isDeleted && (
+          {!message.isDeleted && !message.isDeletedForMe && (
             <div
               className={`absolute top-1/2 -translate-y-1/2 ${
                 isOwn ? "right-full mr-12" : "left-full ml-12"
@@ -237,6 +237,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         </span>
                         {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
                       </button>
+                      {message.content &&
+                        message.messageType !== MessageType.Voice && (
+                          <button
+                            onClick={() => {
+                              if (message.content) {
+                                navigator.clipboard.writeText(message.content);
+                              }
+                              setShowOptions(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              content_copy
+                            </span>
+                            Sao chép văn bản
+                          </button>
+                        )}
                       <button
                         onClick={() => {
                           onDeleteForMe?.(message.id);
