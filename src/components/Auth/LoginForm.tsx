@@ -5,7 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
 const LoginForm: React.FC = () => {
-  const { login, loading, error, clearError, loginWithGoogle } = useAuth();
+  const {
+    login,
+    loading,
+    error,
+    clearError,
+    loginWithGoogle,
+    loginWithFacebook,
+  } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,6 +37,53 @@ const LoginForm: React.FC = () => {
     } catch (err) {
       console.error("Login error: ", err);
     }
+  };
+
+  // Initialize Facebook SDK
+  React.useEffect(() => {
+    // Load Facebook SDK
+    (window as any).fbAsyncInit = function () {
+      (window as any).FB.init({
+        appId: "1195151906039072", // Replace with your Facebook App ID
+        cookie: true,
+        xfbml: true,
+        version: "v18.0",
+      });
+    };
+
+    // Load SDK script
+    if (!(window as any).FB) {
+      const script = document.createElement("script");
+      script.src = "https://connect.facebook.net/en_US/sdk.js";
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = "anonymous";
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const handleFacebookLogin = () => {
+    const FB = (window as any).FB;
+    if (!FB) {
+      console.error("Facebook SDK not loaded");
+      return;
+    }
+
+    FB.login(
+      (response: any) => {
+        if (response.authResponse) {
+          const accessToken = response.authResponse.accessToken;
+          loginWithFacebook(accessToken)
+            .then(() => navigate("/chat"))
+            .catch((error: any) =>
+              console.error("Facebook login error:", error)
+            );
+        } else {
+          console.log("User cancelled login or did not fully authorize.");
+        }
+      },
+      { scope: "public_profile,email" }
+    );
   };
 
   // WAIT. The user specifically wants "synchronous" design. Standard Google button is rectangular.
@@ -207,6 +261,7 @@ const LoginForm: React.FC = () => {
 
         <button
           type="button"
+          onClick={handleFacebookLogin}
           disabled={loading}
           className="flex items-center justify-center gap-2 rounded-full h-[40px] px-4 font-medium bg-[#1877F2] text-white hover:bg-[#1864cc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed w-full shadow-lg shadow-[#1877F2]/20"
         >

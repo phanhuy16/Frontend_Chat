@@ -20,6 +20,7 @@ interface AuthContextType {
   clearError: () => void;
   refreshAuthToken: (data: RefreshTokenRequest) => Promise<boolean>;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithFacebook: (accessToken: string) => Promise<void>;
   isAuthenticated: boolean;
   updateUser: (updatedUser: UserAuth) => void;
   forgotPassword: (
@@ -160,6 +161,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  const loginWithFacebook = useCallback(async (accessToken: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await authApi.facebookLogin({ accessToken });
+      if (response.success && response.user && response.token) {
+        setUser(response.user);
+        setToken(response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("refreshToken", response.refreshToken || "");
+      } else {
+        setError(response.message || "Facebook login failed");
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Facebook login failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const forgotPassword = useCallback(async (data: ForgotPasswordRequest) => {
     setLoading(true);
     setError(null);
@@ -204,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: !!token,
         refreshAuthToken,
         loginWithGoogle,
+        loginWithFacebook,
         updateUser: (updatedUser: UserAuth) => {
           setUser(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));

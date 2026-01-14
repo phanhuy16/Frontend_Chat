@@ -28,6 +28,10 @@ export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
+export interface FacebookLoginRequest {
+  accessToken: string;
+}
+
 export interface ForgotPasswordRequest {
   email: string;
 }

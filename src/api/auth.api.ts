@@ -17,6 +17,9 @@ export const authApi = {
   googleLogin: ({ idToken }: { idToken: string }): Promise<AuthResponse> =>
     axiosInstance.post('/auth/google-login', { idToken }).then((res) => res.data),
 
+  facebookLogin: ({ accessToken }: { accessToken: string }): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/facebook-login', { accessToken }).then((res) => res.data),
+
   getCurrentUser: (): Promise<UserAuth> =>
     axiosInstance.get('/auth/me').then((res) => res.data),
 
