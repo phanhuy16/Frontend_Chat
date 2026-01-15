@@ -95,7 +95,7 @@ const InterfaceTab: React.FC = () => {
           <div className="flex gap-4">
             <button
               onClick={() => changeLanguage("vi")}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 i18n.language === "vi"
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10"
@@ -104,13 +104,13 @@ const InterfaceTab: React.FC = () => {
               <img
                 src="https://flagcdn.com/w40/vn.png"
                 alt="Vietnamese"
-                className="w-5 h-3.5 object-cover rounded-sm"
+                className="w-4 h-3 object-cover rounded-sm"
               />
               Tiếng Việt
             </button>
             <button
               onClick={() => changeLanguage("en")}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 i18n.language === "en"
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10"
@@ -119,7 +119,7 @@ const InterfaceTab: React.FC = () => {
               <img
                 src="https://flagcdn.com/w40/us.png"
                 alt="English"
-                className="w-5 h-3.5 object-cover rounded-sm"
+                className="w-4 h-3 object-cover rounded-sm"
               />
               English
             </button>
@@ -141,7 +141,7 @@ const InterfaceTab: React.FC = () => {
               <button
                 key={color.name}
                 onClick={() => handleAccentUpdate(color.value)}
-                className={`w-12 h-12 rounded-full ${
+                className={`w-10 h-10 rounded-full ${
                   color.class
                 } flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg ${
                   accentColor === color.value
@@ -151,7 +151,7 @@ const InterfaceTab: React.FC = () => {
                 title={color.name}
               >
                 {accentColor === color.value && (
-                  <span className="material-symbols-outlined text-white text-xl font-bold">
+                  <span className="material-symbols-outlined text-white text-lg font-bold">
                     check
                   </span>
                 )}
@@ -211,7 +211,7 @@ const InterfaceTab: React.FC = () => {
               <button
                 key={size}
                 onClick={() => handleFontSizeUpdate(size)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   fontSize === size
                     ? "bg-white dark:bg-white/10 text-primary shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"

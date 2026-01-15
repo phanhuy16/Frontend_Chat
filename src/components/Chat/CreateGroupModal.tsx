@@ -198,7 +198,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     <div
                       key={friend.id}
                       onClick={() => handleToggleMember(friend.id)}
-                      className={`group flex items-center justify-between gap-4 p-3 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                      className={`group flex items-center justify-between gap-3 p-2 rounded-2xl border transition-all duration-300 cursor-pointer ${
                         selectedMembers.includes(friend.id)
                           ? "bg-primary/10 border-primary/20"
                           : "bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-white/5"
@@ -207,7 +207,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
                           <div
-                            className="size-10 rounded-2xl bg-center bg-no-repeat bg-cover border border-white dark:border-slate-800 shadow-sm"
+                            className="size-8 rounded-xl bg-center bg-no-repeat bg-cover border border-white dark:border-slate-800 shadow-sm"
                             style={{
                               backgroundImage: `url("${getAvatarUrl(
                                 friend.avatar
@@ -215,7 +215,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             }}
                           />
                           <div
-                            className="absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
+                            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
                             style={{
                               backgroundColor: getStatusUserColor(
                                 friend.status as StatusUser
@@ -224,23 +224,23 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-extrabold text-sm truncate">
+                          <p className="font-extrabold text-xs truncate">
                             {friend.displayName}
                           </p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">
+                          <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">
                             {getStatusUserLabel(friend.status as StatusUser)}
                           </p>
                         </div>
                       </div>
                       <div
-                        className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                        className={`size-5 rounded-full border-2 flex items-center justify-center transition-all ${
                           selectedMembers.includes(friend.id)
                             ? "bg-primary border-primary text-white scale-110"
                             : "border-slate-200 dark:border-slate-700 bg-transparent group-hover:border-primary/40"
                         }`}
                       >
                         {selectedMembers.includes(friend.id) && (
-                          <span className="material-symbols-outlined text-[16px] font-black">
+                          <span className="material-symbols-outlined text-[14px] font-black">
                             done
                           </span>
                         )}

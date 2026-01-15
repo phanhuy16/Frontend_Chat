@@ -133,18 +133,20 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Profile Header */}
-      <div className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-premium">
-        <div className="flex w-full flex-col gap-6 sm:flex-row sm:justify-between sm:items-center">
-          <div className="flex gap-5 items-center">
+      <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-premium">
+        <div className="flex w-full flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+          <div className="flex gap-4 items-center">
             <div className="relative group">
               <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24 border-4 border-white dark:border-white/10 shadow-lg"
+                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-16 w-16 border-4 border-white dark:border-white/10 shadow-lg"
                 style={{
                   backgroundImage: `url("${getAvatarUrl(avatarPreview)}")`,
                 }}
               />
               <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                <span className="material-symbols-outlined">photo_camera</span>
+                <span className="material-symbols-outlined text-lg">
+                  photo_camera
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -154,15 +156,15 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               </label>
             </div>
             <div className="flex flex-col justify-center">
-              <p className="text-gray-900 dark:text-white text-2xl font-black tracking-tight">
+              <p className="text-gray-900 dark:text-white text-xl font-black tracking-tight">
                 {user?.displayName}
               </p>
-              <p className="text-gray-500 dark:text-slate-400 text-sm font-medium mt-1">
+              <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-0.5">
                 Cập nhật ảnh và chi tiết cá nhân của bạn.
               </p>
             </div>
           </div>
-          <label className="flex min-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-11 px-5 bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white text-sm font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition-all sm:w-auto">
+          <label className="flex min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-8 px-4 bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition-all sm:w-auto">
             <span className="truncate">Tải ảnh lên</span>
             <input
               type="file"
@@ -185,7 +187,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               Tên hiển thị
             </label>
             <input
-              className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
+              className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
               id="displayName"
               value={formData.displayName}
               onChange={handleInputChange}
@@ -200,7 +202,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               Email
             </label>
             <input
-              className="w-full rounded-xl text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 h-12 px-4 cursor-not-allowed"
+              className="w-full rounded-xl text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 h-9 px-4 cursor-not-allowed text-sm"
               id="email"
               type="email"
               value={formData.email}
@@ -217,7 +219,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             Tiểu sử ngắn
           </label>
           <textarea
-            className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 min-h-[120px] resize-none"
+            className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 min-h-[100px] resize-none text-sm"
             id="bio"
             value={formData.bio}
             onChange={handleInputChange}
@@ -243,7 +245,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               id="customStatus"
               type="text"
               placeholder="Bạn đang nghĩ gì?"
-              className="w-full h-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
+              className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
               value={formData.customStatus}
               onChange={handleInputChange}
             />
@@ -254,7 +256,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 rounded-xl h-11 px-8 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 transition-all"
+            className="flex items-center gap-2 rounded-xl h-9 px-6 bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 transition-all"
           >
             {loading ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
@@ -282,7 +284,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
                 Mật khẩu hiện tại
               </label>
               <input
-                className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
+                className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
                 id="currentPassword"
                 placeholder="••••••••"
                 type="password"
@@ -298,7 +300,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
                 Mật khẩu mới
               </label>
               <input
-                className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
+                className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
                 id="newPassword"
                 placeholder="••••••••"
                 type="password"
@@ -312,7 +314,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 rounded-xl h-11 px-8 bg-slate-800 dark:bg-white/10 text-white text-sm font-bold hover:bg-slate-900 dark:hover:bg-white/20 disabled:opacity-50 transition-all"
+              className="flex items-center gap-2 rounded-xl h-9 px-6 bg-slate-800 dark:bg-white/10 text-white text-xs font-bold hover:bg-slate-900 dark:hover:bg-white/20 disabled:opacity-50 transition-all"
             >
               {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
             </button>
@@ -335,7 +337,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
           type="button"
           onClick={handleDeleteAccount}
           disabled={loading}
-          className="flex items-center gap-2 rounded-xl h-11 px-6 bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-600/20 hover:bg-red-700 transition-all"
+          className="flex items-center gap-2 rounded-xl h-9 px-5 bg-red-600 text-white text-xs font-bold shadow-lg shadow-red-600/20 hover:bg-red-700 transition-all"
         >
           {loading ? "Đang xử lý..." : "Xóa tài khoản của tôi"}
         </button>

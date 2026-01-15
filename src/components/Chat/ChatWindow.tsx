@@ -85,6 +85,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showContactSidebar, setShowContactSidebar] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [blockerId, setBlockerId] = useState<number | undefined>(undefined);
   const [chatWallpaper, setChatWallpaper] = useState(
     localStorage.getItem("chat-wallpaper") || "default"
   );
@@ -301,16 +302,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         conversation.conversationType === ConversationType.Direct
       ) {
         try {
-          const { isBlocked } = await blockApi.isUserBlockedMutual(
+          const { isBlocked, blockerId } = await blockApi.isUserBlockedMutual(
             user.id,
             otherMember.id
           );
           setIsBlocked(isBlocked);
+          setBlockerId(blockerId);
         } catch (err) {
           console.error("Error checking block status:", err);
         }
       } else {
         setIsBlocked(false);
+        setBlockerId(undefined);
       }
     };
 
@@ -932,7 +935,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                         prev > 0 ? prev - 1 : pinnedMessages.length - 1
                       )
                     }
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
                   >
                     <span className="material-symbols-outlined text-base">
                       chevron_left
@@ -944,7 +947,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                         prev < pinnedMessages.length - 1 ? prev + 1 : 0
                       )
                     }
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
                   >
                     <span className="material-symbols-outlined text-base">
                       chevron_right
@@ -954,7 +957,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               )}
               <button
                 onClick={() => setPinnedMessages([])}
-                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors ml-1"
+                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors ml-1"
                 title="Ẩn"
               >
                 <span className="material-symbols-outlined text-base">
@@ -1021,10 +1024,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         {showJumpToBottom && (
           <button
             onClick={scrollToBottom}
-            className="fixed bottom-32 right-12 z-50 size-12 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
+            className="fixed bottom-32 right-12 z-50 size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
             title="Cuộn xuống dưới cùng"
           >
-            <span className="material-symbols-outlined text-2xl font-black">
+            <span className="material-symbols-outlined text-xl font-black">
               keyboard_double_arrow_down
             </span>
           </button>
@@ -1059,9 +1062,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             </div>
             <button
               onClick={() => setReplyingTo(null)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">close</span>
+              <span className="material-symbols-outlined text-base">close</span>
             </button>
           </div>
         )}
@@ -1085,9 +1088,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 setEditingMessage(null);
                 setInputValue("");
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">close</span>
+              <span className="material-symbols-outlined text-base">close</span>
             </button>
           </div>
         )}
@@ -1115,6 +1118,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           showGiphyPicker={showGiphyPicker}
           setShowGiphyPicker={setShowGiphyPicker}
           onGifSelect={handleGifSelect}
+          blockerId={blockerId}
+          currentUserId={user?.id}
         />
       </div>
 

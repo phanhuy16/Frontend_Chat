@@ -15,7 +15,8 @@
     "voice_message": "Tin nhắn thoại",
     "pinned": "Tin nhắn đã ghim",
     "replying": "Đang trả lời",
-    "editing": "Đang chỉnh sửa"
+    "editing": "Đang chỉnh sửa",
+    "disabled_blocked": "Bạn không thể gửi tin nhắn cho người dùng này."
   },
   "settings": {
     "title": "Cài đặt hệ thống",
@@ -89,7 +90,7 @@
       "read_receipts": "Xác nhận đã đọc (Seen)",
       "read_receipts_desc": "Nếu tắt, bạn cũng sẽ không thấy xác nhận đã đọc từ người khác.",
       "blocked_users": "Danh sách chặn",
-      "blocked_count": "Bạn hiện đang chặn {count} người dùng.",
+      "blocked_count": "Bạn hiện đang chặn {{count}} người dùng.",
       "manage": "Quản lý",
       "everyone": "Mọi người",
       "contacts": "Liên hệ",
@@ -98,7 +99,7 @@
   },
   "media": {
     "title": "Media & Tệp tin",
-    "subtitle": "{count} mục trong cuộc hội thoại",
+    "subtitle": "{{count}} mục trong cuộc hội thoại",
     "view_all": "Xem tất cả",
     "search_placeholder": "Tìm kiếm tệp...",
     "no_media": "Không tìm thấy media",
@@ -106,7 +107,7 @@
     "recent_files": "Tài liệu gần đây",
     "no_files": "Không có tập tin nào",
     "links_development": "Tính năng Link đang phát triển",
-    "count_items": "{count} mục",
+    "count_items": "{{count}} mục",
     "tabs": {
       "all": "Tất cả",
       "images": "Hình ảnh",

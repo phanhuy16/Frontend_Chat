@@ -54,9 +54,9 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
   };
 
   return (
-    <div className="absolute top-[80px] left-0 right-0 z-40 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
+    <div className="absolute top-[64px] left-0 right-0 z-40 px-6 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 animate-slide-up">
       <div className="relative max-w-2xl mx-auto">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-lg">
           search
         </span>
         <input
@@ -65,14 +65,14 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           autoFocus
-          className="w-full pl-12 pr-12 py-3 bg-slate-100 dark:bg-white/5 border-none rounded-2xl focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+          className="w-full pl-10 pr-10 py-2 bg-slate-100 dark:bg-white/5 border-none rounded-xl focus:ring-2 focus:ring-primary/50 transition-all text-xs"
         />
         {searchQuery && (
           <button
             onClick={() => handleSearch("")}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
-            <span className="material-symbols-outlined text-sm">cancel</span>
+            <span className="material-symbols-outlined text-xs">cancel</span>
           </button>
         )}
       </div>

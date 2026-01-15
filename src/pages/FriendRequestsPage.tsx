@@ -98,19 +98,19 @@ const FriendRequestsPage: React.FC = () => {
           </div>
           <button
             onClick={() => navigate("/chat")}
-            className="w-9 h-9 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+            className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
           >
-            <span className="material-symbols-outlined !text-[20px]">
+            <span className="material-symbols-outlined !text-[16px]">
               close
             </span>
           </button>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex p-1.5 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl w-fit mb-8">
+        <div className="flex p-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl w-fit mb-6">
           <button
             onClick={() => setActiveTab("received")}
-            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
+            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 ${
               activeTab === "received"
                 ? "bg-white dark:bg-slate-700 text-primary shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -120,7 +120,7 @@ const FriendRequestsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab("sent")}
-            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
+            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 ${
               activeTab === "sent"
                 ? "bg-white dark:bg-slate-700 text-primary shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -217,18 +217,18 @@ const FriendRequestsPage: React.FC = () => {
 
                   {/* Actions section */}
                   {activeTab === "received" ? (
-                    <div className="flex flex-col w-full gap-2 mt-4">
+                    <div className="flex flex-col w-full gap-1.5 mt-3">
                       <button
                         onClick={() => handleAccept(request)}
                         disabled={processing[request.id]}
-                        className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 text-[11px]"
+                        className="w-full py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 text-[10px]"
                       >
                         {processing[request.id] ? "Đang xử lý..." : "Chấp nhận"}
                       </button>
                       <button
                         onClick={() => handleReject(request.id)}
                         disabled={processing[request.id]}
-                        className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 text-[11px]"
+                        className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 text-[10px]"
                       >
                         Để sau
                       </button>
@@ -238,12 +238,12 @@ const FriendRequestsPage: React.FC = () => {
                       <button
                         onClick={() => handleReject(request.id)}
                         disabled={processing[request.id]}
-                        className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 group/cancel"
+                        className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 group/cancel"
                       >
-                        <span className="group-hover/cancel:hidden text-[11px]">
+                        <span className="group-hover/cancel:hidden text-[10px]">
                           Đang chờ phản hồi
                         </span>
-                        <span className="hidden group-hover/cancel:block text-[11px]">
+                        <span className="hidden group-hover/cancel:block text-[10px]">
                           Thu hồi lời mời
                         </span>
                       </button>

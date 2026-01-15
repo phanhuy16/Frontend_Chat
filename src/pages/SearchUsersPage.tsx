@@ -61,17 +61,19 @@ const SearchUsersPage: React.FC = () => {
           </div>
           <button
             onClick={() => navigate("/chat")}
-            className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+            className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Premium Search Bar */}
         <form onSubmit={handleSearch} className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
-          <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl px-6 py-5 transition-all focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-primary/50">
-            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 mr-4 text-2xl">search</span>
+          <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl px-4 py-3 transition-all focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-primary/50">
+            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 mr-3 text-xl">
+              search
+            </span>
             <input
               type="text"
               placeholder="Nhập tên người dùng hoặc email để tìm kiếm..."
@@ -91,13 +93,17 @@ const SearchUsersPage: React.FC = () => {
         {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 grayscale opacity-40">
             <div className="w-32 h-32 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-8">
-              <span className="material-symbols-outlined text-6xl">person_search</span>
+              <span className="material-symbols-outlined text-6xl">
+                person_search
+              </span>
             </div>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3">
               {searchTerm ? "Không có kết quả nào" : "Bắt đầu tìm kiếm"}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-sm font-bold text-sm uppercase tracking-widest leading-relaxed">
-              {searchTerm ? `Chúng tôi không tìm thấy ai trùng khớp với "${searchTerm}"` : "Nhập tên hoặc email vào ô tìm kiếm bên trên để tìm bạn bè mới"}
+              {searchTerm
+                ? `Chúng tôi không tìm thấy ai trùng khớp với "${searchTerm}"`
+                : "Nhập tên hoặc email vào ô tìm kiếm bên trên để tìm bạn bè mới"}
             </p>
           </div>
         ) : (
@@ -118,7 +124,8 @@ const SearchUsersPage: React.FC = () => {
                       />
                     ) : (
                       <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-4xl font-black border-4 border-white dark:border-slate-800 shadow-xl group-hover:scale-105 transition-transform duration-500">
-                        {u.displayName?.charAt(0).toUpperCase() || u.userName?.charAt(0).toUpperCase()}
+                        {u.displayName?.charAt(0).toUpperCase() ||
+                          u.userName?.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -138,20 +145,22 @@ const SearchUsersPage: React.FC = () => {
                     <button
                       onClick={() => handleSendRequest(u.id)}
                       disabled={requesting[u.id]}
-                      className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-xl font-black shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
                     >
                       {requesting[u.id] ? (
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                       ) : (
                         <>
-                          <span className="material-symbols-outlined text-xl">person_add</span>
+                          <span className="material-symbols-outlined text-lg">
+                            person_add
+                          </span>
                           Kết bạn
                         </>
                       )}
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Decorative background element */}
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
               </div>

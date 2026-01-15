@@ -61,32 +61,32 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex flex-col items-center gap-3 w-full px-2">
+        <nav className="flex flex-col items-center gap-4 w-full">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavClick(item.path)}
-              className={`relative flex items-center justify-center w-full h-9 lg:h-10 rounded-2xl transition-all duration-300 group ${
+              className={`relative flex items-center justify-center size-9 lg:size-10 rounded-2xl transition-all duration-300 group ${
                 isActive(item.path)
-                  ? "bg-primary text-white shadow-lg shadow-primary/30"
+                  ? "bg-primary text-white shadow-xl shadow-primary/40 scale-105"
                   : "text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-primary dark:hover:text-primary"
               }`}
               title={item.label}
             >
               <span
-                className={`material-symbols-outlined text-[18px] lg:text-[22px] ${
+                className={`material-symbols-outlined text-[20px] lg:text-[22px] transition-transform duration-300 group-hover:scale-110 ${
                   isActive(item.path) ? "font-fill" : ""
                 }`}
               >
                 {item.icon}
               </span>
               {isActive(item.path) && (
-                <div className="absolute left-0 w-0.5 h-6 bg-white rounded-r-full" />
+                <div className="absolute -left-2 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
               )}
               {/* Notification Badge for Requests */}
               {item.id === "requests" && pendingCount > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg animate-pulse">
-                  {pendingCount > 9 ? "9+" : pendingCount}
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full size-4 flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-900 group-hover:scale-110 transition-transform">
+                  {pendingCount > 9 ? "!" : pendingCount}
                 </div>
               )}
             </button>
@@ -95,22 +95,22 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       </div>
 
       {/* Actions at Bottom */}
-      <div className="flex flex-col items-center gap-3 px-2 w-full mt-auto">
+      <div className="flex flex-col items-center gap-4 w-full mt-auto">
         <button
           onClick={onNewGroup}
-          className="flex items-center justify-center w-full h-9 lg:h-10 rounded-2xl bg-white/10 text-slate-400 hover:text-primary hover:bg-white/20 transition-all duration-300 group"
+          className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-300 group"
           title="New Group"
         >
-          <span className="material-symbols-outlined text-[20px]">
+          <span className="material-symbols-outlined text-[20px] group-hover:rotate-6 transition-transform">
             group_add
           </span>
         </button>
         <button
           onClick={onNewChat}
-          className="flex items-center justify-center w-full h-9 lg:h-10 rounded-2xl bg-gradient-to-tr from-primary to-secondary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all duration-300 group"
+          className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-primary text-white shadow-xl shadow-primary/30 hover:scale-110 active:scale-95 transition-all duration-300 group"
           title="New Chat"
         >
-          <span className="material-symbols-outlined text-[22px] font-bold">
+          <span className="material-symbols-outlined text-[20px] font-black group-hover:rotate-12 transition-transform">
             add
           </span>
         </button>

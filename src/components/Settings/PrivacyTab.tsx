@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
 import { userApi } from "../../api/user.api";
 import { useTranslation } from "react-i18next";
+import blockApi from "../../api/block.api";
+import BlockedUsersModal from "./BlockedUsersModal";
 
 const PrivacyTab: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -12,6 +14,8 @@ const PrivacyTab: React.FC = () => {
     onlineStatus: user?.onlineStatusPrivacy || "everyone",
     readReceipts: user?.readReceiptsEnabled ?? true,
   });
+  const [blockedCount, setBlockedCount] = useState(0);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -22,6 +26,20 @@ const PrivacyTab: React.FC = () => {
       });
     }
   }, [user]);
+
+  const fetchBlockedCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const blocked = await blockApi.getBlockedUsers(user.id);
+      setBlockedCount(blocked.length);
+    } catch (err) {
+      console.error("Failed to fetch blocked count:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchBlockedCount();
+  }, [fetchBlockedCount]);
 
   const handlePrivacyChange = async (key: string, value: any) => {
     const updatedSettings = { ...privacySettings, [key]: value };
@@ -74,7 +92,7 @@ const PrivacyTab: React.FC = () => {
               <button
                 key={option}
                 onClick={() => handlePrivacyChange("lastSeen", option)}
-                className={`px-4 py-3 rounded-xl border-2 transition-all font-bold text-sm ${
+                className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${
                   privacySettings.lastSeen === option
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20"
@@ -100,7 +118,7 @@ const PrivacyTab: React.FC = () => {
               <button
                 key={option}
                 onClick={() => handlePrivacyChange("onlineStatus", option)}
-                className={`px-4 py-3 rounded-xl border-2 transition-all font-bold text-sm ${
+                className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${
                   privacySettings.onlineStatus === option
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20"
@@ -119,10 +137,10 @@ const PrivacyTab: React.FC = () => {
         <hr className="border-t border-slate-200 dark:border-white/10 my-8" />
 
         {/* Read Receipts */}
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
-          <div className="flex gap-4 items-center">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined font-fill">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+          <div className="flex gap-3 items-center">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <span className="material-symbols-outlined font-fill text-lg">
                 done_all
               </span>
             </div>
@@ -139,7 +157,7 @@ const PrivacyTab: React.FC = () => {
             onClick={() =>
               handlePrivacyChange("readReceipts", !privacySettings.readReceipts)
             }
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
               privacySettings.readReceipts
                 ? "bg-primary"
                 : "bg-slate-200 dark:bg-slate-700"
@@ -147,18 +165,18 @@ const PrivacyTab: React.FC = () => {
           >
             <span
               className={`${
-                privacySettings.readReceipts ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                privacySettings.readReceipts ? "translate-x-5" : "translate-x-1"
+              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </button>
         </div>
 
         {/* Blocked Users */}
-        <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+        <div className="p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex gap-4 items-center">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-                <span className="material-symbols-outlined font-fill">
+            <div className="flex gap-3 items-center">
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+                <span className="material-symbols-outlined font-fill text-lg">
                   block
                 </span>
               </div>
@@ -167,16 +185,25 @@ const PrivacyTab: React.FC = () => {
                   {t("settings.privacy.blocked_users")}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  {t("settings.privacy.blocked_count", { count: 0 })}
+                  {t("settings.privacy.blocked_count", { count: blockedCount })}
                 </p>
               </div>
             </div>
-            <button className="text-sm font-bold text-primary px-4 py-2 hover:bg-primary/10 rounded-xl transition-all">
+            <button
+              onClick={() => setIsBlockedModalOpen(true)}
+              className="text-xs font-bold text-primary px-3 py-1.5 hover:bg-primary/10 rounded-lg transition-all"
+            >
               {t("settings.privacy.manage")}
             </button>
           </div>
         </div>
       </div>
+
+      <BlockedUsersModal
+        isOpen={isBlockedModalOpen}
+        onClose={() => setIsBlockedModalOpen(false)}
+        onUnblocked={fetchBlockedCount}
+      />
     </div>
   );
 };

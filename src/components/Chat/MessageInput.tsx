@@ -26,6 +26,8 @@ interface MessageInputProps {
   showGiphyPicker: boolean;
   setShowGiphyPicker: (show: boolean) => void;
   onGifSelect: (gif: any) => void;
+  blockerId?: number;
+  currentUserId?: number;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -51,10 +53,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
   showGiphyPicker,
   setShowGiphyPicker,
   onGifSelect,
+  blockerId,
+  currentUserId,
 }) => {
   const { t } = useTranslation();
   return (
-    <div className="px-8 py-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
+    <div className="px-3 py-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
       {uploadingFiles && (
         <div className="mb-4 bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
           <div
@@ -65,9 +69,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
       )}
 
       {isBlocked ? (
-        <div className="p-4 text-center text-red-500 bg-red-100/50 dark:bg-red-900/20 border border-red-200/50 dark:border-red-900/50 rounded-2xl font-bold animate-pulse-subtle">
-          <p>
-            {t("chat.disabled_blocked") || "Chat is disabled due to blockade"}
+        <div className="flex flex-col items-center justify-center p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl animate-fade-in backdrop-blur-sm">
+          <div className="mb-2 size-10 flex items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/30 text-red-500">
+            <span className="material-symbols-outlined text-xl">
+              {blockerId === currentUserId ? "block" : "lock"}
+            </span>
+          </div>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 text-center">
+            {t("chat.disabled_blocked") ||
+              "You cannot send messages to this user."}
           </p>
         </div>
       ) : (
@@ -81,7 +91,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           />
 
           {isRecording ? (
-            <div className="flex-1 flex items-center gap-4 bg-slate-100 dark:bg-slate-800/50 px-4 py-1.5 rounded-2xl animate-fade-in">
+            <div className="flex-1 flex items-center gap-3 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-xl animate-fade-in">
               <div className="flex items-center gap-2 text-red-500 animate-pulse">
                 <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 <span className="text-sm font-bold">
@@ -97,16 +107,18 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 onClick={cancelRecording}
                 className="text-slate-400 hover:text-red-500 transition-colors"
               >
-                <span className="material-symbols-outlined text-xl">
+                <span className="material-symbols-outlined text-lg">
                   delete
                 </span>
               </button>
               <button
                 type="button"
                 onClick={stopRecording}
-                className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
+                className="w-6 h-6 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
               >
-                <span className="material-symbols-outlined text-xl">send</span>
+                <span className="material-symbols-outlined text-base">
+                  send
+                </span>
               </button>
             </div>
           ) : (
@@ -115,9 +127,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowUploadMenu(!showUploadMenu)}
-                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
+                  className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[24px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     add
                   </span>
                 </button>
@@ -165,7 +177,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
               <div className="flex-1 relative group">
                 <input
-                  className="w-full pl-6 pr-14 py-2 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-xs h-9"
+                  className="w-full pl-4 pr-12 py-1.5 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-[11px] h-7"
                   placeholder={t("chat.input_placeholder")}
                   type="text"
                   value={inputValue}
@@ -174,19 +186,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowGiphyPicker(!showGiphyPicker)}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-xl hover:bg-primary/10"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10"
                 >
-                  <span className="material-symbols-outlined text-[20px]">
+                  <span className="material-symbols-outlined text-[16px]">
                     gif
                   </span>
                 </button>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-xl hover:bg-accent/10">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-lg hover:bg-accent/10">
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className="w-full h-full flex items-center justify-center"
                   >
-                    <span className="material-symbols-outlined text-[20px]">
+                    <span className="material-symbols-outlined text-[16px]">
                       sentiment_satisfied
                     </span>
                   </button>
@@ -215,9 +227,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || uploadingFiles}
-                  className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-2xl disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
+                  className="w-7 h-7 flex items-center justify-center text-white bg-primary rounded-lg disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
                 >
-                  <span className="material-symbols-outlined text-[24px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     send
                   </span>
                 </button>
@@ -225,9 +237,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="button"
                   onClick={startRecording}
-                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all duration-200 shrink-0"
+                  className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[24px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     mic
                   </span>
                 </button>

@@ -67,10 +67,10 @@ const NotificationsTab: React.FC = () => {
 
       <div className="space-y-4">
         {/* Desktop Notifications */}
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
-          <div className="flex gap-4 items-center">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <span className="material-symbols-outlined font-fill">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+          <div className="flex gap-3 items-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+              <span className="material-symbols-outlined font-fill text-lg">
                 desktop_windows
               </span>
             </div>
@@ -86,23 +86,23 @@ const NotificationsTab: React.FC = () => {
           <button
             onClick={toggleSubscription}
             disabled={loading}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
               isSubscribed ? "bg-primary" : "bg-slate-200 dark:bg-slate-700"
             } ${loading ? "opacity-50 cursor-wait" : ""}`}
           >
             <span
               className={`${
-                isSubscribed ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                isSubscribed ? "translate-x-5" : "translate-x-1"
+              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </button>
         </div>
 
         {/* Sound Notifications */}
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
-          <div className="flex gap-4 items-center">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <span className="material-symbols-outlined font-fill">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+          <div className="flex gap-3 items-center">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <span className="material-symbols-outlined font-fill text-lg">
                 volume_up
               </span>
             </div>
@@ -115,16 +115,16 @@ const NotificationsTab: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={playTestSound}
-              className="text-xs font-bold text-primary hover:underline"
+              className="text-[10px] font-bold text-primary hover:underline"
             >
               {t("settings.notifications.test_sound")}
             </button>
             <button
               onClick={() => toggleSetting("enableSound")}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
                 settings.enableSound
                   ? "bg-primary"
                   : "bg-slate-200 dark:bg-slate-700"
@@ -132,18 +132,18 @@ const NotificationsTab: React.FC = () => {
             >
               <span
                 className={`${
-                  settings.enableSound ? "translate-x-6" : "translate-x-1"
-                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  settings.enableSound ? "translate-x-5" : "translate-x-1"
+                } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
               />
             </button>
           </div>
         </div>
 
         {/* Message Preview */}
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
-          <div className="flex gap-4 items-center">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <span className="material-symbols-outlined font-fill">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm">
+          <div className="flex gap-3 items-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <span className="material-symbols-outlined font-fill text-lg">
                 visibility
               </span>
             </div>
@@ -158,7 +158,7 @@ const NotificationsTab: React.FC = () => {
           </div>
           <button
             onClick={() => toggleSetting("showMessagePreview")}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
               settings.showMessagePreview
                 ? "bg-primary"
                 : "bg-slate-200 dark:bg-slate-700"
@@ -166,17 +166,17 @@ const NotificationsTab: React.FC = () => {
           >
             <span
               className={`${
-                settings.showMessagePreview ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                settings.showMessagePreview ? "translate-x-5" : "translate-x-1"
+              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </button>
         </div>
 
         {/* Mute All */}
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-red-500/5 dark:bg-red-500/10 shadow-sm">
-          <div className="flex gap-4 items-center">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-              <span className="material-symbols-outlined font-fill">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-red-500/10 bg-red-500/5 dark:bg-red-500/10 shadow-sm">
+          <div className="flex gap-3 items-center">
+            <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+              <span className="material-symbols-outlined font-fill text-lg">
                 notifications_off
               </span>
             </div>
@@ -191,14 +191,14 @@ const NotificationsTab: React.FC = () => {
           </div>
           <button
             onClick={() => toggleSetting("muteAll")}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
               settings.muteAll ? "bg-red-500" : "bg-slate-200 dark:bg-slate-700"
             }`}
           >
             <span
               className={`${
-                settings.muteAll ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                settings.muteAll ? "translate-x-5" : "translate-x-1"
+              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </button>
         </div>

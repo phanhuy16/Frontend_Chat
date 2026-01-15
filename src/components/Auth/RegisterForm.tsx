@@ -138,7 +138,7 @@ const RegisterForm: React.FC = () => {
             </span>
           </div>
           <input
-            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs"
             placeholder="Tên người dùng"
             type="text"
             name="username"
@@ -157,7 +157,7 @@ const RegisterForm: React.FC = () => {
             </span>
           </div>
           <input
-            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs"
             placeholder="Email"
             type="email"
             name="email"
@@ -176,7 +176,7 @@ const RegisterForm: React.FC = () => {
             </span>
           </div>
           <input
-            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs"
             placeholder="Tên hiển thị"
             type="text"
             name="displayName"
@@ -195,7 +195,7 @@ const RegisterForm: React.FC = () => {
             </span>
           </div>
           <input
-            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-10 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-10 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs"
             placeholder="Mật khẩu"
             type={showPassword ? "text" : "password"}
             name="password"
@@ -209,7 +209,7 @@ const RegisterForm: React.FC = () => {
             onClick={togglePasswordVisibility}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
           >
-            <span className="material-symbols-outlined text-xl">
+            <span className="material-symbols-outlined text-lg">
               {showPassword ? "visibility_off" : "visibility"}
             </span>
           </button>
@@ -223,7 +223,7 @@ const RegisterForm: React.FC = () => {
             </span>
           </div>
           <input
-            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-10 pl-10 pr-10 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-sm"
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-10 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs"
             placeholder="Xác nhận mật khẩu"
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
@@ -237,7 +237,7 @@ const RegisterForm: React.FC = () => {
             onClick={toggleConfirmPasswordVisibility}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
           >
-            <span className="material-symbols-outlined text-xl">
+            <span className="material-symbols-outlined text-lg">
               {showConfirmPassword ? "visibility_off" : "visibility"}
             </span>
           </button>
@@ -248,11 +248,11 @@ const RegisterForm: React.FC = () => {
       <button
         type="submit"
         disabled={loading}
-        className="w-full h-10 bg-primary hover:bg-primary-hover text-white rounded-full font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm mt-2"
+        className="w-full h-8 bg-primary hover:bg-primary-hover text-white rounded-full font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-xs mt-2"
       >
         {loading ? (
           <>
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             <span>Đang đăng ký...</span>
           </>
         ) : (
@@ -279,7 +279,7 @@ const RegisterForm: React.FC = () => {
             theme="filled_black"
             shape="pill"
             text="signin_with"
-            size="large"
+            size="medium"
             width="100%"
           />
         </div>
@@ -287,12 +287,12 @@ const RegisterForm: React.FC = () => {
         <button
           type="button"
           disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-full h-[40px] px-4 font-medium bg-[#1877F2] text-white hover:bg-[#1864cc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed w-full shadow-lg shadow-[#1877F2]/20"
+          className="flex items-center justify-center gap-2 rounded-full h-[32px] px-4 font-medium bg-[#1877F2] text-white hover:bg-[#1864cc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed w-full shadow-lg shadow-[#1877F2]/20"
         >
-          <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
             <path d="M13.397 20.997V12.801H16.162L16.573 9.59099H13.397V7.54899C13.397 6.55199 13.658 5.92999 14.836 5.92999H16.669V3.12799C15.8421 3.03358 15.0116 2.98666 14.18 2.98699C11.822 2.98699 10.155 4.45399 10.155 7.23499V9.59099H7.336V12.801H10.155V20.997H13.397Z" />
           </svg>
-          <span className="text-sm">Facebook</span>
+          <span className="text-xs">Facebook</span>
         </button>
       </div>
     </form>

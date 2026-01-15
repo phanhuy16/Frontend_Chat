@@ -207,7 +207,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       <aside className="flex flex-col w-full max-w-[320px] lg:max-w-[360px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300">
         <div className="flex flex-col gap-6 p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
               Conversations
             </h2>
           </div>
@@ -215,7 +215,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           {/* Search */}
           <div className="relative w-full group" ref={searchRef}>
             <input
-              className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-sm"
               placeholder="Search conversations..."
               type="search"
               value={searchTerm}
@@ -225,7 +225,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
               }}
               onFocus={() => setShowSearchResults(searchTerm.trim() !== "")}
             />
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-lg">
               search
             </span>
             {showSearchResults && (

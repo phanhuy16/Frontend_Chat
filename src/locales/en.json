@@ -15,7 +15,8 @@
     "voice_message": "Voice Message",
     "pinned": "Pinned Message",
     "replying": "Replying to",
-    "editing": "Editing message"
+    "editing": "Editing message",
+    "disabled_blocked": "You cannot send messages to this user."
   },
   "settings": {
     "title": "System Settings",
@@ -89,7 +90,7 @@
       "read_receipts": "Read Receipts",
       "read_receipts_desc": "If turned off, you won't see read receipts from others.",
       "blocked_users": "Blocked Users",
-      "blocked_count": "You are currently blocking {count} users.",
+      "blocked_count": "You are currently blocking {{count}} users.",
       "manage": "Manage",
       "everyone": "Everyone",
       "contacts": "Contacts",
@@ -98,7 +99,7 @@
   },
   "media": {
     "title": "Media & Files",
-    "subtitle": "{count} items in conversation",
+    "subtitle": "{{count}} items in conversation",
     "view_all": "View All",
     "search_placeholder": "Search files...",
     "no_media": "No media found",
@@ -106,7 +107,7 @@
     "recent_files": "Recent Files",
     "no_files": "No files found",
     "links_development": "Links feature is under development",
-    "count_items": "{count} items",
+    "count_items": "{{count}} items",
     "tabs": {
       "all": "All",
       "images": "Images",

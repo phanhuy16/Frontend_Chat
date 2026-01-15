@@ -127,9 +127,9 @@ const FriendsListPage: React.FC = () => {
           </div>
           <button
             onClick={() => setIsSearchModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 text-[11px]"
+            className="flex items-center gap-1.5 px-2 py-1 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 text-[10px]"
           >
-            <span className="material-symbols-outlined text-xl">
+            <span className="material-symbols-outlined text-[10px]">
               person_add
             </span>
             Thêm bạn mới
@@ -139,8 +139,8 @@ const FriendsListPage: React.FC = () => {
         {/* Premium Search Bar */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
-          <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg px-3 py-2 transition-all focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-primary/50 h-9">
-            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 mr-3">
+          <div className="relative flex items-center bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg px-3 py-1.5 transition-all focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-primary/50 h-8">
+            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 mr-2 text-lg">
               search
             </span>
             <input
@@ -148,7 +148,7 @@ const FriendsListPage: React.FC = () => {
               placeholder="Tìm kiếm trong danh sách bạn bè..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none w-full text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-xs"
+              className="bg-transparent border-none outline-none w-full text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-[11px]"
             />
           </div>
         </div>
@@ -235,13 +235,13 @@ const FriendsListPage: React.FC = () => {
                       </div>
 
                       {/* Hover Actions */}
-                      <div className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
+                      <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1.5">
                         <button
                           onClick={() => handleOpenChat(friend)}
-                          className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-lg shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
+                          className="w-6 h-6 flex items-center justify-center bg-primary text-white rounded-lg shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
                           title="Gửi tin nhắn"
                         >
-                          <span className="material-symbols-outlined text-lg">
+                          <span className="material-symbols-outlined text-base">
                             chat
                           </span>
                         </button>
@@ -250,13 +250,13 @@ const FriendsListPage: React.FC = () => {
                             handleRemoveFriend(friend.id, friend.displayName)
                           }
                           disabled={removing[friend.id]}
-                          className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all"
+                          className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all"
                           title="Xoá bạn bè"
                         >
                           {removing[friend.id] ? (
-                            <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                            <div className="w-3 h-3 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
                           ) : (
-                            <span className="material-symbols-outlined text-lg">
+                            <span className="material-symbols-outlined text-base">
                               person_remove
                             </span>
                           )}
