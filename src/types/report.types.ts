@@ -49,6 +49,7 @@ export interface ReportListItemDto {
   reportedUserName: string;
   reporterName: string;
   reason: string;
+  description?: string;
   reportedAt: string;
   status: ReportStatus;
 }

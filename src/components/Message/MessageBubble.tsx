@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   onPin?: (messageId: number) => void;
   onForward?: (message: Message) => void;
   onEdit?: (message: Message) => void;
+  onReport?: (message: Message) => void;
 }
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -31,6 +32,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onPin,
   onForward,
   onEdit,
+  onReport,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
@@ -306,6 +308,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           Chỉnh sửa
                         </button>
                       )}
+                      {!isOwn && (
+                        <button
+                          onClick={() => {
+                            onReport?.(message);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 text-red-500"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            report
+                          </span>
+                          Báo cáo
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -413,7 +429,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             ? "text-white"
                             : "text-slate-800 dark:text-white"
                         }`}
-                        style={{ fontSize: "var(--message-text)" }}
                       >
                         {message.content}
                       </p>

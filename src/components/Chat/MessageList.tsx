@@ -26,6 +26,7 @@ interface MessageListProps {
   loadMoreMessages: () => void;
   hasMore: boolean;
   loadingMore: boolean;
+  onReportMessage?: (msg: Message) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -50,6 +51,7 @@ const MessageList: React.FC<MessageListProps> = ({
   loadMoreMessages,
   hasMore,
   loadingMore,
+  onReportMessage,
 }) => {
   const topObserverRef = React.useRef<HTMLDivElement>(null);
 
@@ -139,6 +141,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   setEditingMessage(msg);
                   setInputValue(msg.content || "");
                 }}
+                onReport={(msg) => onReportMessage?.(msg)}
               />
             </div>
           ))}

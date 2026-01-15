@@ -35,7 +35,7 @@ const reportApi = {
   // Update report status (Admin)
   updateReportStatus: (
     reportId: number,
-    status: string,
+    status: string | number,
     adminNotes?: string
   ): Promise<any> =>
     axiosInstance

@@ -32,6 +32,7 @@ import { AddMembersModal } from "./AddMembersModal";
 import ChatHeader from "./ChatHeader";
 import ChatSearchPanel from "./ChatSearchPanel";
 import ContactInfoSidebar from "./ContactInfoSidebar";
+import ReportModal from "./ReportModal";
 import { ForwardMessageModal } from "./ForwardMessageModal";
 import { GroupMembersModal } from "./GroupMembersModal";
 import MessageInput from "./MessageInput";
@@ -95,6 +96,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   );
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [forwardingLoading, setForwardingLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTargetUser, setReportTargetUser] = useState<{
+    id: number;
+    displayName: string;
+  } | null>(null);
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -714,6 +720,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
   };
 
+  const handleReportMessage = (msg: Message) => {
+    if (msg.sender) {
+      setReportTargetUser({
+        id: msg.senderId,
+        displayName: msg.sender.displayName,
+      });
+      setShowReportModal(true);
+    }
+  };
+
   // Handle drag and drop
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -819,6 +835,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             onReject={rejectCall}
           />
         )}
+
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportedUser={reportTargetUser || undefined}
+          conversationId={conversation?.id}
+        />
 
         {/* Call Modal (during ringing) */}
         <CallModal
@@ -1015,6 +1038,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           setForwardingMessage={setForwardingMessage}
           setEditingMessage={setEditingMessage}
           setInputValue={setInputValue}
+          onReportMessage={handleReportMessage}
           scrollToBottom={scrollToBottom}
           loadMoreMessages={loadMoreMessages}
           hasMore={hasMore}

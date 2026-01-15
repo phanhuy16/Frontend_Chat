@@ -13,6 +13,7 @@ export interface User {
   lastSeenPrivacy: string;
   onlineStatusPrivacy: string;
   readReceiptsEnabled: boolean;
+  role: string;
 }
 
 export interface UserSearchResponse {

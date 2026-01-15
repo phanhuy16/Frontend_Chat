@@ -60,13 +60,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [accentColor]);
 
   useEffect(() => {
-    // Apply font size
+    // Apply font size globally by setting root font-size
+    // Default browser font-size is usually 16px
     const root = document.documentElement;
-    let sizeValue = "14px";
-    if (fontSize === "small") sizeValue = "13px";
-    if (fontSize === "large") sizeValue = "16px";
+    let sizeValue = "16px"; // Normal
+    if (fontSize === "small") sizeValue = "14px";
+    if (fontSize === "large") sizeValue = "18px";
 
-    root.style.setProperty("--message-text", sizeValue);
+    root.style.fontSize = sizeValue;
+
+    // Also keep the custom variable for messages if we want to fine-tune them
+    root.style.setProperty(
+      "--message-text",
+      fontSize === "small"
+        ? "0.9375rem"
+        : fontSize === "large"
+        ? "1.125rem"
+        : "1rem"
+    );
+
     localStorage.setItem("font-size", fontSize);
   }, [fontSize]);
 

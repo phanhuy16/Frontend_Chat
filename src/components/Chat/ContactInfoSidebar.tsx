@@ -8,6 +8,7 @@ import { Conversation, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import ConversationMedia from "./ConversationMedia";
+import ReportModal from "./ReportModal";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -54,20 +55,6 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
 
   // Report settings
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [reportDescription, setReportDescription] = useState("");
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportSubmitted, setReportSubmitted] = useState(false);
-
-  const reportReasons = [
-    { value: "spam", label: "Thư rác/Quảng cáo" },
-    { value: "harassment", label: "Quấy rối/Tấn công" },
-    { value: "hate_speech", label: "Phát ngôn gây thù địch" },
-    { value: "misinformation", label: "Thông tin sai lệch" },
-    { value: "adult_content", label: "Nội dung người lớn" },
-    { value: "violence", label: "Bạo lực/Đe dọa" },
-    { value: "other", label: "Khác" },
-  ];
 
   // Check if user is blocked
   useEffect(() => {
@@ -157,62 +144,8 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     }
   };
 
-  // Handle report submit - using API
-  const handleReportSubmit = async () => {
-    if (!reportReason) {
-      toast.error("Vui lòng chọn lý do báo cáo");
-      return;
-    }
-
-    if (!user?.id || !otherMember?.id) {
-      toast.error("Không thể xác định người dùng");
-      return;
-    }
-
-    setReportLoading(true);
-    try {
-      // Use report API
-      await reportApi.createReport({
-        reportedUserId: otherMember.id,
-        reporterId: user.id,
-        conversationId: conversation?.id,
-        reason: reportReason,
-        description: reportDescription.substring(0, 500), // Limit to 500 chars
-      });
-
-      // Show success message
-      toast.success("Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét vấn đề này.");
-
-      // Reset form
-      setReportSubmitted(true);
-      setReportReason("");
-      setReportDescription("");
-
-      // Close modal after 2 seconds
-      setTimeout(() => {
-        setReportModalOpen(false);
-        setReportSubmitted(false);
-      }, 2000);
-    } catch (err: any) {
-      console.error("Error submitting report:", err);
-
-      // Better error handling
-      const errorMessage =
-        err.response?.data?.message || err.message || "Lỗi khi gửi báo cáo";
-
-      toast.error(errorMessage);
-    } finally {
-      setReportLoading(false);
-    }
-  };
-
-  // Handle report modal close
-  const handleReportModalClose = () => {
-    setReportModalOpen(false);
-    setReportReason("");
-    setReportDescription("");
-    setReportSubmitted(false);
-  };
+  // Removed: handleReportSubmit function
+  // Removed: handleReportModalClose function
 
   // Extract all attachments from messages
   const allAttachments = useMemo(() => {
@@ -752,115 +685,16 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
           </div>
         </div>
       </Modal>
-      {/* Report Modal - with success state */}
-      <Modal
-        title="Báo cáo người dùng"
-        open={reportModalOpen}
-        onCancel={handleReportModalClose}
-        footer={
-          reportSubmitted
-            ? null
-            : [
-                <Button key="cancel" onClick={handleReportModalClose}>
-                  Hủy
-                </Button>,
-                <Button
-                  key="submit"
-                  danger
-                  loading={reportLoading}
-                  onClick={handleReportSubmit}
-                  disabled={!reportReason}
-                >
-                  Gửi báo cáo
-                </Button>,
-              ]
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        reportedUser={
+          otherMember
+            ? { id: otherMember.id, displayName: otherMember.displayName }
+            : undefined
         }
-      >
-        {reportSubmitted ? (
-          <div className="flex flex-col items-center justify-center py-8 gap-4">
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-              <span className="material-symbols-outlined text-4xl text-green-600 dark:text-green-400">
-                check_circle
-              </span>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold text-black dark:text-white">
-                Báo cáo đã được gửi
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Cảm ơn bạn. Chúng tôi sẽ xem xét vấn đề này sớm.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Info */}
-            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Báo cáo này sẽ được gửi đến đội quản lý. Vui lòng cung cấp
-                chi tiết chính xác.
-              </p>
-            </div>
-
-            {/* Reported User */}
-            <div className="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Báo cáo
-              </p>
-              <p className="font-medium text-black dark:text-white">
-                {otherMember?.displayName}
-              </p>
-            </div>
-
-            {/* Report Reason */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Lý do báo cáo <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={reportReason}
-                onChange={(e) => setReportReason(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">-- Chọn lý do --</option>
-                {reportReasons.map((reason) => (
-                  <option key={reason.value} value={reason.value}>
-                    {reason.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Report Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Chi tiết (tuỳ chọn)
-              </label>
-              <textarea
-                value={reportDescription}
-                onChange={(e) =>
-                  setReportDescription(e.target.value.substring(0, 500))
-                }
-                placeholder="Mô tả chi tiết vấn đề mà bạn gặp phải..."
-                rows={4}
-                maxLength={500}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {reportDescription.length}/500 ký tự
-              </p>
-            </div>
-
-            {/* Warning */}
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-xs text-red-700 dark:text-red-300">
-                ❌ Báo cáo giả mạo hoặc lạm dụng có thể dẫn đến hành động chống
-                lại tài khoản của bạn.
-              </p>
-            </div>
-          </div>
-        )}
-      </Modal>
+        conversationId={conversation?.id}
+      />
     </>
   );
 };
