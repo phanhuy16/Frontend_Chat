@@ -1,5 +1,6 @@
 import { MessageType } from "./enums";
 import { User } from "./user.types";
+import { Poll } from "./poll.types";
 export { MessageType };
 
 export interface Message {
@@ -9,6 +10,7 @@ export interface Message {
   senderId: number;
   content?: string | null;
   messageType: MessageType;
+  poll?: Poll;
   createdAt: string;
   updatedAt: string;
   reactions: Reaction[];

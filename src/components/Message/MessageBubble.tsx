@@ -6,6 +6,7 @@ import { getAvatarUrl } from "../../utils/helpers";
 import { MessageType } from "../../types";
 import { messageApi } from "../../api/message.api";
 import LinkPreview from "./LinkPreview";
+import PollBucket from "./PollBucket";
 
 interface MessageBubbleProps {
   message: Message;
@@ -18,6 +19,7 @@ interface MessageBubbleProps {
   onForward?: (message: Message) => void;
   onEdit?: (message: Message) => void;
   onReport?: (message: Message) => void;
+  currentUserId: number;
 }
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -33,6 +35,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onForward,
   onEdit,
   onReport,
+  currentUserId,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
@@ -348,14 +351,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             message.isDeletedForMe) && (
             <div
               className={`relative rounded-[1.25rem] ${
-                isPureGif || isPureUrl || isPureEmoji
-                  ? "p-0 bg-transparent shadow-none overflow-hidden"
+                isPureGif ||
+                isPureUrl ||
+                isPureEmoji ||
+                message.messageType === MessageType.Poll
+                  ? "p-0 bg-transparent shadow-none overflow-hidden w-full"
                   : `px-3 py-1.5 ${
                       message.isDeleted || message.isDeletedForMe
                         ? "bg-transparent shadow-none border-none"
                         : isOwn
-                        ? "bg-primary text-white rounded-br-none shadow-premium"
-                        : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
+                          ? "bg-primary text-white rounded-br-none shadow-premium"
+                          : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
                     }`
               }`}
             >
@@ -403,8 +409,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     {message.isDeletedForMe
                       ? "Bạn đã xóa một tin nhắn"
                       : isOwn
-                      ? "Bạn đã thu hồi một tin nhắn"
-                      : "Tin nhắn đã được thu hồi"}
+                        ? "Bạn đã thu hồi một tin nhắn"
+                        : "Tin nhắn đã được thu hồi"}
                   </p>
                 </div>
               ) : (
@@ -422,7 +428,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       <div className="text-3xl leading-tight">
                         {message.content}
                       </div>
-                    ) : (
+                    ) : message.messageType === MessageType.Poll ? null : (
                       <p
                         className={`text-sm leading-relaxed whitespace-pre-wrap ${
                           isOwn
@@ -439,6 +445,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   </>
                 )
               )}
+
+              {/* Poll Display */}
+              {message.messageType === MessageType.Poll &&
+                message.poll &&
+                !message.isDeleted &&
+                !message.isDeletedForMe && (
+                  <div className="w-full flex justify-center py-2">
+                    <div className="w-full max-w-[400px]">
+                      <PollBucket
+                        poll={message.poll}
+                        currentUserId={currentUserId}
+                      />
+                    </div>
+                  </div>
+                )}
 
               {message.isModified &&
                 !message.isDeleted &&
@@ -651,8 +672,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                   ? "bg-white"
                                   : "bg-primary"
                                 : isOwn
-                                ? "bg-white/30"
-                                : "bg-slate-200 dark:bg-slate-700"
+                                  ? "bg-white/30"
+                                  : "bg-slate-200 dark:bg-slate-700"
                             }`}
                             style={{
                               height: `${30 + (Math.sin(i * 1.5) * 15 + 15)}%`,

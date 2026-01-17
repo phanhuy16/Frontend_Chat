@@ -2,6 +2,7 @@ import React from "react";
 import { EmojiPicker } from "./EmojiPicker";
 import GiphyPicker from "./GiphyPicker";
 import { useTranslation } from "react-i18next";
+import PollCreationModal from "../CreatePoll/PollCreationModal";
 
 interface MessageInputProps {
   inputValue: string;
@@ -28,6 +29,8 @@ interface MessageInputProps {
   onGifSelect: (gif: any) => void;
   blockerId?: number;
   currentUserId?: number;
+  conversationId?: number;
+  onOpenPollModal?: () => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -55,8 +58,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onGifSelect,
   blockerId,
   currentUserId,
+  conversationId,
+  onOpenPollModal,
 }) => {
   const { t } = useTranslation();
+
   return (
     <div className="px-3 py-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
       {uploadingFiles && (
@@ -170,6 +176,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         description
                       </span>
                       <span className="text-sm">Files</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenPollModal?.();
+                        setShowUploadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                    >
+                      <span className="material-symbols-outlined text-orange-500">
+                        poll
+                      </span>
+                      <span className="text-sm">Poll</span>
                     </button>
                   </div>
                 )}

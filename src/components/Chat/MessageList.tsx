@@ -142,6 +142,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   setInputValue(msg.content || "");
                 }}
                 onReport={(msg) => onReportMessage?.(msg)}
+                currentUserId={user?.id || 0}
               />
             </div>
           ))}

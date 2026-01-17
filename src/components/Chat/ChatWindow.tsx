@@ -37,6 +37,7 @@ import { ForwardMessageModal } from "./ForwardMessageModal";
 import { GroupMembersModal } from "./GroupMembersModal";
 import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
+import PollCreationModal from "../CreatePoll/PollCreationModal";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -101,6 +102,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     id: number;
     displayName: string;
   } | null>(null);
+  const [showPollModal, setShowPollModal] = useState(false);
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -1144,8 +1146,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           onGifSelect={handleGifSelect}
           blockerId={blockerId}
           currentUserId={user?.id}
+          conversationId={conversation?.id}
+          onOpenPollModal={() => setShowPollModal(true)}
         />
       </div>
+
+      <PollCreationModal
+        isOpen={showPollModal}
+        onClose={() => setShowPollModal(false)}
+        conversationId={conversation.id}
+      />
 
       {/* Right side: Contact Info Sidebar */}
       {showContactSidebar && (

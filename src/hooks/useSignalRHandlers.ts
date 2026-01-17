@@ -185,6 +185,20 @@ export const useSignalRHandlers = () => {
       updateConversation(conversationId, { isPinned });
     });
 
+    on("PollUpdated", (data: any) => {
+      // Find the message that contains this poll and update it
+      // The backend returns the full PollDto in 'data'
+      const poll = data;
+      const pollId = poll.id ?? poll.Id;
+
+      // Update the message in the current conversation
+      setMessages((prev) =>
+        prev.map(msg =>
+          msg.poll?.id === pollId ? { ...msg, poll: poll } : msg
+        )
+      );
+    });
+
     // --- System Events ---
 
     on("Error", (errorMessage: string) => {
@@ -206,6 +220,7 @@ export const useSignalRHandlers = () => {
       off("AddedToConversation");
       off("RemovedFromConversation");
       off("ConversationPinStatusChanged");
+      off("PollUpdated");
       off("Error");
       listenerSetupRef.current = false;
     };

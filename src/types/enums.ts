@@ -9,6 +9,7 @@ export enum MessageType {
   Image = 1,
   File = 2,
   Voice = 3,
+  Poll = 4,
 }
 
 export enum ConversationType {

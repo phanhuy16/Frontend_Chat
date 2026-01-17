@@ -7,3 +7,4 @@ export * from './contact.types';
 export * from './api.types';
 export * from './signalr.types';
 export * from './friend.type';
+export * from './poll.types';
