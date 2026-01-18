@@ -26,6 +26,7 @@ export interface Message {
   readCount?: number;
   clientGeneratedId?: string;
   isOptimistic?: boolean;
+  scheduledAt?: string | null;
 }
 
 export interface Reaction {
@@ -61,6 +62,7 @@ export interface SendMessageRequest {
   content: string;
   messageType: number;
   parentMessageId?: number;
+  scheduledAt?: string | null;
 }
 
 export interface EditMessageRequest {

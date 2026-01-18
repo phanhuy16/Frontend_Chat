@@ -3,6 +3,8 @@ import { EmojiPicker } from "./EmojiPicker";
 import GiphyPicker from "./GiphyPicker";
 import { useTranslation } from "react-i18next";
 import PollCreationModal from "../CreatePoll/PollCreationModal";
+import DateTimePicker from "./DateTimePicker";
+import { format } from "date-fns";
 
 interface MessageInputProps {
   inputValue: string;
@@ -31,6 +33,10 @@ interface MessageInputProps {
   currentUserId?: number;
   conversationId?: number;
   onOpenPollModal?: () => void;
+  scheduledAt: string | null;
+  setScheduledAt: (val: string | null) => void;
+  showDateTimePicker: boolean;
+  setShowDateTimePicker: (show: boolean) => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -60,6 +66,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
   currentUserId,
   conversationId,
   onOpenPollModal,
+  scheduledAt,
+  setScheduledAt,
+  showDateTimePicker,
+  setShowDateTimePicker,
 }) => {
   const { t } = useTranslation();
 
@@ -239,8 +249,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       onClose={() => setShowGiphyPicker(false)}
                     />
                   )}
+                  {showDateTimePicker && (
+                    <DateTimePicker
+                      value={scheduledAt || ""}
+                      onChange={(val) => setScheduledAt(val)}
+                      onClose={() => setShowDateTimePicker(false)}
+                      onConfirm={() => setShowDateTimePicker(false)}
+                    />
+                  )}
                 </div>
               </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowDateTimePicker(!showDateTimePicker)}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                    scheduledAt 
+                      ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30" 
+                      : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
+                  }`}
+                  title="Schedule message"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    schedule
+                  </span>
+                </button>
 
               {inputValue.trim() ? (
                 <button
@@ -263,9 +297,25 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   </span>
                 </button>
               )}
+            </div>
             </>
           )}
         </form>
+      )}
+      
+      {scheduledAt && (
+        <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg animate-in fade-in slide-in-from-top-1">
+          <span className="material-symbols-outlined text-sm text-blue-500">schedule</span>
+          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+            Scheduled for: {format(new Date(scheduledAt), "MMM d, HH:mm")}
+          </span>
+          <button
+            onClick={() => setScheduledAt(null)}
+            className="ml-auto text-blue-400 hover:text-blue-600 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
       )}
     </div>
   );

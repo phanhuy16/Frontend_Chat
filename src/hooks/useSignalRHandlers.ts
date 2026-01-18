@@ -114,6 +114,16 @@ export const useSignalRHandlers = () => {
       }
     });
 
+    on("MessageScheduled", (data: any) => {
+      const scheduledAt = data.scheduledAt ?? data.ScheduledAt;
+      if (scheduledAt) {
+        toast.success(`Message scheduled for ${new Date(scheduledAt).toLocaleString()}`, {
+          icon: '⏰',
+          duration: 4000
+        });
+      }
+    });
+
     // --- Reaction Events ---
 
     on("ReactionAdded", (data: any) => {
@@ -221,6 +231,7 @@ export const useSignalRHandlers = () => {
       off("RemovedFromConversation");
       off("ConversationPinStatusChanged");
       off("PollUpdated");
+      off("MessageScheduled");
       off("Error");
       listenerSetupRef.current = false;
     };

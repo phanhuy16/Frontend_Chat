@@ -103,12 +103,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     displayName: string;
   } | null>(null);
   const [showPollModal, setShowPollModal] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null);
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null
+    null,
   );
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -131,7 +133,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
   // Drafts management
   const [drafts, setDrafts] = useState<{ [key: number]: string }>({});
-  const prevConversationId = useRef<number | null>(null);
 
   const inputRef = useRef(inputValue);
   useEffect(() => {
@@ -174,7 +175,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       const data = await messageApi.getConversationMessages(
         conversation.id,
         1,
-        50
+        50,
       );
       // Reverse to get [oldest -> newest] for bottom-up display
       setMessages([...data].reverse());
@@ -197,7 +198,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       const data = await messageApi.getConversationMessages(
         conversation.id,
         nextPage,
-        50
+        50,
       );
       if (data.length > 0) {
         // Reverse new batch and prepend to existing messages
@@ -277,7 +278,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
     try {
       const updatedConversations = await conversationApi.getUserConversations(
-        user.id
+        user.id,
       );
       setConversations(updatedConversations);
     } catch (err) {
@@ -312,7 +313,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         try {
           const { isBlocked, blockerId } = await blockApi.isUserBlockedMutual(
             user.id,
-            otherMember.id
+            otherMember.id,
           );
           setIsBlocked(isBlocked);
           setBlockerId(blockerId);
@@ -409,7 +410,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           editingMessage.id,
           conversation.id,
           inputValue.trim(),
-          user.id
+          user.id,
         );
         setEditingMessage(null);
       } else {
@@ -444,11 +445,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           user.id,
           content,
           MessageType.Text,
-          replyingTo?.id
+          replyingTo?.id,
+          scheduledAt ? new Date(scheduledAt).toISOString() : null,
         );
       }
       setInputValue("");
       setReplyingTo(null);
+      setScheduledAt(null);
+      setShowDateTimePicker(false);
       invoke("StopTyping", conversation.id, user.id);
       if (reloadConversations) {
         await reloadConversations();
@@ -469,7 +473,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         user.id,
         gifUrl,
         MessageType.Image, // Treat GIFs as images for rendering
-        replyingTo?.id
+        replyingTo?.id,
       );
       setShowGiphyPicker(false);
       setReplyingTo(null);
@@ -499,7 +503,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         await invoke("ForwardMessage", forwardingMessage.id, targetId, user.id);
       }
       toast.success(
-        `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`
+        `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`,
       );
       setForwardingMessage(null);
     } catch (err) {
@@ -519,7 +523,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const handleGroupDeleted = async () => {
     // Xoá group khỏi conversations
     setConversations((prev: any) =>
-      prev.filter((conv: any) => conv.id !== conversation.id)
+      prev.filter((conv: any) => conv.id !== conversation.id),
     );
     // Clear current conversation
     setCurrentConversation(null);
@@ -548,7 +552,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     try {
       // Determine message type based on files
       const isAllImages = Array.from(files).every((f) =>
-        f.type.startsWith("image/")
+        f.type.startsWith("image/"),
       );
       const messageType = isAllImages ? MessageType.Image : MessageType.File;
       // Step 1: Send placeholder message using HTTP API to get ID immediately
@@ -593,7 +597,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         const updatedMessages = await messageApi.getConversationMessages(
           conversationIdAtStart,
           1,
-          50
+          50,
         );
         const sortedMessages = [...updatedMessages].reverse();
         setMessages(sortedMessages);
@@ -682,7 +686,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         const updatedMessages = await messageApi.getConversationMessages(
           conversationIdAtStart,
           1,
-          50
+          50,
         );
         setMessages([...updatedMessages].reverse());
       }
@@ -701,8 +705,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         prev.map((m) =>
           m.id === messageId
             ? { ...m, isDeletedForMe: true, content: null, attachments: [] }
-            : m
-        )
+            : m,
+        ),
       );
       toast.success("Đã xoá tin nhắn ở phía bạn");
     } catch (err) {
@@ -783,7 +787,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           otherMember.id,
           otherMember.displayName,
           conversation.id,
-          CallType.Audio
+          CallType.Audio,
         );
       }
     } else {
@@ -801,7 +805,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           otherMember.id,
           otherMember.displayName,
           conversation.id,
-          CallType.Video
+          CallType.Video,
         );
       }
     } else {
@@ -929,7 +933,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                     el.classList.add("highlight-message");
                     setTimeout(
                       () => el.classList.remove("highlight-message"),
-                      2000
+                      2000,
                     );
                   }
                 }}
@@ -957,7 +961,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                   <button
                     onClick={() =>
                       setCurrentPinnedIndex((prev) =>
-                        prev > 0 ? prev - 1 : pinnedMessages.length - 1
+                        prev > 0 ? prev - 1 : pinnedMessages.length - 1,
                       )
                     }
                     className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
@@ -969,7 +973,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                   <button
                     onClick={() =>
                       setCurrentPinnedIndex((prev) =>
-                        prev < pinnedMessages.length - 1 ? prev + 1 : 0
+                        prev < pinnedMessages.length - 1 ? prev + 1 : 0,
                       )
                     }
                     className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
@@ -1026,7 +1030,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 conversation.id,
                 user.id,
                 emoji,
-                user.displayName
+                user.displayName,
               );
             } catch (err) {
               console.error("Failed to add reaction:", err);
@@ -1148,6 +1152,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           currentUserId={user?.id}
           conversationId={conversation?.id}
           onOpenPollModal={() => setShowPollModal(true)}
+          scheduledAt={scheduledAt}
+          setScheduledAt={setScheduledAt}
+          showDateTimePicker={showDateTimePicker}
+          setShowDateTimePicker={setShowDateTimePicker}
         />
       </div>
 
