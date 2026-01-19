@@ -16,6 +16,7 @@ import ChatWindow from "../components/Chat/ChatWindow";
 import ConversationList from "../components/Chat/ConversationList";
 import { CreateGroupModal } from "../components/Chat/CreateGroupModal";
 import SearchUsersModal from "../components/Chat/SearchUsersModal";
+import GlobalSearchModal from "../components/Chat/GlobalSearchModal";
 import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
@@ -46,8 +47,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<{ [key: number]: number }>(
-    {}
+    {},
   );
 
   const searchRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
     try {
       const updatedConversations = await conversationApi.getUserConversations(
-        user.id
+        user.id,
       );
       setConversations(updatedConversations);
     } catch (err) {
@@ -101,14 +103,14 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     const conversationUserIds = new Set(
       conversations
         .filter((c) => c.conversationType === 1)
-        .flatMap((c) => c.members.map((m) => m.id))
+        .flatMap((c) => c.members.map((m) => m.id)),
     );
 
     const filteredFriends = friends.filter(
       (friend) =>
         !conversationUserIds.has(friend.id) &&
         (friend.displayName.toLowerCase().includes(searchLower) ||
-          friend.userName.toLowerCase().includes(searchLower))
+          friend.userName.toLowerCase().includes(searchLower)),
     );
 
     return { conversations: filteredConversations, friends: filteredFriends };
@@ -159,6 +161,39 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     }
   };
 
+  const handleDeleteConversation = async (conv: Conversation) => {
+    if (!user) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${
+          conv.groupName || "this conversation"
+        }"?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      if (conv.conversationType === 1) {
+        // Direct chat - currently just hide locally or show toast until backend supports hide
+        // Assuming backend might have delete endpoint or we wait for feature
+        toast.error("Deleting direct chats is not supported yet.");
+        return;
+      }
+
+      // Group chat
+      await conversationApi.deleteGroupConversation(conv.id, user.id);
+      setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+      if (currentConversation?.id === conv.id) {
+        setCurrentConversation(null);
+      }
+      toast.success("Conversation deleted");
+    } catch (err) {
+      toast.error("Failed to delete conversation");
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadFriends();
   }, []);
@@ -179,6 +214,19 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   }, [user, setConversations]);
 
   useSignalRHandlers(); // Centralized handlers
+
+  // Global search keyboard shortcut (Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowGlobalSearch(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   if (!user) {
     return (
@@ -248,6 +296,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
             setUnreadCounts((prev) => ({ ...prev, [conv.id]: 0 }));
           }}
           onTogglePin={handleTogglePin}
+          onDeleteConversation={handleDeleteConversation}
           user={user}
           unreadCounts={unreadCounts}
         />
@@ -266,6 +315,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           <ChatEmptyState onStartNewChat={() => setShowSearchModal(true)} />
         )}
       </main>
+
+      {/* Global Search Modal */}
+      <GlobalSearchModal
+        isOpen={showGlobalSearch}
+        onClose={() => setShowGlobalSearch(false)}
+      />
     </div>
   );
 };

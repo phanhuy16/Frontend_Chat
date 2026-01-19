@@ -109,17 +109,28 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
+    // Prevent infinite loop: if the error is from the refresh endpoint itself (or login/logout), don't try to refresh again
+    if (
+      originalRequest.url?.includes("/auth/refresh-token") ||
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/logout")
+    ) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -128,10 +139,10 @@ axiosInstance.interceptors.response.use(
       try {
         const newTokenData = await refreshAuthToken();
 
-        localStorage.setItem('token', newTokenData.token);
-        localStorage.setItem('refreshToken', newTokenData.refreshToken);
+        localStorage.setItem("token", newTokenData.token);
+        localStorage.setItem("refreshToken", newTokenData.refreshToken);
         if (newTokenData.user) {
-          localStorage.setItem('user', JSON.stringify(newTokenData.user));
+          localStorage.setItem("user", JSON.stringify(newTokenData.user));
         }
 
         axiosInstance.defaults.headers.common.Authorization = `Bearer ${newTokenData.token}`;
@@ -143,13 +154,13 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError: any) {
         processQueue(refreshError, null);
-        console.error('Token refresh failed:', refreshError.message);
+        console.error("Token refresh failed:", refreshError.message);
 
-      // Clear storage and redirect to auth
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/auth';
+        // Clear storage and redirect to auth
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        window.location.href = "/auth";
 
         return Promise.reject(refreshError);
       } finally {

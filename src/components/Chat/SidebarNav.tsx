@@ -8,6 +8,7 @@ interface SidebarNavProps {
   avatar: string;
   onNewChat: () => void;
   onNewGroup: () => void;
+  onGlobalSearch?: () => void;
 }
 
 const SidebarNav: React.FC<SidebarNavProps> = ({
@@ -15,6 +16,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   avatar,
   onNewChat,
   onNewGroup,
+  onGlobalSearch,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -96,6 +98,15 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
 
       {/* Actions at Bottom */}
       <div className="flex flex-col items-center gap-4 w-full mt-auto">
+        <button
+          onClick={onGlobalSearch}
+          className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-300 group"
+          title="Global Search (Ctrl+K)"
+        >
+          <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
+            manage_search
+          </span>
+        </button>
         <button
           onClick={onNewGroup}
           className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-300 group"

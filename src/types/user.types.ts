@@ -14,6 +14,8 @@ export interface User {
   onlineStatusPrivacy: string;
   readReceiptsEnabled: boolean;
   role: string;
+  createdAt: string;
+  phoneNumber?: string;
 }
 
 export interface UserSearchResponse {

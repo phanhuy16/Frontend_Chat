@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import SidebarNav from "./SidebarNav";
 import { useAuth } from "../../hooks/useAuth";
 import { userApi } from "../../api/user.api";
 import { REACT_APP_AVATAR_URL } from "../../utils/constants";
-import SearchUsersModal from "./SearchUsersModal";
-import { CreateGroupModal } from "./CreateGroupModal";
 import { conversationApi } from "../../api/conversation.api";
 import { useChat } from "../../hooks/useChat";
+import SidebarNav from "../Chat/SidebarNav";
+import SearchUsersModal from "../Chat/SearchUsersModal";
+import { CreateGroupModal } from "../Chat/CreateGroupModal";
+import GlobalSearchModal from "../Chat/GlobalSearchModal";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [avatar, setAvatar] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [searchGlobal, setSearchGlobal] = useState(false);
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -53,6 +55,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           avatar={avatar}
           onNewChat={() => setShowSearchModal(true)}
           onNewGroup={() => setShowCreateGroup(true)}
+          onGlobalSearch={() => setSearchGlobal(true)}
         />
 
         {/* Dynamic Content Columns */}
@@ -69,6 +72,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
         onGroupCreated={reloadConversations}
+      />
+      <GlobalSearchModal
+        isOpen={searchGlobal}
+        onClose={() => setSearchGlobal(false)}
       />
     </div>
   );

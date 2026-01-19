@@ -9,7 +9,8 @@ import FriendRequestsPage from "../pages/FriendRequestsPage";
 import FriendsListPage from "../pages/FriendsListPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import SettingsPage from "../pages/SettingsPage";
-import MainLayout from "../components/Chat/MainLayout";
+import ProfilePage from "../pages/ProfilePage";
+import MainLayout from "../components/Layout/MainLayout";
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -71,6 +72,16 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <MainLayout>
               <FriendsListPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/:userId"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ProfilePage />
             </MainLayout>
           </ProtectedRoute>
         }
