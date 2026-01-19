@@ -117,5 +117,26 @@
       "files": "Tệp tin",
       "links": "Liên kết"
     }
+  },
+  "profile_page": {
+    "title": "Thông tin cá nhân",
+    "about": "Giới thiệu",
+    "member_since": "Thành viên từ",
+    "email": "Email",
+    "phone": "Số điện thoại",
+    "shared_media": "Phương tiện đã chia sẻ",
+    "shared_media_desc": "Ảnh và video bạn đã chia sẻ sẽ xuất hiện ở đây.",
+    "message": "Nhắn tin",
+    "friend": "Bạn bè",
+    "add_friend": "Thêm bạn",
+    "not_found_title": "Không tìm thấy người dùng",
+    "not_found_desc": "Trang cá nhân bạn đang tìm kiếm không tồn tại.",
+    "go_back": "Quay lại",
+    "no_bio": "Chưa có tiểu sử.",
+    "edit_profile": "Chỉnh sửa hồ sơ",
+    "loading": "Đang tải hồ sơ...",
+    "recently": "Gần đây",
+    "blocked": "Đã bị chặn",
+    "you_blocked": "Bạn đã chặn"
   }
 }

@@ -5,9 +5,15 @@ import { userApi } from "../../api/user.api";
 import { useTranslation } from "react-i18next";
 import blockApi from "../../api/block.api";
 import BlockedUsersModal from "./BlockedUsersModal";
+import { User } from "../../types/user.types";
 
-const PrivacyTab: React.FC = () => {
-  const { user, updateUser } = useAuth();
+interface PrivacyTabProps {
+  user: User | null;
+}
+
+const PrivacyTab: React.FC<PrivacyTabProps> = ({ user: propUser }) => {
+  const { user: authUser, updateUser } = useAuth();
+  const user = propUser || authUser;
   const { t } = useTranslation();
   const [privacySettings, setPrivacySettings] = useState({
     lastSeen: user?.lastSeenPrivacy || "everyone",
@@ -101,8 +107,8 @@ const PrivacyTab: React.FC = () => {
                 {option === "everyone"
                   ? t("settings.privacy.everyone")
                   : option === "contacts"
-                  ? t("settings.privacy.contacts")
-                  : t("settings.privacy.nobody")}
+                    ? t("settings.privacy.contacts")
+                    : t("settings.privacy.nobody")}
               </button>
             ))}
           </div>
@@ -127,8 +133,8 @@ const PrivacyTab: React.FC = () => {
                 {option === "everyone"
                   ? t("settings.privacy.everyone")
                   : option === "contacts"
-                  ? t("settings.privacy.contacts")
-                  : t("settings.privacy.nobody")}
+                    ? t("settings.privacy.contacts")
+                    : t("settings.privacy.nobody")}
               </button>
             ))}
           </div>

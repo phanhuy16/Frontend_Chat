@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { conversationApi } from "../api/conversation.api";
 import { friendApi } from "../api/friend.api";
 import { userApi } from "../api/user.api";
@@ -32,6 +32,7 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { conversationId } = useParams<{ conversationId: string }>();
   const {
     conversations,
     currentConversation,
@@ -127,7 +128,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       });
 
       setConversations([newConversation, ...conversations]);
-      setCurrentConversation(newConversation);
+      navigate(`/chat/${newConversation.id}`);
       setSearchTerm("");
       setShowSearchResults(false);
       toast.success("Chat opened!");
@@ -139,7 +140,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
   // Handle selecting conversation from search
   const handleSelectConversation = (conv: Conversation) => {
-    setCurrentConversation(conv);
+    navigate(`/chat/${conv.id}`);
     setSearchTerm("");
     setShowSearchResults(false);
 
@@ -212,6 +213,38 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
     loadConversations();
   }, [user, setConversations]);
+
+  useEffect(() => {
+    if (conversationId && conversations.length > 0) {
+      const convIdNum = parseInt(conversationId);
+      const existingConv = conversations.find((c) => c.id === convIdNum);
+      if (existingConv) {
+        if (currentConversation?.id !== convIdNum) {
+          setCurrentConversation(existingConv);
+        }
+      } else {
+        // If not found in current list, fetch it
+        conversationApi
+          .getConversation(convIdNum)
+          .then((conv) => {
+            setConversations((prev) => [conv, ...prev]);
+            setCurrentConversation(conv);
+          })
+          .catch((err) => {
+            console.error("Failed to fetch specific conversation:", err);
+            toast.error("Conversation not found");
+            navigate("/chat");
+          });
+      }
+    }
+  }, [
+    conversationId,
+    conversations,
+    setCurrentConversation,
+    setConversations,
+    navigate,
+    currentConversation?.id,
+  ]);
 
   useSignalRHandlers(); // Centralized handlers
 
@@ -292,7 +325,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           conversations={filteredConversations}
           currentConversation={currentConversation}
           onSelectConversation={(conv) => {
-            setCurrentConversation(conv);
+            navigate(`/chat/${conv.id}`);
             setUnreadCounts((prev) => ({ ...prev, [conv.id]: 0 }));
           }}
           onTogglePin={handleTogglePin}

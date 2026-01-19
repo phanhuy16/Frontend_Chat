@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { userApi } from "../../api/user.api";
 import { getAvatarUrl } from "../../utils/helpers";
 import toast from "react-hot-toast";
@@ -27,7 +27,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({
@@ -35,6 +35,21 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
       [id]: value,
     }));
   };
+
+  // Sync state when user prop changes (e.g., after initial fetch in SettingsPage)
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        displayName: user.displayName || "",
+        email: user.email || "",
+        bio: user.bio || "",
+        customStatus: user.customStatus || "",
+        currentPassword: "",
+        newPassword: "",
+      });
+      setAvatarPreview(user.avatar || "");
+    }
+  }, [user]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

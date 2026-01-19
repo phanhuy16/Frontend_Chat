@@ -115,5 +115,26 @@
       "files": "Files",
       "links": "Links"
     }
+  },
+  "profile_page": {
+    "title": "Profile Information",
+    "about": "About",
+    "member_since": "Member Since",
+    "email": "Email",
+    "phone": "Phone",
+    "shared_media": "Shared Media",
+    "shared_media_desc": "Photos and videos you've shared will appear here.",
+    "message": "Message",
+    "friend": "Friend",
+    "add_friend": "Add Friend",
+    "not_found_title": "User Not Found",
+    "not_found_desc": "The profile you're looking for doesn't exist.",
+    "go_back": "Go Back",
+    "no_bio": "No biography provided yet.",
+    "edit_profile": "Edit Profile",
+    "loading": "Loading profile...",
+    "recently": "Recently",
+    "blocked": "Blocked",
+    "you_blocked": "You Blocked"
   }
 }

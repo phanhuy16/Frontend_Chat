@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../hooks/useAuth";
 import { getAvatarUrl } from "../utils/helpers";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
 // Tabs
 import ProfileTab from "../components/Settings/ProfileTab";
 import NotificationsTab from "../components/Settings/NotificationsTab";
 import PrivacyTab from "../components/Settings/PrivacyTab";
 import InterfaceTab from "../components/Settings/InterfaceTab";
 import ReportsTab from "../components/Settings/ReportsTab";
+import { userApi } from "../api/user.api";
+import { User } from "../types";
 
 type TabId = "profile" | "notifications" | "privacy" | "interface" | "reports";
 
@@ -19,6 +20,24 @@ const SettingsPage: React.FC = () => {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("profile");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!user?.id) return;
+      try {
+        setLoading(true);
+        const userData = await userApi.getUserById(user.id);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await logout();
@@ -42,19 +61,27 @@ const SettingsPage: React.FC = () => {
   ] as const;
 
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "profile":
-        return <ProfileTab user={user} logout={logout} />;
+        return <ProfileTab user={currentUser} logout={logout} />;
       case "notifications":
         return <NotificationsTab />;
       case "privacy":
-        return <PrivacyTab />;
+        return <PrivacyTab user={currentUser} />;
       case "interface":
         return <InterfaceTab />;
       case "reports":
         return <ReportsTab />;
       default:
-        return <ProfileTab user={user} logout={logout} />;
+        return <ProfileTab user={currentUser} logout={logout} />;
     }
   };
 

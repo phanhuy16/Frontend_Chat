@@ -17,16 +17,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   onSelect,
 }) => {
   const { user } = useAuth();
-  const [avatar, setAvatar] = React.useState("");
-
-  useEffect(() => {
-    const loadAvatar = async () => {
-      const data = await userApi.getUserById(user!.id);
-      setAvatar(getAvatarUrl(data.avatar));
-    };
-
-    loadAvatar();
-  }, [user]);
 
   // Memoize calculations to prevent re-renders
   const otherMember = useMemo(() => {

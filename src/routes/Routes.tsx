@@ -47,6 +47,16 @@ export default function AppRoutes() {
         }
       />
       <Route
+        path="/chat/:conversationId"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ChatPage pendingRequestCount={pendingRequestCount} />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>

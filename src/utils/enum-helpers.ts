@@ -19,10 +19,11 @@ export const getStatusUserColor = (status: StatusUser): string => {
 };
 
 export const getMessageTypeLabel = (type: MessageType): string => {
-  const labels: Record<MessageType, string> = {
+  const labels: Record<string, string> = {
     [MessageType.Text]: 'Text',
     [MessageType.Image]: 'Image',
     [MessageType.File]: 'File',
+    [MessageType.Poll]: 'Poll',
   };
   return labels[type] || 'Unknown';
 };

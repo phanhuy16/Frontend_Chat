@@ -222,6 +222,20 @@
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
+.btn-action-primary.btn-blocked {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-action-primary.btn-blocked:hover {
+  transform: none;
+  filter: none;
+  background: rgba(239, 68, 68, 0.15);
+}
+
 .btn-action-secondary {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
