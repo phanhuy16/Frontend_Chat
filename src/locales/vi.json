@@ -26,14 +26,16 @@
       "notifications": "Thông báo",
       "privacy": "Quyền riêng tư & Bảo mật",
       "interface": "Giao diện",
-      "reports": "Báo cáo vi phạm"
+      "reports": "Báo cáo vi phạm",
+      "security": "Bảo mật"
     },
     "descriptions": {
       "profile": "Cập nhật thông tin cá nhân và quản lý bảo mật tài khoản của bạn.",
       "notifications": "Thiết lập cách bạn nhận thông báo và tương tác với các tin nhắn mới.",
       "privacy": "Kiểm soát quyền truy cập và dữ liệu cá nhân của bạn trong cộng đồng.",
       "interface": "Tạo nét riêng cho ứng dụng với chủ đề và màu sắc bạn yêu thích.",
-      "reports": "Xem lịch sử báo cáo của bạn và theo dõi các khiếu nại về vi phạm cộng đồng."
+      "reports": "Xem lịch sử báo cáo của bạn và theo dõi các khiếu nại về vi phạm cộng đồng.",
+      "security": "Quản lý cài đặt bảo mật cho tài khoản của bạn."
     },
     "interface": {
       "title": "Giao diện & Trải nghiệm",
@@ -97,6 +99,31 @@
       "everyone": "Mọi người",
       "contacts": "Liên hệ",
       "nobody": "Không ai cả"
+    },
+    "security": {
+      "title": "Cài đặt bảo mật",
+      "subtitle": "Quản lý cài đặt bảo mật tài khoản của bạn.",
+      "two_factor": {
+        "title": "Xác thực 2 lớp (2FA)",
+        "description": "Thêm một lớp bảo mật cho tài khoản của bạn.",
+        "enable": "Bật 2FA",
+        "disable": "Tắt 2FA",
+        "enabled_alert": "2FA đang được bật",
+        "enabled_desc": "Tài khoản của bạn được bảo vệ bằng xác thực hai yếu tố.",
+        "modal_title": "Thiết lập xác thực 2 lớp",
+        "step_1": "1. Quét mã QR này bằng ứng dụng xác thực của bạn (Google Authenticator, Authy,...)",
+        "manual_entry": "Hoặc nhập khóa này thủ công:",
+        "step_2": "2. Nhập mã 6 chữ số từ ứng dụng:",
+        "verify_btn": "Xác minh & Bật",
+        "cancel": "Hủy",
+        "success_enable": "Đã bật 2FA thành công",
+        "success_disable": "Đã tắt 2FA",
+        "error_generate": "Không thể tạo mã 2FA",
+        "error_verify": "Không thể xác minh mã",
+        "error_disable": "Không thể tắt 2FA",
+        "placeholder_code": "000000",
+        "invalid_code": "Vui lòng nhập mã xác minh"
+      }
     }
   },
   "media": {

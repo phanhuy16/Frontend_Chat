@@ -1,4 +1,4 @@
-import { AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, UserAuth, ForgotPasswordRequest, ResetPasswordRequest } from "../types/auth.types";
+import { AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, UserAuth, ForgotPasswordRequest, ResetPasswordRequest, EnableTwoFactorResponse, VerifyTwoFactorRequest, TwoFactorLoginRequest } from "../types/auth.types";
 import axiosInstance from "./axios";
 
 export const authApi = {
@@ -31,4 +31,16 @@ export const authApi = {
 
   resetPassword: (data: ResetPasswordRequest): Promise<AuthResponse> =>
     axiosInstance.post('/auth/reset-password', data).then((res) => res.data),
+
+  enableTwoFactor: (): Promise<EnableTwoFactorResponse> =>
+    axiosInstance.post('/auth/enable-2fa').then((res) => res.data),
+
+  verifyTwoFactorSetup: (data: VerifyTwoFactorRequest): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/verify-2fa-setup', data).then((res) => res.data),
+
+  disableTwoFactor: (): Promise<any> =>
+    axiosInstance.post('/auth/disable-2fa').then((res) => res.data),
+
+  verifyTwoFactorLogin: (data: TwoFactorLoginRequest): Promise<AuthResponse> =>
+    axiosInstance.post('/auth/verify-2fa-login', data).then((res) => res.data),
 }

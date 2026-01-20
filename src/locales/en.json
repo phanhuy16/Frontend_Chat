@@ -25,13 +25,15 @@
       "profile": "Profile & Account",
       "notifications": "Notifications",
       "privacy": "Privacy & Security",
-      "interface": "Interface"
+      "interface": "Interface",
+      "security": "Security"
     },
     "descriptions": {
       "profile": "Update your personal information and manage account security.",
       "notifications": "Configure how you receive notifications and interact with new messages.",
       "privacy": "Control access and your personal data within the community.",
-      "interface": "Customize theme and colors to make the app your own."
+      "interface": "Customize theme and colors to make the app your own.",
+      "security": "Manage your account security settings."
     },
     "interface": {
       "title": "Interface & Experience",
@@ -95,6 +97,31 @@
       "everyone": "Everyone",
       "contacts": "Contacts",
       "nobody": "Nobody"
+    },
+    "security": {
+      "title": "Security Settings",
+      "subtitle": "Manage your account security settings.",
+      "two_factor": {
+        "title": "Two-Factor Authentication (2FA)",
+        "description": "Add an extra layer of security to your account.",
+        "enable": "Enable 2FA",
+        "disable": "Disable 2FA",
+        "enabled_alert": "2FA is currently enabled",
+        "enabled_desc": "Your account is protected with Two-Factor Authentication.",
+        "modal_title": "Set up Two-Factor Authentication",
+        "step_1": "1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+        "manual_entry": "Or enter this key manually:",
+        "step_2": "2. Enter the 6-digit code from your app:",
+        "verify_btn": "Verify & Enable",
+        "cancel": "Cancel",
+        "success_enable": "2FA has been enabled successfully",
+        "success_disable": "2FA has been disabled",
+        "error_generate": "Failed to generate 2FA key",
+        "error_verify": "Failed to verify code",
+        "error_disable": "Failed to disable 2FA",
+        "placeholder_code": "000000",
+        "invalid_code": "Please enter the verification code"
+      }
     }
   },
   "media": {

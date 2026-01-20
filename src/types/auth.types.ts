@@ -20,6 +20,7 @@ export interface AuthResponse {
   token?: string;
   refreshToken?: string;
   expiresIn?: Date;
+  requiresTwoFactor?: boolean;
 }
 
 export interface UserAuth extends User { }
@@ -39,4 +40,19 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
   token: string;
   newPassword: string;
+}
+
+export interface EnableTwoFactorResponse {
+  sharedKey: string;
+  authenticatorUri: string;
+}
+
+export interface VerifyTwoFactorRequest {
+  code: string;
+}
+
+export interface TwoFactorLoginRequest {
+  username: string;
+  code: string;
+  provider?: string;
 }

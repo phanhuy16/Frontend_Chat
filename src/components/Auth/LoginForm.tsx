@@ -12,6 +12,9 @@ const LoginForm: React.FC = () => {
     clearError,
     loginWithGoogle,
     loginWithFacebook,
+    requiresTwoFactor,
+    verifyTwoFactorLogin,
+    twoFactorUsername,
   } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +22,7 @@ const LoginForm: React.FC = () => {
     username: "",
     password: "",
   });
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   React.useEffect(() => {
     clearError();
@@ -76,58 +80,15 @@ const LoginForm: React.FC = () => {
           loginWithFacebook(accessToken)
             .then(() => navigate("/chat"))
             .catch((error: any) =>
-              console.error("Facebook login error:", error)
+              console.error("Facebook login error:", error),
             );
         } else {
           console.log("User cancelled login or did not fully authorize.");
         }
       },
-      { scope: "public_profile,email" }
+      { scope: "public_profile,email" },
     );
   };
-
-  // WAIT. The user specifically wants "synchronous" design. Standard Google button is rectangular.
-  // Let's use `type="standard"` width="100%" (if possible) or just let them be flexible.
-  // Actually, `GoogleLogin` has a `width` prop.
-
-  // Let's proceed with simplifying the FORM fields first (removing labels), and for buttons:
-  // I will use `GoogleLogin` with `type="standard"` `theme="filled_black"` (to match dark theme if needed) or `outline`.
-  // And Style the FB button to match.
-
-  // Refined Plan:
-  // 1. Inputs: Remove top labels. Keep placeholder. Add icons inside input for better UX (User icon, Lock icon).
-  // 2. Buttons:
-  //    - Google: `<GoogleLogin theme="outline" size="large" width="100%" text="continue_with" />` (This will be a wide button)
-  //    - Facebook: Wide button "Continue with Facebook", matching style (white bg, gray border, or blue bg).
-  //    - Actually, Google's "outline" is white background with gray border.
-  //    - I'll make FB button similar: White/Gray background or Blue? Usually FB is Blue.
-  //    - If Google is "outline", FB should probably be "outline" too or "filled".
-  //    - Let's try to make them look separate but equal width.
-
-  // Let's assume user wants two columns like before but "synchronized".
-  // Before: GoogleLogin (Standard) | Custom FB Button (Small text).
-  // Problem: GoogleLogin height/style is fixed.
-
-  // Let's try to wrap GoogleLogin to hide it and click it programmatically?
-  // No, `useGoogleLogin` is best for custom UI.
-  // I will switch to `useGoogleLogin`.
-  // ISSUE: Backend validation of ID Token.
-  // IF I use `useGoogleLogin`, I get an access_token.
-  // I can use `https://www.googleapis.com/oauth2/v3/userinfo` with that access_token to get user details on CLIENT side?
-  // No, backend blindly trusts? NO.
-  // Backend needs to verify.
-  // Backend `GoogleJsonWebSignature.ValidateAsync` expects ID Token.
-
-  // Is there a way to get ID Token from `useGoogleLogin`?
-  // No, not directly in the new library for implicit flow.
-
-  // Okay, I will stick to `GoogleLogin` component but I will make the Facebook button match its height and style (Rounded, shadow, etc).
-  // And I will simplify the inputs.
-
-  // Let's look at the "unnecessary things". Labels are definitely one.
-  // Also "Welcome back" text inside form might be redundant if AuthPage has it.
-  // AuthPage DOES have it: "{activeTab === "login" ? "Welcome back" : ...}"
-  // So I will remove headers from `LoginForm` as well (I added them in previous step, now removing).
 
   const handleGoogleLogin = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
@@ -140,9 +101,80 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorUsername) return;
+
+    try {
+      await verifyTwoFactorLogin({
+        username: twoFactorUsername,
+        code: twoFactorCode,
+      });
+      navigate("/chat");
+    } catch (err) {
+      console.error("2FA Login error: ", err);
+    }
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  if (requiresTwoFactor) {
+    return (
+      <form onSubmit={handleTwoFactorSubmit} className="flex flex-col gap-5">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200 px-4 py-3 rounded-lg text-sm animate-shake">
+            {error}
+          </div>
+        )}
+
+        <div className="text-center mb-2">
+          <h3 className="text-white font-bold mb-1">
+            Two-Factor Authentication
+          </h3>
+          <p className="text-slate-400 text-xs">
+            Enter the code from your authenticator app.
+          </p>
+        </div>
+
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-slate-500 group-focus-within:text-white transition-colors text-xl">
+              lock_clock
+            </span>
+          </div>
+          <input
+            className="w-full bg-white/5 border border-white/10 text-white rounded-full h-8 pl-10 pr-4 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium text-xs tracking-[0.5em] text-center"
+            placeholder="000000"
+            type="text"
+            value={twoFactorCode}
+            onChange={(e) => setTwoFactorCode(e.target.value)}
+            maxLength={6}
+            disabled={loading}
+            autoFocus
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-8 bg-primary hover:bg-primary-hover text-white rounded-full font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
+        >
+          {loading ? (
+            <>
+              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Verifying...</span>
+            </>
+          ) : (
+            "Verify"
+          )}
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">

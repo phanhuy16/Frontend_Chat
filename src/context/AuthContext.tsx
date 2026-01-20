@@ -7,6 +7,8 @@ import {
   UserAuth,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  TwoFactorLoginRequest,
+  AuthResponse,
 } from "../types/auth.types";
 
 interface AuthContextType {
@@ -24,15 +26,18 @@ interface AuthContextType {
   isAuthenticated: boolean;
   updateUser: (updatedUser: UserAuth) => void;
   forgotPassword: (
-    data: ForgotPasswordRequest
+    data: ForgotPasswordRequest,
   ) => Promise<{ success: boolean; message: string }>;
   resetPassword: (
-    data: ResetPasswordRequest
+    data: ResetPasswordRequest,
   ) => Promise<{ success: boolean; message: string }>;
+  verifyTwoFactorLogin: (data: TwoFactorLoginRequest) => Promise<AuthResponse>;
+  requiresTwoFactor: boolean;
+  twoFactorUsername: string | null;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -44,10 +49,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token")
+    localStorage.getItem("token"),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorUsername, setTwoFactorUsername] = useState<string | null>(
+    null,
+  );
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -76,9 +85,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = useCallback(async (data: LoginRequest) => {
     setLoading(true);
     setError(null);
+    setRequiresTwoFactor(false);
+    setTwoFactorUsername(null);
 
     try {
       const response = await authApi.login(data);
+      if (response.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        setTwoFactorUsername(data.username);
+        setLoading(false);
+        return;
+      }
+
       if (response.success && response.user && response.token) {
         setUser(response.user);
         setToken(response.token);
@@ -94,6 +112,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     }
   }, []);
+
+  const verifyTwoFactorLogin = useCallback(
+    async (data: TwoFactorLoginRequest) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await authApi.verifyTwoFactorLogin(data);
+        if (response.success && response.user && response.token) {
+          setUser(response.user);
+          setToken(response.token);
+          localStorage.setItem("user", JSON.stringify(response.user));
+          localStorage.setItem("token", response.token);
+          localStorage.setItem("refreshToken", response.refreshToken || "");
+          setRequiresTwoFactor(false);
+          setTwoFactorUsername(null);
+          return response;
+        } else {
+          setError(response.message || "2FA verification failed");
+          return response;
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.message || "2FA verification failed";
+        setError(msg);
+        return { success: false, message: msg };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   const refreshAuthToken = useCallback(async () => {
     try {
@@ -234,6 +282,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         },
         forgotPassword,
         resetPassword,
+        verifyTwoFactorLogin,
+        requiresTwoFactor,
+        twoFactorUsername,
       }}
     >
       {children}

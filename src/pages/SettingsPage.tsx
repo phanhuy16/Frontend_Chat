@@ -10,10 +10,17 @@ import NotificationsTab from "../components/Settings/NotificationsTab";
 import PrivacyTab from "../components/Settings/PrivacyTab";
 import InterfaceTab from "../components/Settings/InterfaceTab";
 import ReportsTab from "../components/Settings/ReportsTab";
+import SecuritySettings from "../components/Settings/SecuritySettings";
 import { userApi } from "../api/user.api";
 import { User } from "../types";
 
-type TabId = "profile" | "notifications" | "privacy" | "interface" | "reports";
+type TabId =
+  | "profile"
+  | "notifications"
+  | "privacy"
+  | "interface"
+  | "reports"
+  | "security";
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +65,7 @@ const SettingsPage: React.FC = () => {
       icon: "palette",
     },
     { id: "reports", label: t("settings.sidebar.reports"), icon: "flag" },
+    { id: "security", label: t("settings.sidebar.security"), icon: "security" },
   ] as const;
 
   const renderContent = () => {
@@ -80,6 +88,8 @@ const SettingsPage: React.FC = () => {
         return <InterfaceTab />;
       case "reports":
         return <ReportsTab />;
+      case "security":
+        return <SecuritySettings />;
       default:
         return <ProfileTab user={currentUser} logout={logout} />;
     }
@@ -176,6 +186,7 @@ const SettingsPage: React.FC = () => {
               {activeTab === "interface" &&
                 t("settings.descriptions.interface")}
               {activeTab === "reports" && t("settings.descriptions.reports")}
+              {activeTab === "security" && t("settings.descriptions.security")}
             </p>
           </div>
 
