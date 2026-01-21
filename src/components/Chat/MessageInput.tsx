@@ -37,6 +37,9 @@ interface MessageInputProps {
   setScheduledAt: (val: string | null) => void;
   showDateTimePicker: boolean;
   setShowDateTimePicker: (show: boolean) => void;
+  members: { id: number; displayName: string; avatar: string }[];
+  onMentionSelect?: (userId: number) => void;
+  isGroup: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -70,8 +73,86 @@ const MessageInput: React.FC<MessageInputProps> = ({
   setScheduledAt,
   showDateTimePicker,
   setShowDateTimePicker,
+  members,
+  onMentionSelect,
+  isGroup,
 }) => {
   const { t } = useTranslation();
+  const [showMentions, setShowMentions] = React.useState(false);
+  const [mentionQuery, setMentionQuery] = React.useState("");
+  const [mentionIndex, setMentionIndex] = React.useState(0);
+  const [cursorPosition, setCursorPosition] = React.useState(0);
+
+  const filteredMembers = React.useMemo(() => {
+    if (!mentionQuery) return members.filter(m => m.id !== currentUserId);
+    return members.filter(
+      (m) =>
+        m.id !== currentUserId &&
+        m.displayName.toLowerCase().includes(mentionQuery.toLowerCase()),
+    );
+  }, [members, mentionQuery, currentUserId]);
+
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const selectionStart = e.target.selectionStart || 0;
+    setCursorPosition(selectionStart);
+
+    handleInputChange(e);
+
+    // Mention logic - ONLY in Group Chats
+    if (!isGroup) {
+      setShowMentions(false);
+      return;
+    }
+
+    const textBeforeCursor = value.substring(0, selectionStart);
+    const atIndex = textBeforeCursor.lastIndexOf("@");
+
+    if (atIndex !== -1) {
+      const query = textBeforeCursor.substring(atIndex + 1);
+      // Check if there's a space before @ or if it's the start
+      if (atIndex === 0 || textBeforeCursor[atIndex - 1] === " ") {
+        if (!query.includes(" ")) {
+          setMentionQuery(query);
+          setShowMentions(true);
+          setMentionIndex(0);
+          return;
+        }
+      }
+    }
+    setShowMentions(false);
+  };
+
+  const insertMention = (member: { id: number; displayName: string }) => {
+    const textBeforeAt = inputValue.substring(0, inputValue.lastIndexOf("@", cursorPosition - 1));
+    const textAfterCursor = inputValue.substring(cursorPosition);
+    const newValue = `${textBeforeAt}@${member.displayName} ${textAfterCursor}`;
+    
+    setInputValue(newValue);
+    setShowMentions(false);
+    onMentionSelect?.(member.id);
+    
+    // Autofocus back to input would be good, but we don't have the ref easily here without adding it.
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showMentions && filteredMembers.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionIndex((prev) => (prev + 1) % filteredMembers.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionIndex(
+          (prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length,
+        );
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        insertMention(filteredMembers[mentionIndex]);
+      } else if (e.key === "Escape") {
+        setShowMentions(false);
+      }
+    }
+  };
 
   return (
     <div className="px-3 py-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
@@ -210,8 +291,45 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   placeholder={t("chat.input_placeholder")}
                   type="text"
                   value={inputValue}
-                  onChange={handleInputChange}
+                  onChange={onInputChange}
+                  onKeyDown={handleKeyDown}
                 />
+                
+                {showMentions && filteredMembers.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
+                    <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Mention someone
+                      </p>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredMembers.map((member, index) => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          onClick={() => insertMention(member)}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                            index === mentionIndex
+                              ? "bg-primary/10 dark:bg-primary/20"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                          }`}
+                        >
+                          <img
+                            src={member.avatar || "/default-avatar.png"}
+                            alt=""
+                            className="size-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                            onError={(e) => (e.currentTarget.src = "/default-avatar.png")}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                              {member.displayName}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowGiphyPicker(!showGiphyPicker)}

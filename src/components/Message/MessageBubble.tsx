@@ -20,6 +20,8 @@ interface MessageBubbleProps {
   onEdit?: (message: Message) => void;
   onReport?: (message: Message) => void;
   currentUserId: number;
+  canPin?: boolean;
+  canDeleteEveryone?: boolean;
 }
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -36,6 +38,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onEdit,
   onReport,
   currentUserId,
+  canPin = false,
+  canDeleteEveryone = false,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
@@ -129,7 +133,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 border border-white/10 shadow-sm"
               style={{
                 backgroundImage: `url("${getAvatarUrl(
-                  message.sender?.avatar
+                  message.sender?.avatar,
                 )}")`,
               }}
             />
@@ -230,18 +234,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         isOwn ? "right-0" : "left-0"
                       } z-30 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-1 min-w-[160px] animate-slide-up`}
                     >
-                      <button
-                        onClick={() => {
-                          onPin?.(message.id);
-                          setShowOptions(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
-                      >
-                        <span className="material-symbols-outlined text-base">
-                          push_pin
-                        </span>
-                        {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
-                      </button>
+                      {(isOwn || canPin) && (
+                        <button
+                          onClick={() => {
+                            onPin?.(message.id);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            push_pin
+                          </span>
+                          {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
+                        </button>
+                      )}
                       {message.content &&
                         message.messageType !== MessageType.Voice && (
                           <button
@@ -283,7 +289,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         </span>
                         Chuyển tiếp
                       </button>
-                      {isOwn && (
+                      {(isOwn || canDeleteEveryone) && (
                         <button
                           onClick={() => {
                             onDeleteForEveryone?.(message.id);
@@ -383,13 +389,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   } text-[12px] opacity-80 cursor-pointer`}
                   onClick={() => {
                     const el = document.getElementById(
-                      `message-${message.parentMessageId}`
+                      `message-${message.parentMessageId}`,
                     );
                     el?.scrollIntoView({ behavior: "smooth", block: "center" });
                     el?.classList.add("highlight-message");
                     setTimeout(
                       () => el?.classList.remove("highlight-message"),
-                      2000
+                      2000,
                     );
                   }}
                 >
@@ -436,7 +442,69 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             : "text-slate-800 dark:text-white"
                         }`}
                       >
-                        {message.content}
+                        {(() => {
+                          if (!message.content) return null;
+                          if (
+                            !message.mentionedUsers ||
+                            message.mentionedUsers.length === 0
+                          )
+                            return message.content;
+
+                          const parts = [];
+                          let lastIndex = 0;
+
+                          // Create a regex to match all mentioned usernames
+                          // We escape special characters in display names for safety
+                          const escapeRegExp = (string: string) =>
+                            string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                          const mentionRegexSource = message.mentionedUsers
+                            .map((u) => `@${escapeRegExp(u.displayName)}`)
+                            .join("|");
+
+                          if (!mentionRegexSource) return message.content;
+
+                          const mentionRegex = new RegExp(
+                            `(${mentionRegexSource})`,
+                            "g",
+                          );
+                          let match;
+
+                          while (
+                            (match = mentionRegex.exec(message.content)) !==
+                            null
+                          ) {
+                            // Add text before the mention
+                            if (match.index > lastIndex) {
+                              parts.push(
+                                message.content.substring(
+                                  lastIndex,
+                                  match.index,
+                                ),
+                              );
+                            }
+
+                            // Add the highlighted mention
+                            parts.push(
+                              <span
+                                key={match.index}
+                                className={`font-black underline decoration-2 underline-offset-2 ${
+                                  isOwn ? "text-amber-300" : "text-primary"
+                                }`}
+                              >
+                                {match[0]}
+                              </span>,
+                            );
+
+                            lastIndex = mentionRegex.lastIndex;
+                          }
+
+                          // Add remaining text
+                          if (lastIndex < message.content.length) {
+                            parts.push(message.content.substring(lastIndex));
+                          }
+
+                          return parts;
+                        })()}
                       </p>
                     )}
                     {urls.map((url, index) => (
@@ -481,7 +549,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 >
                   <div className="flex -space-x-1">
                     {Array.from(
-                      new Set(message.reactions.map((r) => r.emojiType))
+                      new Set(message.reactions.map((r) => r.emojiType)),
                     )
                       .slice(0, 1)
                       .map((emoji, idx) => (
@@ -577,7 +645,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     >
                       <div className="flex -space-x-1">
                         {Array.from(
-                          new Set(message.reactions.map((r) => r.emojiType))
+                          new Set(message.reactions.map((r) => r.emojiType)),
                         )
                           .slice(0, 1)
                           .map((emoji, idx) => (
@@ -622,7 +690,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     >
                       <div className="flex -space-x-1">
                         {Array.from(
-                          new Set(message.reactions.map((r) => r.emojiType))
+                          new Set(message.reactions.map((r) => r.emojiType)),
                         )
                           .slice(0, 1)
                           .map((emoji, idx) => (

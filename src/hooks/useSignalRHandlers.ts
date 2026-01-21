@@ -51,6 +51,7 @@ export const useSignalRHandlers = () => {
       reactions: [],
       attachments: data.attachments ?? data.Attachments ?? [],
       readCount: data.readCount ?? data.ReadCount ?? 0,
+      mentionedUsers: data.mentionedUsers ?? data.MentionedUsers ?? [],
     };
   };
 
@@ -122,6 +123,17 @@ export const useSignalRHandlers = () => {
           duration: 4000
         });
       }
+    });
+
+    on("UserMentioned", (data: any) => {
+      const senderName = data.senderName ?? data.SenderName;
+      const content = data.content ?? data.Content;
+
+      toast(`You were mentioned by ${senderName}: "${content}"`, {
+        icon: '🔔',
+        duration: 5000,
+        position: 'top-right'
+      });
     });
 
     // --- Reaction Events ---
@@ -209,6 +221,23 @@ export const useSignalRHandlers = () => {
       );
     });
 
+    on("PermissionsUpdated", (data: any) => {
+      const conversationId = data.conversationId ?? data.ConversationId;
+      const permissions = data.permissions ?? data.Permissions;
+
+      if (currentConversation && currentConversation.id === conversationId) {
+        const updatedMembers = currentConversation.members.map(m =>
+          m.id === user?.id ? { ...m, ...permissions } : m
+        );
+        updateConversation(conversationId, { members: updatedMembers });
+      }
+
+      toast.success("Quyền hạn của bạn đã được cập nhật bởi quản trị viên", {
+        icon: '🛡️',
+        duration: 4000
+      });
+    });
+
     // --- System Events ---
 
     on("Error", (errorMessage: string) => {
@@ -232,6 +261,8 @@ export const useSignalRHandlers = () => {
       off("ConversationPinStatusChanged");
       off("PollUpdated");
       off("MessageScheduled");
+      off("UserMentioned");
+      off("PermissionsUpdated");
       off("Error");
       listenerSetupRef.current = false;
     };

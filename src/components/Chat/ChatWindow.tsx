@@ -105,6 +105,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showPollModal, setShowPollModal] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+  const [mentionedUserIds, setMentionedUserIds] = useState<number[]>([]);
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -278,7 +279,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
     try {
       const updatedConversations = await conversationApi.getUserConversations(
-        user.id,
+        user?.id || 0,
       );
       setConversations(updatedConversations);
     } catch (err) {
@@ -312,7 +313,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       ) {
         try {
           const { isBlocked, blockerId } = await blockApi.isUserBlockedMutual(
-            user.id,
+            user?.id || 0,
             otherMember.id,
           );
           setIsBlocked(isBlocked);
@@ -342,7 +343,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         const convId = conversation.id;
 
         try {
-          await invoke("JoinConversation", convId, user.id);
+          await invoke("JoinConversation", convId, user?.id);
           console.log("Joined conversation successfully");
         } catch (err) {
           console.error("Failed to join conversation:", err);
@@ -410,7 +411,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           editingMessage.id,
           conversation.id,
           inputValue.trim(),
-          user.id,
+          user?.id,
         );
         setEditingMessage(null);
       } else {
@@ -421,7 +422,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         const optimisticMessage: Message = {
           id: -Date.now(), // Temp negative ID
           conversationId: conversation.id,
-          senderId: user.id,
+          senderId: user?.id || 0,
           sender: user as any,
           content: content,
           messageType: MessageType.Text,
@@ -442,18 +443,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         await invoke(
           "SendMessage",
           conversation.id,
-          user.id,
+          user?.id,
           content,
           MessageType.Text,
           replyingTo?.id,
           scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          mentionedUserIds,
         );
       }
       setInputValue("");
       setReplyingTo(null);
       setScheduledAt(null);
+      setMentionedUserIds([]);
       setShowDateTimePicker(false);
-      invoke("StopTyping", conversation.id, user.id);
+      invoke("StopTyping", conversation.id, user?.id);
       if (reloadConversations) {
         await reloadConversations();
       }
@@ -470,7 +473,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       await invoke(
         "SendMessage",
         conversation.id,
-        user.id,
+        user?.id,
         gifUrl,
         MessageType.Image, // Treat GIFs as images for rendering
         replyingTo?.id,
@@ -488,7 +491,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
   const handlePinMessage = async (messageId: number) => {
     try {
-      await invoke("PinMessage", messageId, conversation.id);
+      await invoke("PinMessage", messageId, conversation.id, user?.id);
     } catch (err) {
       console.error("Failed to pin message:", err);
       toast.error("Không thể ghim tin nhắn");
@@ -500,7 +503,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setForwardingLoading(true);
     try {
       for (const targetId of targetConversationIds) {
-        await invoke("ForwardMessage", forwardingMessage.id, targetId, user.id);
+        await invoke("ForwardMessage", forwardingMessage.id, targetId, user?.id);
       }
       toast.success(
         `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`,
@@ -1016,7 +1019,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             const optimisticReaction: Reaction = {
               id: -Date.now(), // Temp negative ID
               messageId: messageId,
-              userId: user.id,
+              userId: user?.id || 0,
               username: user.displayName,
               emojiType: emoji,
               isOptimistic: true,
@@ -1028,7 +1031,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
                 "AddReaction",
                 messageId,
                 conversation.id,
-                user.id,
+                user?.id,
                 emoji,
                 user.displayName,
               );
@@ -1156,6 +1159,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           setScheduledAt={setScheduledAt}
           showDateTimePicker={showDateTimePicker}
           setShowDateTimePicker={setShowDateTimePicker}
+          members={conversation.members.map((m) => ({
+            id: m.id,
+            displayName: m.displayName,
+            avatar: m.avatar,
+          }))}
+          onMentionSelect={(userId) => {
+            if (!mentionedUserIds.includes(userId)) {
+              setMentionedUserIds((prev) => [...prev, userId]);
+            }
+          }}
+          isGroup={conversation.conversationType === ConversationType.Group}
         />
       </div>
 
@@ -1210,7 +1224,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           visible={!!forwardingMessage}
           onCancel={() => setForwardingMessage(null)}
           onForward={handleForwardMessage}
-          userId={user.id}
+          userId={user?.id || 0}
           loading={forwardingLoading}
         />
       )}

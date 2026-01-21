@@ -43,4 +43,7 @@ export const conversationApi = {
 
   getConversationLinks: (id: number): Promise<any[]> =>
     axiosInstance.get(`/conversations/${id}/links`).then((res) => res.data),
-}
+
+  updateMemberPermissions: (conversationId: number, targetUserId: number, permissions: any): Promise<any> =>
+    axiosInstance.patch(`/conversations/${conversationId}/members/${targetUserId}/permissions`, permissions).then((res) => res.data),
+};

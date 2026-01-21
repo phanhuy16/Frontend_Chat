@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import blockApi from "../../api/block.api";
 import reportApi from "../../api/report.api";
 import { useAuth } from "../../hooks/useAuth";
-import { Conversation, StatusUser, User } from "../../types";
+import { Conversation, ConversationMember, StatusUser, User } from "../../types";
 import { Message } from "../../types/message.types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import ConversationMedia from "./ConversationMedia";
@@ -13,7 +13,7 @@ import ReportModal from "./ReportModal";
 interface ContactInfoSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  otherMember?: User | null;
+  otherMember?: User | ConversationMember | null;
   conversation?: Conversation | null;
   messages?: Message[];
   onPinMessage?: (messageId: number) => void;

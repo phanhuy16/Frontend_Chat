@@ -4,8 +4,10 @@ import { conversationApi } from "../../api/conversation.api";
 import toast from "react-hot-toast";
 import { AddMembersModal } from "./AddMembersModal";
 import { Modal } from "antd";
-import { ExclamationCircleFilled } from "@ant-design/icons";
+import { ExclamationCircleFilled, SafetyCertificateOutlined } from "@ant-design/icons";
 import { getAvatarUrl } from "../../utils/helpers";
+import { MemberPermissionsModal } from "./MemberPermissionsModal";
+import { MemberPermissions } from "../../types/conversation.types";
 
 interface GroupMembersModalProps {
   conversation: any;
@@ -29,10 +31,15 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   const [selectedUserForAdmin, setSelectedUserForAdmin] = useState<
     number | null
   >(null);
+  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any | null>(null);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [updatedConversation, setUpdatedConversation] = useState(conversation);
-
+  
+  const currentUserMember = updatedConversation?.members?.find((m: any) => m.id === user?.id);
   const isGroupAdmin = conversation?.createdBy === user?.id;
+  const canAddMembers = isGroupAdmin || currentUserMember?.canAddMembers;
+  const canRemoveMembers = isGroupAdmin || currentUserMember?.canRemoveMembers;
+  const canManagePermissions = isGroupAdmin || currentUserMember?.canChangePermissions;
   const isMember = updatedConversation?.members?.some(
     (m: any) => m.id === user?.id
   );
@@ -118,12 +125,39 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       setLoading(false);
     }
   };
-
   const handleMembersAdded = async () => {
-    // Reload conversation to update members list
-    onMemberRemoved?.();
     setShowAddMembers(false);
     toast.success("Thêm thành viên thành công");
+  };
+
+  const handleUpdatePermissions = async (permissions: MemberPermissions) => {
+    if (!selectedUserForPermissions) return;
+    setLoading(true);
+    try {
+      await conversationApi.updateMemberPermissions(
+        conversation.id,
+        selectedUserForPermissions.id,
+        permissions
+      );
+
+      // Update local state
+      setUpdatedConversation((prev: any) => ({
+        ...prev,
+        members: prev.members.map((m: any) =>
+          m.id === selectedUserForPermissions.id
+            ? { ...m, ...permissions }
+            : m
+        ),
+      }));
+
+      setSelectedUserForPermissions(null);
+      toast.success("Cập nhật quyền thành công");
+    } catch (err: any) {
+      console.error("Failed to update permissions:", err);
+      toast.error(err.response?.data?.message || "Lỗi cập nhật quyền");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen || !conversation) return null;
@@ -182,24 +216,38 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                 </div>
 
                 {/* Actions */}
-                {isGroupAdmin && member.id !== user?.id && (
+                {(isGroupAdmin || canRemoveMembers || canManagePermissions) && member.id !== user?.id && (
                   <div className="flex gap-1 ml-2">
-                    <button
-                      onClick={() => setSelectedUserForAdmin(member.id)}
-                      disabled={loading}
-                      title="Chuyển quyền admin"
-                      className="px-2 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                      👑
-                    </button>
-                    <button
-                      onClick={() => handleRemoveMember(member.id)}
-                      disabled={loading}
-                      title="Xoá thành viên"
-                      className="px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                      ✕
-                    </button>
+                    {canManagePermissions && (
+                      <button
+                        onClick={() => setSelectedUserForPermissions(member)}
+                        disabled={loading}
+                        title="Quản lý quyền"
+                        className="px-2 py-1 text-xs bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50 transition-colors font-medium flex items-center justify-center"
+                      >
+                         <SafetyCertificateOutlined className="text-xl" />
+                      </button>
+                    )}
+                    {isGroupAdmin && (
+                      <>
+                        <button
+                          onClick={() => setSelectedUserForAdmin(member.id)}
+                          disabled={loading}
+                          title="Chuyển quyền admin"
+                          className="px-2 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                        >
+                          👑
+                        </button>
+                        <button
+                          onClick={() => handleRemoveMember(member.id)}
+                          disabled={loading}
+                          title="Xoá thành viên"
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -247,7 +295,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-            {isMember && (
+            {canAddMembers && (
               <button
                 onClick={() => setShowAddMembers(true)}
                 disabled={loading}
@@ -298,6 +346,17 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
         onClose={() => setShowAddMembers(false)}
         onMembersAdded={handleMembersAdded}
       />
+
+      {/* Permissions Modal */}
+      {selectedUserForPermissions && (
+        <MemberPermissionsModal
+          member={selectedUserForPermissions}
+          isOpen={!!selectedUserForPermissions}
+          onClose={() => setSelectedUserForPermissions(null)}
+          onSave={handleUpdatePermissions}
+          loading={loading}
+        />
+      )}
     </>
   );
 };

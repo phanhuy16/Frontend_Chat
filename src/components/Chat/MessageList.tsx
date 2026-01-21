@@ -118,34 +118,43 @@ const MessageList: React.FC<MessageListProps> = ({
             </span>
             <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
           </div>
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              id={`message-${message.id}`}
-              className={`flex animate-fade-in ${
-                message.senderId === user?.id ? "justify-end" : "justify-start"
-              }`}
-            >
-              <MessageBubble
-                message={message}
-                isOwn={message.senderId === user?.id}
-                onDeleteForMe={handleDeleteForMe}
-                onDeleteForEveryone={handleDeleteForEveryone}
-                onReact={(messageId, emoji) =>
-                  handleAddReaction(messageId, emoji)
-                }
-                onReply={(msg) => setReplyingTo(msg)}
-                onPin={handlePinMessage}
-                onForward={(msg) => setForwardingMessage(msg)}
-                onEdit={(msg) => {
-                  setEditingMessage(msg);
-                  setInputValue(msg.content || "");
-                }}
-                onReport={(msg) => onReportMessage?.(msg)}
-                currentUserId={user?.id || 0}
-              />
-            </div>
-          ))}
+          {messages.map((message) => {
+            const isOwn = message.senderId === user?.id;
+            const currentUserMember = conversation.members.find(m => m.id === user?.id);
+            const canPin = currentUserMember?.canPinMessages || currentUserMember?.role === "Admin";
+            const canDeleteEveryone = currentUserMember?.canDeleteMessages || currentUserMember?.role === "Admin";
+
+            return (
+              <div
+                key={message.id}
+                id={`message-${message.id}`}
+                className={`flex animate-fade-in ${
+                  isOwn ? "justify-end" : "justify-start"
+                }`}
+              >
+                <MessageBubble
+                  message={message}
+                  isOwn={isOwn}
+                  onDeleteForMe={handleDeleteForMe}
+                  onDeleteForEveryone={handleDeleteForEveryone}
+                  onReact={(messageId, emoji) =>
+                    handleAddReaction(messageId, emoji)
+                  }
+                  onReply={(msg) => setReplyingTo(msg)}
+                  onPin={handlePinMessage}
+                  onForward={(msg) => setForwardingMessage(msg)}
+                  onEdit={(msg) => {
+                    setEditingMessage(msg);
+                    setInputValue(msg.content || "");
+                  }}
+                  onReport={(msg) => onReportMessage?.(msg)}
+                  currentUserId={user?.id || 0}
+                  canPin={canPin}
+                  canDeleteEveryone={canDeleteEveryone}
+                />
+              </div>
+            );
+          })}
 
           {Array.from(typingUsers).map((typingUserId) => {
             const typingUser = conversation.members.find(

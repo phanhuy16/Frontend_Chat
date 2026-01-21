@@ -27,6 +27,7 @@ export interface Message {
   clientGeneratedId?: string;
   isOptimistic?: boolean;
   scheduledAt?: string | null;
+  mentionedUsers?: User[];
 }
 
 export interface Reaction {
@@ -63,10 +64,12 @@ export interface SendMessageRequest {
   messageType: number;
   parentMessageId?: number;
   scheduledAt?: string | null;
+  mentionedUserIds?: number[];
 }
 
 export interface EditMessageRequest {
   content?: string | null;
+  mentionedUserIds?: number[];
 }
 
 export interface AddReactionRequest {
