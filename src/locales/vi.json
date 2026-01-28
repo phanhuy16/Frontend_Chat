@@ -165,5 +165,32 @@
     "recently": "Gần đây",
     "blocked": "Đã bị chặn",
     "you_blocked": "Bạn đã chặn"
+  },
+  "group_members": {
+    "title": "Thành viên nhóm",
+    "member_count": "{{count}}",
+    "no_name": "Nhóm không có tên",
+    "admin": "Quản trị viên",
+    "you": "(Bạn)",
+    "transfer_admin": "Chuyển quyền admin",
+    "manage_permissions": "Quản lý quyền",
+    "remove_member": "Xoá thành viên",
+    "add_member": "Thêm thành viên",
+    "close": "Đóng",
+    "delete_group": "Xoá nhóm",
+    "remove_success": "Thành viên đã được xoá",
+    "remove_error": "Lỗi xoá thành viên",
+    "transfer_success": "Chuyển quyền admin thành công",
+    "transfer_error": "Lỗi chuyển quyền admin",
+    "delete_success": "Nhóm đã được xoá",
+    "delete_error": "Lỗi xoá nhóm",
+    "permissions_success": "Cập nhật quyền thành công",
+    "permissions_error": "Lỗi cập nhật quyền",
+    "confirm_transfer_title": "Xác nhận chuyển quyền admin",
+    "confirm_transfer_content": "Chuyển quyền admin cho {{name}}? Bạn sẽ trở thành thành viên thường.",
+    "confirm_delete_title": "Xác nhận xoá",
+    "confirm_delete_content": "Xoá nhóm này sẽ xoá tất cả tin nhắn. Bạn chắc chắn?",
+    "confirm_btn": "Xác nhận",
+    "cancel_btn": "Hủy"
   }
 }

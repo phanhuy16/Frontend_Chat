@@ -13,6 +13,7 @@ interface ConversationListProps {
   currentConversation: Conversation | null;
   onSelectConversation: (conversation: Conversation) => void;
   onTogglePin?: (conversation: Conversation) => void;
+  onToggleArchive?: (conversation: Conversation) => void;
   onDeleteConversation?: (conversation: Conversation) => void;
   user: User;
   unreadCounts?: { [key: number]: number };
@@ -23,6 +24,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   currentConversation,
   onSelectConversation,
   onTogglePin,
+  onToggleArchive,
   onDeleteConversation,
   user,
   unreadCounts = {},
@@ -275,6 +277,29 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       push_pin
                     </span>
                     {conversation.isPinned ? "Unpin chat" : "Pin chat"}
+                  </button>
+                )}
+
+                {/* Archive Option */}
+                {onToggleArchive && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleArchive(conversation);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-3 text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    <span
+                      className={`material-symbols-outlined text-[18px] ${
+                        conversation.isArchived ? "font-fill" : ""
+                      }`}
+                    >
+                      archive
+                    </span>
+                    {conversation.isArchived
+                      ? "Unarchive chat"
+                      : "Archive chat"}
                   </button>
                 )}
 

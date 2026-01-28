@@ -90,6 +90,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
     // Filter conversations
     const filteredConversations = conversations.filter((conv) => {
+      if (conv.isArchived) return false;
+
       if (conv.conversationType === 1) {
         const otherMember = conv.members.find((m) => m.id !== user!.id);
         return (
@@ -162,6 +164,33 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     }
   };
 
+  const handleToggleArchive = async (conv: Conversation) => {
+    if (!user) return;
+    try {
+      const { isArchived } = await conversationApi.toggleArchive(
+        conv.id,
+        user.id,
+      );
+
+      // If archived, remove from main list
+      if (isArchived) {
+        setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+        if (currentConversation?.id === conv.id) {
+          setCurrentConversation(null);
+          navigate("/chat");
+        }
+      } else {
+        // This case might not happen in main ChatPage as we only filter out archived
+        updateConversation(conv.id, { isArchived });
+      }
+
+      toast.success(isArchived ? "Chat archived" : "Chat unarchived");
+    } catch (err) {
+      toast.error("Failed to toggle archive");
+      console.error(err);
+    }
+  };
+
   const handleDeleteConversation = async (conv: Conversation) => {
     if (!user) return;
     if (
@@ -227,7 +256,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
         conversationApi
           .getConversation(convIdNum)
           .then((conv) => {
-            setConversations((prev) => [conv, ...prev]);
+            setConversations((prev) => {
+              if (prev.some((c) => c.id === conv.id)) return prev;
+              return [conv, ...prev];
+            });
             setCurrentConversation(conv);
           })
           .catch((err) => {
@@ -271,6 +303,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
 
   // Filter conversations based on search term
   const filteredConversations = conversations.filter((conv) => {
+    // Hide archived conversations unless it's the currently active one
+    const isCurrent = conv.id === parseInt(conversationId || "0");
+    if (conv.isArchived && !isCurrent) return false;
+
     const searchLower = searchTerm.toLowerCase();
     if (conv.conversationType === 1) {
       // Direct chat
@@ -329,6 +365,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
             setUnreadCounts((prev) => ({ ...prev, [conv.id]: 0 }));
           }}
           onTogglePin={handleTogglePin}
+          onToggleArchive={handleToggleArchive}
           onDeleteConversation={handleDeleteConversation}
           user={user}
           unreadCounts={unreadCounts}

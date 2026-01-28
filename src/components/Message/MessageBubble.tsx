@@ -46,6 +46,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showReaders, setShowReaders] = React.useState(false);
   const [readers, setReaders] = React.useState<MessageReader[]>([]);
   const [loadingReaders, setLoadingReaders] = React.useState(false);
+  const [menuDirection, setMenuDirection] = React.useState<"up" | "down">("up");
+
+  const optionsButtonRef = React.useRef<HTMLDivElement>(null);
+  const reactionButtonRef = React.useRef<HTMLDivElement>(null);
 
   // Audio player states
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:]?\s|$)/g;
@@ -117,6 +121,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  const calculateDirection = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      // If space above is less than 250px (approx menu height), show menu downwards
+      if (rect.top < 250) {
+        setMenuDirection("down");
+      } else {
+        setMenuDirection("up");
+      }
+    }
+  };
+
   return (
     <div
       className={`group flex ${
@@ -154,9 +170,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               } opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 scale-90 group-hover:scale-100 flex gap-2`}
             >
               {/* Reaction Picker Button */}
-              <div className="relative">
+              <div className="relative" ref={reactionButtonRef}>
                 <button
                   onClick={() => {
+                    if (!showReactions) {
+                      calculateDirection(reactionButtonRef);
+                    }
                     setShowReactions(!showReactions);
                     setShowOptions(false);
                   }}
@@ -175,11 +194,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onClick={() => setShowReactions(false)}
                     />
                     <div
-                      className={`absolute bottom-full mb-2 ${
-                        isOwn ? "right-0" : "left-0"
-                      } z-30 animate-slide-up flex`}
+                      className={`absolute ${
+                        menuDirection === "up"
+                          ? "bottom-full mb-3"
+                          : "top-full mt-3"
+                      } ${isOwn ? "right-0" : "left-0"} z-30 animate-slide-up flex`}
                     >
-                      <div className="p-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex gap-1.5 min-w-max">
+                      <div className="p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 flex gap-1.5 min-w-max">
                         {REACTION_EMOJIS.map((emoji) => (
                           <button
                             key={emoji}
@@ -187,7 +208,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               onReact?.(message.id, emoji);
                               setShowReactions(false);
                             }}
-                            className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all hover:scale-125 text-xl"
+                            className="w-10 h-10 flex items-center justify-center hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all hover:scale-125 text-xl"
                           >
                             {emoji}
                           </button>
@@ -210,9 +231,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               </button>
 
               {/* More Options Button */}
-              <div className="relative">
+              <div className="relative" ref={optionsButtonRef}>
                 <button
                   onClick={() => {
+                    if (!showOptions) {
+                      calculateDirection(optionsButtonRef);
+                    }
                     setShowOptions(!showOptions);
                     setShowReactions(false);
                   }}
@@ -230,9 +254,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onClick={() => setShowOptions(false)}
                     />
                     <div
-                      className={`absolute bottom-full mb-2 ${
+                      className={`absolute ${
+                        menuDirection === "up"
+                          ? "bottom-full mb-3"
+                          : "top-full mt-3"
+                      } ${
                         isOwn ? "right-0" : "left-0"
-                      } z-30 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-1 min-w-[160px] animate-slide-up`}
+                      } z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 py-1.5 min-w-[200px] animate-slide-up overflow-hidden`}
                     >
                       {(isOwn || canPin) && (
                         <button
@@ -240,9 +268,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             onPin?.(message.id);
                             setShowOptions(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-[18px]">
                             push_pin
                           </span>
                           {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
@@ -257,9 +285,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               }
                               setShowOptions(false);
                             }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                           >
-                            <span className="material-symbols-outlined text-base">
+                            <span className="material-symbols-outlined text-[18px]">
                               content_copy
                             </span>
                             Sao chép văn bản
@@ -270,9 +298,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           onDeleteForMe?.(message.id);
                           setShowOptions(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                       >
-                        <span className="material-symbols-outlined text-base">
+                        <span className="material-symbols-outlined text-[18px]">
                           delete
                         </span>
                         Xoá ở phía bạn
@@ -282,9 +310,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           onForward?.(message);
                           setShowOptions(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                       >
-                        <span className="material-symbols-outlined text-base">
+                        <span className="material-symbols-outlined text-[18px]">
                           forward
                         </span>
                         Chuyển tiếp
@@ -295,9 +323,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             onDeleteForEveryone?.(message.id);
                             setShowOptions(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 text-red-500"
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-[18px]">
                             history
                           </span>
                           Thu hồi cho mọi người
@@ -309,9 +337,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             onEdit?.(message);
                             setShowOptions(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-[18px]">
                             edit
                           </span>
                           Chỉnh sửa
@@ -323,9 +351,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             onReport?.(message);
                             setShowOptions(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 text-red-500"
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-[18px]">
                             report
                           </span>
                           Báo cáo
@@ -362,12 +390,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 isPureEmoji ||
                 message.messageType === MessageType.Poll
                   ? "p-0 bg-transparent shadow-none overflow-hidden w-full"
-                  : `px-3 py-1.5 ${
+                  : `px-3.5 py-1.5 ${
                       message.isDeleted || message.isDeletedForMe
                         ? "bg-transparent shadow-none border-none"
                         : isOwn
-                          ? "bg-primary text-white rounded-br-none shadow-premium"
-                          : "bg-[#3b333b] text-white rounded-bl-none shadow-sm"
+                          ? "bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl rounded-br-none shadow-premium border border-white/10"
+                          : "bg-[#2d2d3d] dark:bg-[#1e1e2d] text-white rounded-2xl rounded-bl-none shadow-sm border border-white/5"
                     }`
               }`}
             >

@@ -10,6 +10,7 @@ import FriendsListPage from "../pages/FriendsListPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import SettingsPage from "../pages/SettingsPage";
 import ProfilePage from "../pages/ProfilePage";
+import ArchivedChatsPage from "../pages/ArchivedChatsPage";
 import MainLayout from "../components/Layout/MainLayout";
 
 // Protected Route Component
@@ -52,6 +53,26 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <MainLayout>
               <ChatPage pendingRequestCount={pendingRequestCount} />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat/archived"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ArchivedChatsPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat/archived/:conversationId"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ArchivedChatsPage />
             </MainLayout>
           </ProtectedRoute>
         }

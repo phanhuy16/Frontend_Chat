@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Switch, Button } from "antd";
+import { Modal, Switch, ConfigProvider, theme } from "antd";
 import {
   ConversationMember,
   MemberPermissions,
@@ -84,57 +84,97 @@ export const MemberPermissionsModal: React.FC<MemberPermissionsModalProps> = ({
   ];
 
   return (
-    <Modal
-      title={
-        <div className="flex items-center gap-2">
-          <SafetyCertificateOutlined className="text-xl text-blue-600" />
-          <span>Quản lý quyền: {member.displayName || member.userName}</span>
-        </div>
-      }
-      open={isOpen}
-      onCancel={onClose}
-      footer={[
-        <Button key="cancel" onClick={onClose} disabled={loading}>
-          Hủy
-        </Button>,
-        <Button
-          key="save"
-          type="primary"
-          onClick={() => onSave(permissions)}
-          loading={loading}
-          className="bg-primary hover:bg-primary-hover"
-        >
-          Lưu thay đổi
-        </Button>,
-      ]}
-      width={450}
-      className="dark:bg-[#1e2329]"
+    <ConfigProvider
+      theme={{
+        algorithm: theme.darkAlgorithm,
+        token: {
+          colorBgElevated: "#1e1e1e",
+        },
+      }}
     >
-      <div className="space-y-4 py-2">
-        {permissionItems.map((item) => (
-          <div
-            key={item.key}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-1">{item.icon}</div>
-              <div>
-                <p className="text-sm font-semibold text-black dark:text-white">
-                  {item.label}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {item.description}
-                </p>
-              </div>
+      <Modal
+        title={
+          <div className="flex items-center gap-3 py-0.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+              <SafetyCertificateOutlined className="text-lg" />
             </div>
-            <Switch
-              checked={permissions[item.key]}
-              onChange={() => handleToggle(item.key)}
-              size="small"
-            />
+            <div>
+              <h3 className="text-[15px] font-bold text-white leading-tight">
+                Quản lý quyền
+              </h3>
+              <p className="text-[11px] font-medium text-slate-400">
+                {member.displayName || member.userName}
+              </p>
+            </div>
           </div>
-        ))}
-      </div>
-    </Modal>
+        }
+        open={isOpen}
+        onCancel={onClose}
+        footer={
+          <div className="flex items-center justify-end gap-2.5 mt-3 pt-3 border-t border-white/10">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-bold text-xs hover:bg-white/10 hover:text-white transition-all"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={() => onSave(permissions)}
+              disabled={loading}
+              className={`px-4 py-2 rounded-lg bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5 ${
+                loading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading && <span className="animate-spin text-xs">↻</span>}
+              Lưu thay đổi
+            </button>
+          </div>
+        }
+        width={420}
+        centered
+        className="premium-modal dark-modal transition-all"
+        styles={{
+          mask: { backdropFilter: "blur(4px)" },
+          content: { borderRadius: "20px", padding: "20px" },
+        }}
+        closeIcon={
+          <span className="text-slate-400 hover:text-white transition-colors text-sm">
+            ✕
+          </span>
+        }
+      >
+        <div className="space-y-2.5 py-2">
+          {permissionItems.map((item) => (
+            <div
+              key={item.key}
+              className="group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-emerald-500/30 hover:bg-white/10 transition-all duration-300 shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                  {item.icon}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-bold text-white leading-snug">
+                    {item.label}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400 max-w-[220px]">
+                    {item.description}
+                  </span>
+                </div>
+              </div>
+              <Switch
+                checked={permissions[item.key]}
+                onChange={() => handleToggle(item.key)}
+                size="small"
+                className={
+                  permissions[item.key] ? "bg-emerald-500" : "bg-slate-600"
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </Modal>
+    </ConfigProvider>
   );
 };

@@ -46,4 +46,10 @@ export const conversationApi = {
 
   updateMemberPermissions: (conversationId: number, targetUserId: number, permissions: any): Promise<any> =>
     axiosInstance.patch(`/conversations/${conversationId}/members/${targetUserId}/permissions`, permissions).then((res) => res.data),
+
+  getUserArchivedConversations: (userId: number): Promise<Conversation[]> =>
+    axiosInstance.get(`/conversations/user/${userId}/archived`).then((res) => res.data),
+
+  toggleArchive: (conversationId: number, userId: number): Promise<{ isArchived: boolean }> =>
+    axiosInstance.post(`/conversations/${conversationId}/archive/${userId}`).then((res) => res.data),
 };

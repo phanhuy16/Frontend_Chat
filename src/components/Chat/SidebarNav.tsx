@@ -36,6 +36,12 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       label: "Requests",
       path: "/friends/requests",
     },
+    {
+      id: "archived",
+      icon: "archive",
+      label: "Archived",
+      path: "/chat/archived",
+    },
     { id: "settings", icon: "settings", label: "Settings", path: "/settings" },
   ];
 
@@ -43,7 +49,20 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     navigate(path);
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/chat") {
+      // For main chats, active if it starts with /chat but NOT /chat/archived
+      return (
+        location.pathname.startsWith("/chat") &&
+        !location.pathname.startsWith("/chat/archived")
+      );
+    }
+    if (path === "/chat/archived") {
+      // For archived, active if it starts with /chat/archived
+      return location.pathname.startsWith("/chat/archived");
+    }
+    return location.pathname === path;
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-14 lg:w-16 glass-effect lg:rounded-3xl shrink-0 overflow-hidden py-4 items-center justify-between">

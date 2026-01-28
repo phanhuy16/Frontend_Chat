@@ -163,5 +163,32 @@
     "recently": "Recently",
     "blocked": "Blocked",
     "you_blocked": "You Blocked"
+  },
+  "group_members": {
+    "title": "Group Members",
+    "member_count": "{{count}}",
+    "no_name": "Unnamed Group",
+    "admin": "Admin",
+    "you": "(You)",
+    "transfer_admin": "Transfer Admin",
+    "manage_permissions": "Manage Permissions",
+    "remove_member": "Remove Member",
+    "add_member": "Add Member",
+    "close": "Close",
+    "delete_group": "Delete Group",
+    "remove_success": "Member removed successfully",
+    "remove_error": "Failed to remove member",
+    "transfer_success": "Admin rights transferred",
+    "transfer_error": "Failed to transfer admin rights",
+    "delete_success": "Group deleted",
+    "delete_error": "Failed to delete group",
+    "permissions_success": "Permissions updated",
+    "permissions_error": "Failed to update permissions",
+    "confirm_transfer_title": "Transfer Admin Rights",
+    "confirm_transfer_content": "Are you sure you want to transfer admin rights to {{name}}? You will become a regular member.",
+    "confirm_delete_title": "Delete Group",
+    "confirm_delete_content": "Deleting this group will remove all messages. Are you sure?",
+    "confirm_btn": "Confirm",
+    "cancel_btn": "Cancel"
   }
 }

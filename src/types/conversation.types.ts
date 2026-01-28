@@ -13,6 +13,7 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
   isPinned?: boolean;
+  isArchived?: boolean;
   createdBy: number;
 }
 

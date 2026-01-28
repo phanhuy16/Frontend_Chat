@@ -184,9 +184,13 @@ export const useSignalRHandlers = () => {
     // --- Conversation Lifecycle Events ---
 
     on("NewConversationCreated", (data: any) => {
-      // Refresh conversations list
-      // In a real app, we might want to fetch just the new one
-      // For now, we rely on the component to trigger a reload or provide a refresh method
+      const conversation = data.conversation ?? data.Conversation;
+      if (conversation) {
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === conversation.id)) return prev;
+          return [conversation, ...prev];
+        });
+      }
     });
 
     on("AddedToConversation", (data: any) => {
@@ -205,6 +209,12 @@ export const useSignalRHandlers = () => {
       const conversationId = data.conversationId ?? data.ConversationId;
       const isPinned = data.isPinned ?? data.IsPinned;
       updateConversation(conversationId, { isPinned });
+    });
+
+    on("ConversationArchiveStatusChanged", (data: any) => {
+      const conversationId = data.conversationId ?? data.ConversationId;
+      const isArchived = data.isArchived ?? data.IsArchived;
+      updateConversation(conversationId, { isArchived });
     });
 
     on("PollUpdated", (data: any) => {
@@ -259,6 +269,7 @@ export const useSignalRHandlers = () => {
       off("AddedToConversation");
       off("RemovedFromConversation");
       off("ConversationPinStatusChanged");
+      off("ConversationArchiveStatusChanged");
       off("PollUpdated");
       off("MessageScheduled");
       off("UserMentioned");

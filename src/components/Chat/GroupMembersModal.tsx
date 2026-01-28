@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { conversationApi } from "../../api/conversation.api";
-import toast from "react-hot-toast";
-import { AddMembersModal } from "./AddMembersModal";
-import { Modal } from "antd";
-import { ExclamationCircleFilled, SafetyCertificateOutlined } from "@ant-design/icons";
-import { getAvatarUrl } from "../../utils/helpers";
 import { MemberPermissionsModal } from "./MemberPermissionsModal";
 import { MemberPermissions } from "../../types/conversation.types";
+import { useTranslation } from "react-i18next";
+import {
+  ExclamationCircleFilled,
+  GlobalOutlined,
+  SafetyCertificateOutlined,
+} from "@ant-design/icons";
+import { Modal } from "antd";
+import { useAuth } from "../../hooks/useAuth";
+import { useEffect, useState } from "react";
+import { conversationApi } from "../../api/conversation.api";
+import toast from "react-hot-toast";
+import { getAvatarUrl } from "../../utils/helpers";
+import { AddMembersModal } from "./AddMembersModal";
 
 interface GroupMembersModalProps {
   conversation: any;
@@ -26,22 +31,28 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   onMemberRemoved,
   onGroupDeleted,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedUserForAdmin, setSelectedUserForAdmin] = useState<
     number | null
   >(null);
-  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any | null>(null);
+  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<
+    any | null
+  >(null);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [updatedConversation, setUpdatedConversation] = useState(conversation);
-  
-  const currentUserMember = updatedConversation?.members?.find((m: any) => m.id === user?.id);
+
+  const currentUserMember = updatedConversation?.members?.find(
+    (m: any) => m.id === user?.id,
+  );
   const isGroupAdmin = conversation?.createdBy === user?.id;
   const canAddMembers = isGroupAdmin || currentUserMember?.canAddMembers;
   const canRemoveMembers = isGroupAdmin || currentUserMember?.canRemoveMembers;
-  const canManagePermissions = isGroupAdmin || currentUserMember?.canChangePermissions;
+  const canManagePermissions =
+    isGroupAdmin || currentUserMember?.canChangePermissions;
   const isMember = updatedConversation?.members?.some(
-    (m: any) => m.id === user?.id
+    (m: any) => m.id === user?.id,
   );
 
   useEffect(() => {
@@ -60,10 +71,12 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       }));
 
       onMemberRemoved?.();
-      toast.success("Thành viên đã được xoá");
+      toast.success(t("group_members.remove_success"));
     } catch (err: any) {
       console.error("Failed to remove member:", err);
-      toast.error(err.response?.data?.message || "Lỗi xoá thành viên");
+      toast.error(
+        err.response?.data?.message || t("group_members.remove_error"),
+      );
     } finally {
       setLoading(false);
     }
@@ -71,20 +84,22 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
 
   const handleTransferAdmin = async (newAdminId: number) => {
     const newAdminName = updatedConversation.members.find(
-      (m: any) => m.id === newAdminId
+      (m: any) => m.id === newAdminId,
     )?.displayName;
 
     confirm({
-      title: "Xác nhận chuyển quyền admin",
+      title: t("group_members.confirm_transfer_title"),
       icon: <ExclamationCircleFilled style={{ color: "red" }} />,
-      content: `Chuyển quyền admin cho ${newAdminName}?`,
+      content: t("group_members.confirm_transfer_content", {
+        name: newAdminName,
+      }),
       async onOk() {
         setLoading(true);
         try {
           await conversationApi.transferAdminRights(
             conversation.id,
             user?.id || 0,
-            newAdminId
+            newAdminId,
           );
 
           // Update local state immediately
@@ -97,10 +112,12 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
           }));
 
           setSelectedUserForAdmin(null);
-          toast.success("Chuyển quyền admin thành công");
+          toast.success(t("group_members.transfer_success"));
         } catch (err: any) {
           console.error("Failed to transfer admin:", err);
-          toast.error(err.response?.data?.message || "Lỗi chuyển quyền admin");
+          toast.error(
+            err.response?.data?.message || t("group_members.transfer_error"),
+          );
         } finally {
           setLoading(false);
         }
@@ -113,21 +130,23 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
     try {
       await conversationApi.deleteGroupConversation(
         conversation.id,
-        user?.id || 0
+        user?.id || 0,
       );
       onGroupDeleted?.();
       onClose();
-      toast.success("Nhóm đã được xoá");
+      toast.success(t("group_members.delete_success"));
     } catch (err: any) {
       console.error("Failed to delete group:", err);
-      toast.error(err.response?.data?.message || "Lỗi xoá nhóm");
+      toast.error(
+        err.response?.data?.message || t("group_members.delete_error"),
+      );
     } finally {
       setLoading(false);
     }
   };
   const handleMembersAdded = async () => {
     setShowAddMembers(false);
-    toast.success("Thêm thành viên thành công");
+    toast.success(t("group_members.add_success") || "Success");
   };
 
   const handleUpdatePermissions = async (permissions: MemberPermissions) => {
@@ -137,24 +156,24 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       await conversationApi.updateMemberPermissions(
         conversation.id,
         selectedUserForPermissions.id,
-        permissions
+        permissions,
       );
 
       // Update local state
       setUpdatedConversation((prev: any) => ({
         ...prev,
         members: prev.members.map((m: any) =>
-          m.id === selectedUserForPermissions.id
-            ? { ...m, ...permissions }
-            : m
+          m.id === selectedUserForPermissions.id ? { ...m, ...permissions } : m,
         ),
       }));
 
       setSelectedUserForPermissions(null);
-      toast.success("Cập nhật quyền thành công");
+      toast.success(t("group_members.permissions_success"));
     } catch (err: any) {
       console.error("Failed to update permissions:", err);
-      toast.error(err.response?.data?.message || "Lỗi cập nhật quyền");
+      toast.error(
+        err.response?.data?.message || t("group_members.permissions_error"),
+      );
     } finally {
       setLoading(false);
     }
@@ -164,20 +183,21 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-[#111418] rounded-xl p-5 w-[340px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+        <div className="bg-white/90 dark:bg-[#111418]/90 backdrop-blur-xl rounded-2xl p-6 w-[380px] max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-white/20 dark:border-gray-800">
           {/* Header */}
-          <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-black dark:text-white">
-                👥 Thành viên nhóm
+          <div className="pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+                <GlobalOutlined className="text-blue-500" />
+                {t("group_members.title")}
               </h2>
-              <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
+              <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold border border-blue-100 dark:border-blue-800/50">
                 {updatedConversation.members?.length || 0}
               </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {updatedConversation.groupName || "Nhóm không có tên"}
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+              {updatedConversation.groupName || t("group_members.no_name")}
             </p>
           </div>
 
@@ -190,102 +210,108 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
               >
                 <div className="flex items-center gap-3 flex-1">
                   {/* Avatar */}
-                  <div
-                    className="w-9 h-9 rounded-full bg-center bg-cover ring-2 ring-blue-200 dark:ring-blue-900"
-                    style={{
-                      backgroundImage: `url("${getAvatarUrl(member.avatar)}")`,
-                    }}
-                  />
+                  <div className="relative">
+                    <div
+                      className="w-10 h-10 rounded-full bg-center bg-cover ring-2 ring-white dark:ring-gray-800 shadow-sm"
+                      style={{
+                        backgroundImage: `url("${getAvatarUrl(member.avatar)}")`,
+                      }}
+                    />
+                    <div
+                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800 ${member.isOnline ? "bg-green-500" : "bg-gray-400"}`}
+                    />
+                  </div>
 
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-black dark:text-white truncate">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                       {member.displayName || member.userName}
                     </p>
-                    {updatedConversation.createdBy === member.id && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
-                        👑 Quản trị viên
-                      </p>
-                    )}
-                    {member.id === user?.id && (
-                      <p className="text-xs text-green-600 dark:text-green-400">
-                        (Bạn)
-                      </p>
-                    )}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {updatedConversation.createdBy === member.id && (
+                        <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500 text-[10px] font-bold rounded flex items-center gap-1 border border-amber-100 dark:border-amber-900/40">
+                          👑 {t("group_members.admin")}
+                        </span>
+                      )}
+                      {member.id === user?.id && (
+                        <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400">
+                          {t("group_members.you")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                {(isGroupAdmin || canRemoveMembers || canManagePermissions) && member.id !== user?.id && (
-                  <div className="flex gap-1 ml-2">
-                    {canManagePermissions && (
-                      <button
-                        onClick={() => setSelectedUserForPermissions(member)}
-                        disabled={loading}
-                        title="Quản lý quyền"
-                        className="px-2 py-1 text-xs bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50 transition-colors font-medium flex items-center justify-center"
-                      >
-                         <SafetyCertificateOutlined className="text-xl" />
-                      </button>
-                    )}
-                    {isGroupAdmin && (
-                      <>
+                {(isGroupAdmin || canRemoveMembers || canManagePermissions) &&
+                  member.id !== user?.id && (
+                    <div className="flex gap-1.5 ml-2">
+                      {canManagePermissions && (
                         <button
-                          onClick={() => setSelectedUserForAdmin(member.id)}
+                          onClick={() => setSelectedUserForPermissions(member)}
                           disabled={loading}
-                          title="Chuyển quyền admin"
-                          className="px-2 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                          title={t("group_members.manage_permissions")}
+                          className="w-8 h-8 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-100 dark:border-indigo-800/50"
                         >
-                          👑
+                          <SafetyCertificateOutlined className="text-base" />
                         </button>
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          disabled={loading}
-                          title="Xoá thành viên"
-                          className="px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                        >
-                          ✕
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
+                      )}
+                      {isGroupAdmin && (
+                        <>
+                          <button
+                            onClick={() => setSelectedUserForAdmin(member.id)}
+                            disabled={loading}
+                            title={t("group_members.transfer_admin")}
+                            className="w-8 h-8 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800/50"
+                          >
+                            <span className="text-sm">👑</span>
+                          </button>
+                          <button
+                            onClick={() => handleRemoveMember(member.id)}
+                            disabled={loading}
+                            title={t("group_members.remove_member")}
+                            className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-all border border-red-100 dark:border-red-800/50"
+                          >
+                            <span className="text-sm leading-none">✕</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
               </div>
             ))}
           </div>
 
           {/* Confirm transfer admin dialog */}
           {selectedUserForAdmin && (
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg mb-4 border-2 border-yellow-200 dark:border-yellow-700">
+            <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-4 border border-blue-100 dark:border-blue-900/30 animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-start gap-3">
-                <span className="text-xl">⚠️</span>
+                <span className="text-xl">ℹ️</span>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-3">
-                    Xác nhận chuyển quyền admin
+                  <p className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">
+                    {t("group_members.confirm_transfer_title")}
                   </p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
-                    {
-                      updatedConversation.members.find(
-                        (m: any) => m.id === selectedUserForAdmin
-                      )?.displayName
-                    }{" "}
-                    sẽ trở thành quản trị viên và bạn sẽ trở thành thành viên
-                    thường.
+                  <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-300/80 mb-3">
+                    {t("group_members.confirm_transfer_content", {
+                      name: updatedConversation.members.find(
+                        (m: any) => m.id === selectedUserForAdmin,
+                      )?.displayName,
+                    })}
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleTransferAdmin(selectedUserForAdmin)}
                       disabled={loading}
-                      className="flex-1 px-3 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 disabled:opacity-50 font-medium transition-colors"
+                      className="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all border border-blue-500"
                     >
-                      Xác nhận
+                      {t("group_members.confirm_btn")}
                     </button>
                     <button
                       onClick={() => setSelectedUserForAdmin(null)}
                       disabled={loading}
-                      className="flex-1 px-3 py-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded-md text-sm hover:bg-gray-400 transition-colors"
+                      className="flex-1 px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700"
                     >
-                      Hủy
+                      {t("group_members.cancel_btn")}
                     </button>
                   </div>
                 </div>
@@ -294,44 +320,47 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+          <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2.5">
             {canAddMembers && (
               <button
                 onClick={() => setShowAddMembers(true)}
                 disabled={loading}
-                className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2 text-xs"
+                className="w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 font-bold transition-all flex items-center justify-center gap-2 text-xs shadow-lg shadow-green-500/20 active:scale-[0.98]"
               >
-                ➕ Thêm thành viên
+                <span className="text-base leading-none">+</span>{" "}
+                {t("group_members.add_member")}
               </button>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors text-xs"
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 font-bold transition-all text-xs border border-gray-200 dark:border-gray-700 active:scale-[0.98]"
               >
-                Đóng
+                {t("group_members.close")}
               </button>
 
               {isGroupAdmin && (
                 <button
                   onClick={() =>
                     confirm({
-                      title: "Xác nhận xoá",
+                      title: t("group_members.confirm_delete_title"),
                       icon: (
                         <ExclamationCircleFilled style={{ color: "red" }} />
                       ),
-                      content:
-                        "Xoá nhóm này sẽ xoá tất cả tin nhắn. Bạn chắc chắn?",
+                      content: t("group_members.confirm_delete_content"),
+                      okText: t("group_members.confirm_btn"),
+                      cancelText: t("group_members.cancel_btn"),
                       async onOk() {
                         await handleDeleteGroup();
                       },
                     })
                   }
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 font-medium transition-colors text-xs"
+                  className="flex-1 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-500 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 font-bold transition-all text-xs border border-red-100 dark:border-red-900/30 active:scale-[0.98]"
                 >
-                  🗑️ Xoá nhóm
+                  <span className="mr-1">🗑️</span>{" "}
+                  {t("group_members.delete_group")}
                 </button>
               )}
             </div>
