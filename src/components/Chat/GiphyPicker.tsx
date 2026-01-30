@@ -21,42 +21,40 @@ const GiphyPicker: React.FC<GiphyPickerProps> = ({ onGifSelect, onClose }) => {
     };
 
     return (
-        <div className="absolute bottom-20 right-0 z-50 w-[350px] bg-white dark:bg-slate-900 rounded-2xl shadow-premium border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col animate-slide-up">
-            <div className="p-3 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
-                <div className="flex-1 relative mr-2">
-                    <input 
-                        type="text" 
-                        placeholder="Search Giphy..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-100 dark:bg-white/5 rounded-full py-2 px-4 text-xs outline-none focus:ring-1 focus:ring-primary"
-                        autoFocus
-                    />
-                </div>
-                <button 
-                    onClick={onClose}
-                    className="size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400"
-                >
-                    <span className="material-symbols-outlined text-lg">close</span>
-                </button>
-            </div>
-            <div className="h-[400px] overflow-y-auto p-2 scrollbar-hide">
-                <Grid
-                    key={searchTerm}
-                    width={330}
-                    columns={2}
-                    fetchGifs={fetchGifs}
-                    onGifClick={(gif, e) => {
-                        e.preventDefault();
-                        onGifSelect(gif);
-                    }}
-                    gutter={6}
-                />
-            </div>
-            <div className="p-2 bg-slate-50 dark:bg-black/20 flex justify-center">
-                <img src="https://raw.githubusercontent.com/Giphy/giphy-js/master/packages/react-components/static/PoweredBy_200px-White_Horizontal.png" alt="Powered by Giphy" className="h-4 opacity-50" />
-            </div>
+      <div className="w-full h-full bg-transparent overflow-hidden flex flex-col">
+        <div className="p-3 border-b border-slate-200/50 dark:border-white/5">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search Giphy..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 px-4 text-xs text-black dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+              autoFocus
+            />
+          </div>
         </div>
+        <div className="flex-1 overflow-y-auto p-2.5 scrollbar-hide">
+          <Grid
+            key={searchTerm}
+            width={280}
+            columns={2}
+            fetchGifs={fetchGifs}
+            onGifClick={(gif, e) => {
+              e.preventDefault();
+              onGifSelect(gif);
+            }}
+            gutter={6}
+          />
+        </div>
+        <div className="p-2 border-t border-slate-200/50 dark:border-white/5 flex justify-center bg-slate-50/30 dark:bg-black/10">
+          <img
+            src="https://raw.githubusercontent.com/Giphy/giphy-js/master/packages/react-components/static/PoweredBy_200px-White_Horizontal.png"
+            alt="Powered by Giphy"
+            className="h-3 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+          />
+        </div>
+      </div>
     );
 };
 

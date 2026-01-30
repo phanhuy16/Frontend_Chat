@@ -109,43 +109,25 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState("smileys");
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   const emojis =
     EMOJI_CATEGORIES[selectedCategory as keyof typeof EMOJI_CATEGORIES] || [];
 
   return (
-    <div
-      ref={pickerRef}
-      className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-2xl z-40 w-80 max-h-96 overflow-hidden flex flex-col"
-    >
-      {/* Header */}
-      <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+    <div className="bg-transparent rounded-xl z-40 w-full h-full overflow-hidden flex flex-col">
+      <div className="p-3 border-b border-gray-200/50 dark:border-gray-700/50">
         <input
           type="text"
           placeholder="Search emoji..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none"
+          className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
         />
       </div>
 
       {/* Categories */}
-      <div className="flex gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto">
+      <div className="flex gap-1 px-3 py-2 border-b border-gray-200/50 dark:border-gray-700/50 overflow-x-auto scrollbar-hide">
         {Object.keys(EMOJI_CATEGORIES).map((category) => (
           <button
             key={category}
@@ -153,10 +135,10 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
               setSelectedCategory(category);
               setSearchTerm("");
             }}
-            className={`px-2 py-1 rounded text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
               selectedCategory === category
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300"
+                ? "bg-primary text-white shadow-sm shadow-primary/20"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
             }`}
           >
             {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -165,7 +147,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
       </div>
 
       {/* Emojis Grid */}
-      <div className="flex-1 overflow-y-auto p-3 grid grid-cols-6 gap-2">
+      <div className="flex-1 overflow-y-auto p-2 grid grid-cols-8 gap-1 content-start">
         {emojis.map((emoji) => (
           <button
             key={emoji}
@@ -173,7 +155,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
               onEmojiSelect(emoji);
               onClose();
             }}
-            className="text-2xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2 transition-colors hover:scale-110"
+            className="text-xl hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg p-1 transition-colors hover:scale-110 aspect-square flex items-center justify-center"
             title={emoji}
           >
             {emoji}
@@ -182,8 +164,8 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="p-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-500">
-        Click emoji to add reaction
+      <div className="p-2 border-t border-gray-200/50 dark:border-gray-700/50 text-[10px] text-slate-400 font-medium text-center">
+        Click to insert
       </div>
     </div>
   );

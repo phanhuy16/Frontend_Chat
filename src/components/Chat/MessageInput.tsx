@@ -1,6 +1,5 @@
 import React from "react";
-import { EmojiPicker } from "./EmojiPicker";
-import GiphyPicker from "./GiphyPicker";
+import ChatMediaPicker from "./ChatMediaPicker";
 import { useTranslation } from "react-i18next";
 import PollCreationModal from "../CreatePoll/PollCreationModal";
 import DateTimePicker from "./DateTimePicker";
@@ -353,41 +352,29 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowGiphyPicker(!showGiphyPicker)}
-                  className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10 ${showEmojiPicker ? "text-primary" : ""}`}
                 >
                   <span className="material-symbols-outlined text-[16px]">
-                    gif
+                    sentiment_satisfied
                   </span>
                 </button>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-accent transition-colors rounded-lg hover:bg-accent/10">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="w-full h-full flex items-center justify-center"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">
-                      sentiment_satisfied
-                    </span>
-                  </button>
-                </div>
                 <div className="absolute right-0 bottom-full mb-4">
-                  <EmojiPicker
-                    isOpen={showEmojiPicker}
-                    onClose={() => setShowEmojiPicker(false)}
+                  <ChatMediaPicker
+                    isOpen={showEmojiPicker || showGiphyPicker}
+                    onClose={() => {
+                      setShowEmojiPicker(false);
+                      setShowGiphyPicker(false);
+                    }}
                     onEmojiSelect={(emoji) => {
                       setInputValue((prev) => prev + emoji);
                     }}
+                    onGifSelect={(gif) => {
+                      onGifSelect(gif);
+                      setShowGiphyPicker(false);
+                      setShowEmojiPicker(false);
+                    }}
                   />
-                  {showGiphyPicker && (
-                    <GiphyPicker
-                      onGifSelect={(gif) => {
-                        onGifSelect(gif);
-                        setShowGiphyPicker(false);
-                      }}
-                      onClose={() => setShowGiphyPicker(false)}
-                    />
-                  )}
                   {showDateTimePicker && (
                     <DateTimePicker
                       value={scheduledAt || ""}
