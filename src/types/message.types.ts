@@ -28,6 +28,10 @@ export interface Message {
   isOptimistic?: boolean;
   scheduledAt?: string | null;
   mentionedUsers?: User[];
+  // Self-destructing message fields
+  selfDestructAfterSeconds?: number | null;
+  viewedAt?: string | null;
+  expiresAt?: string | null;
 }
 
 export interface Reaction {
@@ -65,6 +69,7 @@ export interface SendMessageRequest {
   parentMessageId?: number;
   scheduledAt?: string | null;
   mentionedUserIds?: number[];
+  selfDestructAfterSeconds?: number | null;
 }
 
 export interface EditMessageRequest {

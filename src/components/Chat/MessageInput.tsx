@@ -4,6 +4,7 @@ import GiphyPicker from "./GiphyPicker";
 import { useTranslation } from "react-i18next";
 import PollCreationModal from "../CreatePoll/PollCreationModal";
 import DateTimePicker from "./DateTimePicker";
+import SelfDestructSelector from "./SelfDestructSelector";
 import { format } from "date-fns";
 
 interface MessageInputProps {
@@ -40,6 +41,8 @@ interface MessageInputProps {
   members: { id: number; displayName: string; avatar: string }[];
   onMentionSelect?: (userId: number) => void;
   isGroup: boolean;
+  selfDestructAfterSeconds: number | null;
+  setSelfDestructAfterSeconds: (seconds: number | null) => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -76,15 +79,40 @@ const MessageInput: React.FC<MessageInputProps> = ({
   members,
   onMentionSelect,
   isGroup,
+  selfDestructAfterSeconds,
+  setSelfDestructAfterSeconds,
 }) => {
   const { t } = useTranslation();
   const [showMentions, setShowMentions] = React.useState(false);
   const [mentionQuery, setMentionQuery] = React.useState("");
   const [mentionIndex, setMentionIndex] = React.useState(0);
   const [cursorPosition, setCursorPosition] = React.useState(0);
+  const [showSelfDestructSelector, setShowSelfDestructSelector] =
+    React.useState(false);
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
+  const moreMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const moreButtonRef = React.useRef<HTMLButtonElement | null>(null);
+
+  // Close menus when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showMoreMenu &&
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(event.target as Node) &&
+        moreButtonRef.current &&
+        !moreButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowMoreMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMoreMenu]);
 
   const filteredMembers = React.useMemo(() => {
-    if (!mentionQuery) return members.filter(m => m.id !== currentUserId);
+    if (!mentionQuery) return members.filter((m) => m.id !== currentUserId);
     return members.filter(
       (m) =>
         m.id !== currentUserId &&
@@ -124,14 +152,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const insertMention = (member: { id: number; displayName: string }) => {
-    const textBeforeAt = inputValue.substring(0, inputValue.lastIndexOf("@", cursorPosition - 1));
+    const textBeforeAt = inputValue.substring(
+      0,
+      inputValue.lastIndexOf("@", cursorPosition - 1),
+    );
     const textAfterCursor = inputValue.substring(cursorPosition);
     const newValue = `${textBeforeAt}@${member.displayName} ${textAfterCursor}`;
-    
+
     setInputValue(newValue);
     setShowMentions(false);
     onMentionSelect?.(member.id);
-    
+
     // Autofocus back to input would be good, but we don't have the ref easily here without adding it.
   };
 
@@ -143,7 +174,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setMentionIndex(
-          (prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length,
+          (prev) =>
+            (prev - 1 + filteredMembers.length) % filteredMembers.length,
         );
       } else if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
@@ -268,19 +300,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       </span>
                       <span className="text-sm">Files</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenPollModal?.();
-                        setShowUploadMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-orange-500">
-                        poll
-                      </span>
-                      <span className="text-sm">Poll</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -294,7 +313,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   onChange={onInputChange}
                   onKeyDown={handleKeyDown}
                 />
-                
+
                 {showMentions && filteredMembers.length > 0 && (
                   <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
                     <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
@@ -318,7 +337,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                             src={member.avatar || "/default-avatar.png"}
                             alt=""
                             className="size-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                            onError={(e) => (e.currentTarget.src = "/default-avatar.png")}
+                            onError={(e) =>
+                              (e.currentTarget.src = "/default-avatar.png")
+                            }
                           />
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
@@ -375,55 +396,140 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       onConfirm={() => setShowDateTimePicker(false)}
                     />
                   )}
+                  {showSelfDestructSelector && (
+                    <SelfDestructSelector
+                      value={selfDestructAfterSeconds}
+                      onChange={setSelfDestructAfterSeconds}
+                      isOpen={showSelfDestructSelector}
+                      onClose={() => setShowSelfDestructSelector(false)}
+                    />
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowDateTimePicker(!showDateTimePicker)}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                    scheduledAt 
-                      ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30" 
-                      : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
-                  }`}
-                  title="Schedule message"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    schedule
-                  </span>
-                </button>
+                <div className="relative">
+                  <button
+                    ref={moreButtonRef}
+                    type="button"
+                    onClick={() => setShowMoreMenu(!showMoreMenu)}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                      showMoreMenu || scheduledAt || selfDestructAfterSeconds
+                        ? "text-primary bg-primary/10"
+                        : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
+                    }`}
+                    title="More options"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      widgets
+                    </span>
+                  </button>
 
-              {inputValue.trim() ? (
-                <button
-                  type="submit"
-                  disabled={!inputValue.trim() || uploadingFiles}
-                  className="w-7 h-7 flex items-center justify-center text-white bg-primary rounded-lg disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    send
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    mic
-                  </span>
-                </button>
-              )}
-            </div>
+                  {showMoreMenu && (
+                    <div
+                      ref={moreMenuRef}
+                      className="absolute bottom-10 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[200px] animate-slide-up"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenPollModal?.();
+                          setShowMoreMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                      >
+                        <span className="material-symbols-outlined text-orange-500">
+                          poll
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm">Poll</span>
+                          <span className="text-[10px] font-normal text-slate-500">
+                            Create a survey
+                          </span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDateTimePicker(true);
+                          setShowMoreMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
+                          scheduledAt
+                            ? "text-blue-500"
+                            : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-blue-500">
+                          schedule
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm">Schedule Message</span>
+                          <span className="text-[10px] font-normal text-slate-500">
+                            Send later
+                          </span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSelfDestructSelector(true);
+                          setShowMoreMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
+                          selfDestructAfterSeconds
+                            ? "text-red-500"
+                            : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-red-500">
+                          timer
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm">Self-destruct Timer</span>
+                          <span className="text-[10px] font-normal text-slate-500">
+                            Automatic delete
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {inputValue.trim() ? (
+                  <button
+                    type="submit"
+                    disabled={!inputValue.trim() || uploadingFiles}
+                    className="w-7 h-7 flex items-center justify-center text-white bg-primary rounded-lg disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      send
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      mic
+                    </span>
+                  </button>
+                )}
+              </div>
             </>
           )}
         </form>
       )}
-      
+
       {scheduledAt && (
         <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg animate-in fade-in slide-in-from-top-1">
-          <span className="material-symbols-outlined text-sm text-blue-500">schedule</span>
+          <span className="material-symbols-outlined text-sm text-blue-500">
+            schedule
+          </span>
           <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
             Scheduled for: {format(new Date(scheduledAt), "MMM d, HH:mm")}
           </span>

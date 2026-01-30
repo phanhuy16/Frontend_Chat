@@ -105,6 +105,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showPollModal, setShowPollModal] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+  const [selfDestructAfterSeconds, setSelfDestructAfterSeconds] = useState<
+    number | null
+  >(null);
   const [mentionedUserIds, setMentionedUserIds] = useState<number[]>([]);
 
   // Voice recording states
@@ -449,11 +452,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           replyingTo?.id,
           scheduledAt ? new Date(scheduledAt).toISOString() : null,
           mentionedUserIds,
+          selfDestructAfterSeconds,
         );
       }
       setInputValue("");
       setReplyingTo(null);
       setScheduledAt(null);
+      setSelfDestructAfterSeconds(null);
       setMentionedUserIds([]);
       setShowDateTimePicker(false);
       invoke("StopTyping", conversation.id, user?.id);
@@ -503,7 +508,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setForwardingLoading(true);
     try {
       for (const targetId of targetConversationIds) {
-        await invoke("ForwardMessage", forwardingMessage.id, targetId, user?.id);
+        await invoke(
+          "ForwardMessage",
+          forwardingMessage.id,
+          targetId,
+          user?.id,
+        );
       }
       toast.success(
         `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`,
@@ -1164,12 +1174,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             displayName: m.displayName,
             avatar: m.avatar,
           }))}
-          onMentionSelect={(userId) => {
-            if (!mentionedUserIds.includes(userId)) {
-              setMentionedUserIds((prev) => [...prev, userId]);
-            }
-          }}
+          onMentionSelect={(userId) =>
+            setMentionedUserIds((prev) => [...prev, userId])
+          }
           isGroup={conversation.conversationType === ConversationType.Group}
+          selfDestructAfterSeconds={selfDestructAfterSeconds}
+          setSelfDestructAfterSeconds={setSelfDestructAfterSeconds}
         />
       </div>
 

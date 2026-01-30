@@ -7,6 +7,7 @@ import { MessageType } from "../../types";
 import { messageApi } from "../../api/message.api";
 import LinkPreview from "./LinkPreview";
 import PollBucket from "./PollBucket";
+import { parseRichText } from "../../utils/richTextParser";
 
 interface MessageBubbleProps {
   message: Message;
@@ -47,9 +48,33 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [readers, setReaders] = React.useState<MessageReader[]>([]);
   const [loadingReaders, setLoadingReaders] = React.useState(false);
   const [menuDirection, setMenuDirection] = React.useState<"up" | "down">("up");
+  const [timeRemaining, setTimeRemaining] = React.useState<number | null>(null);
 
   const optionsButtonRef = React.useRef<HTMLDivElement>(null);
   const reactionButtonRef = React.useRef<HTMLDivElement>(null);
+
+  // Self-destruct timer effect
+  React.useEffect(() => {
+    if (!message.expiresAt) return;
+
+    const calculateRemaining = () => {
+      const now = new Date().getTime();
+      const expiresAt = new Date(message.expiresAt!).getTime();
+      const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
+      setTimeRemaining(remaining);
+      return remaining;
+    };
+
+    calculateRemaining();
+    const interval = setInterval(() => {
+      const remaining = calculateRemaining();
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [message.expiresAt]);
 
   // Audio player states
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:]?\s|$)/g;
@@ -476,7 +501,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             !message.mentionedUsers ||
                             message.mentionedUsers.length === 0
                           )
-                            return message.content;
+                            return parseRichText(message.content);
 
                           const parts = [];
                           let lastIndex = 0;
@@ -563,6 +588,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <p className="text-[10px] opacity-50 mt-1 italic text-right">
                     Đã chỉnh sửa
                   </p>
+                )}
+
+              {/* Self-destruct timer indicator */}
+              {message.selfDestructAfterSeconds &&
+                !message.isDeleted &&
+                !message.isDeletedForMe && (
+                  <div
+                    className={`self-destruct-indicator mt-1 ${
+                      timeRemaining !== null && timeRemaining <= 10
+                        ? "expiring"
+                        : ""
+                    }`}
+                  >
+                    <span className="material-symbols-outlined">timer</span>
+                    {timeRemaining !== null && message.viewedAt ? (
+                      <span>
+                        {timeRemaining > 60
+                          ? `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
+                          : `${timeRemaining}s`}
+                      </span>
+                    ) : (
+                      <span>
+                        {message.selfDestructAfterSeconds}s sau khi xem
+                      </span>
+                    )}
+                  </div>
                 )}
 
               {/* Reactions Display overlay */}
@@ -858,54 +909,57 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowReaders(false)}
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-zoom-in">
-            <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+          <div className="relative w-full max-w-[300px] bg-white dark:bg-[#1e1e2d] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-zoom-in">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Người đã xem
               </h3>
               <button
                 onClick={() => setShowReaders(false)}
-                className="size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500"
+                className="size-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors"
               >
-                <span className="material-symbols-outlined text-xl">close</span>
+                <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
-            <div className="p-2 max-h-[300px] overflow-y-auto">
+            <div className="p-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
               {loadingReaders ? (
                 <div className="p-8 flex flex-col items-center gap-3">
-                  <div className="size-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
-                  <p className="text-sm font-bold text-slate-400">
-                    Đang tải...
+                  <div className="size-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+                    Đang tải
                   </p>
                 </div>
               ) : readers.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 font-medium">
-                  Chưa có ai xem tin nhắn này
+                <div className="p-8 text-center text-slate-500 font-medium text-sm">
+                  Chưa có ai xem
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {readers.map((reader) => (
                     <div
                       key={reader.userId}
-                      className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/reader"
                     >
-                      <div className="relative size-10 rounded-full border-2 border-primary/20 p-0.5">
+                      <div className="relative size-8 rounded-full border border-primary/20 p-0.5 shrink-0">
                         <img
                           src={getAvatarUrl(reader.avatar)}
                           alt={reader.displayName}
                           className="w-full h-full rounded-full object-cover"
+                          onError={(e) =>
+                            (e.currentTarget.src = "/default-avatar.png")
+                          }
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 dark:text-white truncate">
+                        <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
                           {reader.displayName}
                         </p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight">
                           Đã xem lúc {formatTime(reader.readAt)}
                         </p>
                       </div>
-                      <span className="material-symbols-outlined text-blue-400 text-lg">
+                      <span className="material-symbols-outlined text-blue-400 text-base opacity-0 group-hover/reader:opacity-100 transition-opacity">
                         done_all
                       </span>
                     </div>
