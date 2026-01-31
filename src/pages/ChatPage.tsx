@@ -15,6 +15,7 @@ import ChatPageSearchResults from "../components/Chat/ChatPageSearchResults";
 import ChatWindow from "../components/Chat/ChatWindow";
 import ConversationList from "../components/Chat/ConversationList";
 import { CreateGroupModal } from "../components/Chat/CreateGroupModal";
+import ChatFolders, { FolderType } from "../components/Chat/ChatFolders";
 import SearchUsersModal from "../components/Chat/SearchUsersModal";
 import GlobalSearchModal from "../components/Chat/GlobalSearchModal";
 import { useAuth } from "../hooks/useAuth";
@@ -53,6 +54,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   const [unreadCounts, setUnreadCounts] = useState<{ [key: number]: number }>(
     {},
   );
+  const [activeFolder, setActiveFolder] = useState<FolderType>("all");
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -294,6 +296,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Folder-based counts
+  const folderCounts = useMemo(
+    () => ({
+      all: conversations.filter((c) => !c.isArchived).length,
+      direct: conversations.filter(
+        (c) => !c.isArchived && c.conversationType === 1,
+      ).length,
+      groups: conversations.filter(
+        (c) => !c.isArchived && c.conversationType === 2,
+      ).length,
+      archived: conversations.filter((c) => c.isArchived).length,
+    }),
+    [conversations],
+  );
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -302,21 +319,33 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     );
   }
 
-  // Filter conversations based on search term
+  // Filter conversations based on search term and active folder
   const filteredConversations = conversations.filter((conv) => {
-    // Hide archived conversations unless it's the currently active one
-    const isCurrent = conv.id === parseInt(conversationId || "0");
-    if (conv.isArchived && !isCurrent) return false;
-
     const searchLower = searchTerm.toLowerCase();
-    if (conv.conversationType === 1) {
-      // Direct chat
-      const otherMember = conv.members.find((m) => m.id !== user.id);
-      return (
-        otherMember?.displayName.toLowerCase().includes(searchLower) || false
-      );
+
+    // Search filtering
+    const matchesSearch =
+      conv.conversationType === 1
+        ? conv.members
+            .find((m) => m.id !== user.id)
+            ?.displayName.toLowerCase()
+            .includes(searchLower) || false
+        : conv.groupName?.toLowerCase().includes(searchLower) || false;
+
+    if (searchTerm.trim() && !matchesSearch) return false;
+
+    // Folder filtering
+    if (activeFolder === "archived") return conv.isArchived;
+
+    if (conv.isArchived) {
+      // Hide archived conversations unless it's the currently active one
+      return conv.id === parseInt(conversationId || "0");
     }
-    return conv.groupName?.toLowerCase().includes(searchLower) || false;
+
+    if (activeFolder === "direct") return conv.conversationType === 1;
+    if (activeFolder === "groups") return conv.conversationType === 2;
+
+    return true; // "all" folder
   });
 
   return (
@@ -356,6 +385,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
             )}
           </div>
         </div>
+
+        <ChatFolders
+          activeFolder={activeFolder}
+          onFolderChange={setActiveFolder}
+          counts={folderCounts}
+        />
 
         {/* Conversation List */}
         <ConversationList

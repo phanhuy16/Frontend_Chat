@@ -7,7 +7,7 @@ import { MessageType } from "../../types";
 import { messageApi } from "../../api/message.api";
 import LinkPreview from "./LinkPreview";
 import PollBucket from "./PollBucket";
-// No rich text parsing
+import { translateText } from "../../services/translationService";
 
 interface MessageBubbleProps {
   message: Message;
@@ -50,6 +50,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [loadingReaders, setLoadingReaders] = React.useState(false);
   const [menuDirection, setMenuDirection] = React.useState<"up" | "down">("up");
   const [timeRemaining, setTimeRemaining] = React.useState<number | null>(null);
+  const [isTranslating, setIsTranslating] = React.useState(false);
+  const [translatedText, setTranslatedText] = React.useState<string | null>(
+    null,
+  );
+  const [isTranslated, setIsTranslated] = React.useState(false);
 
   const optionsButtonRef = React.useRef<HTMLDivElement>(null);
   const reactionButtonRef = React.useRef<HTMLDivElement>(null);
@@ -157,12 +162,72 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const calculateDirection = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      // If space above is less than 250px (approx menu height), show menu downwards
-      if (rect.top < 250) {
+      const windowHeight = window.innerHeight;
+      const spaceAbove = rect.top;
+      const spaceBelow = windowHeight - rect.bottom;
+
+      // Estimated max height of the menu
+      const estimatedHeight = 350;
+
+      // Show down if:
+      // 1. Not enough space above
+      // 2. OR enough space below AND more space below than above (better fit)
+      if (spaceAbove < estimatedHeight || spaceBelow > spaceAbove) {
         setMenuDirection("down");
       } else {
         setMenuDirection("up");
       }
+    }
+  };
+
+  // Handle clicking outside to close menus
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        optionsButtonRef.current &&
+        !optionsButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowOptions(false);
+      }
+      if (
+        reactionButtonRef.current &&
+        !reactionButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowReactions(false);
+      }
+    };
+
+    if (showOptions || showReactions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showOptions, showReactions]);
+
+  const handleTranslate = async () => {
+    if (!message.content || isTranslating) return;
+
+    if (isTranslated) {
+      setIsTranslated(false);
+      return;
+    }
+
+    if (translatedText) {
+      setIsTranslated(true);
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const result = await translateText(message.content);
+      setTranslatedText(result);
+      setIsTranslated(true);
+    } catch (err) {
+      console.error("Translation failed:", err);
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -171,6 +236,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       className={`group flex ${
         isOwn ? "justify-end pl-12" : "justify-start pr-12"
       } relative mb-4`}
+      style={{ zIndex: showOptions || showReactions ? 50 : "auto" }}
     >
       <div
         className={`flex items-end gap-3 ${isOwn ? "flex-row-reverse" : ""}`}
@@ -202,8 +268,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 isOwn ? "right-full mr-12" : "left-full ml-12"
               } ${
                 showOptions || showReactions
-                  ? "opacity-100 scale-100"
-                  : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                  ? "opacity-100 scale-100 pointer-events-auto"
+                  : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 pointer-events-none group-hover:pointer-events-auto"
               } transition-all duration-200 z-10 flex gap-2`}
             >
               {/* Reaction Picker Button */}
@@ -225,34 +291,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
                 {/* Reaction Picker Popup */}
                 {showReactions && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-20"
-                      onClick={() => setShowReactions(false)}
-                    />
-                    <div
-                      className={`absolute ${
-                        menuDirection === "up"
-                          ? "bottom-full mb-3"
-                          : "top-full mt-3"
-                      } ${isOwn ? "right-0" : "left-0"} z-30 animate-slide-up flex`}
-                    >
-                      <div className="p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 flex gap-1.5 min-w-max">
-                        {REACTION_EMOJIS.map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => {
-                              onReact?.(message.id, emoji);
-                              setShowReactions(false);
-                            }}
-                            className="w-10 h-10 flex items-center justify-center hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all hover:scale-125 text-xl"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
+                  <div
+                    className={`absolute ${
+                      menuDirection === "up"
+                        ? "bottom-full mb-3"
+                        : "top-full mt-3"
+                    } ${isOwn ? "right-0" : "left-0"} z-30 animate-slide-up flex`}
+                  >
+                    <div className="p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 flex gap-1.5 min-w-max">
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => {
+                            onReact?.(message.id, emoji);
+                            setShowReactions(false);
+                          }}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all hover:scale-125 text-xl"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
@@ -285,146 +345,158 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </button>
 
                 {showOptions && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-20"
-                      onClick={() => setShowOptions(false)}
-                    />
-                    <div
-                      className={`absolute ${
-                        menuDirection === "up"
-                          ? "bottom-full mb-3"
-                          : "top-full mt-3"
-                      } ${
-                        isOwn ? "right-0" : "left-0"
-                      } z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 py-1.5 min-w-[200px] animate-slide-up overflow-hidden`}
-                    >
-                      {!showDeleteOptions ? (
-                        <>
-                          {(isOwn || canPin) && (
+                  <div
+                    className={`absolute ${
+                      menuDirection === "up"
+                        ? "bottom-full mb-3"
+                        : "top-full mt-3"
+                    } ${
+                      isOwn ? "right-0" : "left-0"
+                    } z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 py-1.5 min-w-[200px] animate-slide-up overflow-hidden`}
+                  >
+                    {!showDeleteOptions ? (
+                      <>
+                        {(isOwn || canPin) && (
+                          <button
+                            onClick={() => {
+                              onPin?.(message.id);
+                              setShowOptions(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              push_pin
+                            </span>
+                            {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
+                          </button>
+                        )}
+                        {message.content &&
+                          message.messageType !== MessageType.Voice && (
                             <button
                               onClick={() => {
-                                onPin?.(message.id);
+                                if (message.content) {
+                                  navigator.clipboard.writeText(
+                                    message.content,
+                                  );
+                                }
                                 setShowOptions(false);
                               }}
-                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
                             >
                               <span className="material-symbols-outlined text-[18px]">
-                                push_pin
+                                content_copy
                               </span>
-                              {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
+                              Sao chép văn bản
                             </button>
                           )}
-                          {message.content &&
-                            message.messageType !== MessageType.Voice && (
-                              <button
-                                onClick={() => {
-                                  if (message.content) {
-                                    navigator.clipboard.writeText(
-                                      message.content,
-                                    );
-                                  }
-                                  setShowOptions(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                        <button
+                          onClick={() => setShowDeleteOptions(true)}
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            delete
+                          </span>
+                          Xoá tin nhắn
+                        </button>
+                        <button
+                          onClick={() => {
+                            onForward?.(message);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            forward
+                          </span>
+                          Chuyển tiếp
+                        </button>
+                        {isOwn && !message.isDeleted && (
+                          <button
+                            onClick={() => {
+                              onEdit?.(message);
+                              setShowOptions(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              edit
+                            </span>
+                            Chỉnh sửa
+                          </button>
+                        )}
+                        {message.content &&
+                          message.messageType === MessageType.Text && (
+                            <button
+                              onClick={() => {
+                                handleTranslate();
+                                setShowOptions(false);
+                              }}
+                              disabled={isTranslating}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                            >
+                              <span
+                                className={`material-symbols-outlined text-[18px] ${isTranslating ? "animate-spin" : ""}`}
                               >
-                                <span className="material-symbols-outlined text-[18px]">
-                                  content_copy
-                                </span>
-                                Sao chép văn bản
-                              </button>
-                            )}
-                          <button
-                            onClick={() => setShowDeleteOptions(true)}
-                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              delete
-                            </span>
-                            Xoá tin nhắn
-                          </button>
+                                {isTranslating ? "sync" : "translate"}
+                              </span>
+                              {isTranslated ? "Xem bản gốc" : "Dịch tin nhắn"}
+                            </button>
+                          )}
+                        {!isOwn && (
                           <button
                             onClick={() => {
-                              onForward?.(message);
+                              onReport?.(message);
                               setShowOptions(false);
                             }}
-                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px]">
-                              forward
+                              report
                             </span>
-                            Chuyển tiếp
+                            Báo cáo
                           </button>
-                          {isOwn && !message.isDeleted && (
-                            <button
-                              onClick={() => {
-                                onEdit?.(message);
-                                setShowOptions(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">
-                                edit
-                              </span>
-                              Chỉnh sửa
-                            </button>
-                          )}
-                          {!isOwn && (
-                            <button
-                              onClick={() => {
-                                onReport?.(message);
-                                setShowOptions(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">
-                                report
-                              </span>
-                              Báo cáo
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => setShowDeleteOptions(false)}
-                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-white/5 mb-1"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              arrow_back
-                            </span>
-                            Quay lại
-                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setShowDeleteOptions(false)}
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-white/5 mb-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            arrow_back
+                          </span>
+                          Quay lại
+                        </button>
+                        <button
+                          onClick={() => {
+                            onDeleteForMe?.(message.id);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            delete
+                          </span>
+                          Xoá ở phía bạn
+                        </button>
+                        {(isOwn || canDeleteEveryone) && (
                           <button
                             onClick={() => {
-                              onDeleteForMe?.(message.id);
+                              onDeleteForEveryone?.(message.id);
                               setShowOptions(false);
                             }}
-                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px]">
-                              delete
+                              delete_forever
                             </span>
-                            Xoá ở phía bạn
+                            Xoá cho mọi người
                           </button>
-                          {(isOwn || canDeleteEveryone) && (
-                            <button
-                              onClick={() => {
-                                onDeleteForEveryone?.(message.id);
-                                setShowOptions(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">
-                                delete_forever
-                              </span>
-                              Xoá cho mọi người
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -542,69 +614,75 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             : "text-slate-800 dark:text-white"
                         }`}
                       >
-                        {(() => {
-                          if (!message.content) return null;
-                          if (
-                            !message.mentionedUsers ||
-                            message.mentionedUsers.length === 0
-                          )
-                            return message.content;
+                        {isTranslated ? (
+                          <span className="italic opacity-90">
+                            {translatedText}
+                          </span>
+                        ) : (
+                          (() => {
+                            if (!message.content) return null;
+                            if (
+                              !message.mentionedUsers ||
+                              message.mentionedUsers.length === 0
+                            )
+                              return message.content;
 
-                          const parts = [];
-                          let lastIndex = 0;
+                            const parts = [];
+                            let lastIndex = 0;
 
-                          // Create a regex to match all mentioned usernames
-                          // We escape special characters in display names for safety
-                          const escapeRegExp = (string: string) =>
-                            string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                          const mentionRegexSource = message.mentionedUsers
-                            .map((u) => `@${escapeRegExp(u.displayName)}`)
-                            .join("|");
+                            // Create a regex to match all mentioned usernames
+                            // We escape special characters in display names for safety
+                            const escapeRegExp = (string: string) =>
+                              string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                            const mentionRegexSource = message.mentionedUsers
+                              .map((u) => `@${escapeRegExp(u.displayName)}`)
+                              .join("|");
 
-                          if (!mentionRegexSource) return message.content;
+                            if (!mentionRegexSource) return message.content;
 
-                          const mentionRegex = new RegExp(
-                            `(${mentionRegexSource})`,
-                            "g",
-                          );
-                          let match;
+                            const mentionRegex = new RegExp(
+                              `(${mentionRegexSource})`,
+                              "g",
+                            );
+                            let match;
 
-                          while (
-                            (match = mentionRegex.exec(message.content)) !==
-                            null
-                          ) {
-                            // Add text before the mention
-                            if (match.index > lastIndex) {
+                            while (
+                              (match = mentionRegex.exec(message.content)) !==
+                              null
+                            ) {
+                              // Add text before the mention
+                              if (match.index > lastIndex) {
+                                parts.push(
+                                  message.content.substring(
+                                    lastIndex,
+                                    match.index,
+                                  ),
+                                );
+                              }
+
+                              // Add the highlighted mention
                               parts.push(
-                                message.content.substring(
-                                  lastIndex,
-                                  match.index,
-                                ),
+                                <span
+                                  key={match.index}
+                                  className={`font-black underline decoration-2 underline-offset-2 ${
+                                    isOwn ? "text-amber-300" : "text-primary"
+                                  }`}
+                                >
+                                  {match[0]}
+                                </span>,
                               );
+
+                              lastIndex = mentionRegex.lastIndex;
                             }
 
-                            // Add the highlighted mention
-                            parts.push(
-                              <span
-                                key={match.index}
-                                className={`font-black underline decoration-2 underline-offset-2 ${
-                                  isOwn ? "text-amber-300" : "text-primary"
-                                }`}
-                              >
-                                {match[0]}
-                              </span>,
-                            );
+                            // Add remaining text
+                            if (lastIndex < message.content.length) {
+                              parts.push(message.content.substring(lastIndex));
+                            }
 
-                            lastIndex = mentionRegex.lastIndex;
-                          }
-
-                          // Add remaining text
-                          if (lastIndex < message.content.length) {
-                            parts.push(message.content.substring(lastIndex));
-                          }
-
-                          return parts;
-                        })()}
+                            return parts;
+                          })()
+                        )}
                       </p>
                     )}
                     {urls.map((url, index) => (

@@ -38,6 +38,7 @@ import { GroupMembersModal } from "./GroupMembersModal";
 import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
 import PollCreationModal from "../CreatePoll/PollCreationModal";
+import PinnedHeader from "./PinnedHeader";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -245,8 +246,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       });
       el.classList.add("highlight-message");
       setTimeout(() => el.classList.remove("highlight-message"), 2000);
+    } else {
+      // If message not in DOM, we might need to load it (advanced feature)
+      toast.error("Message not found in local view");
     }
   }, []);
+
+  const handleJumpToMessage = (messageId: number) => {
+    scrollToMessage(messageId);
+  };
+
+  const handleUnpinMessage = async (messageId: number) => {
+    try {
+      await messageApi.togglePin(messageId);
+      // Update local state
+      setPinnedMessages((prev) => prev.filter((m) => m.id !== messageId));
+      toast.success("Message unpinned");
+    } catch (err) {
+      toast.error("Failed to unpin message");
+      console.error(err);
+    }
+  };
 
   const getWallpaperStyle = () => {
     switch (chatWallpaper) {
@@ -956,86 +976,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           onStartAudioCall={handleStartAudioCall}
         />
 
-        {/* Pinned Message Banner */}
-        {pinnedMessages.length > 0 && (
-          <div className="relative z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-8 py-2 flex items-center justify-between gap-4 animate-fade-in shadow-sm">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <span className="material-symbols-outlined text-amber-500 scale-90">
-                push_pin
-              </span>
-              <div
-                className="flex flex-col min-w-0 cursor-pointer"
-                onClick={() => {
-                  const msg = pinnedMessages[currentPinnedIndex];
-                  const el = document.getElementById(`message-${msg.id}`);
-                  if (el) {
-                    el.scrollIntoView({ behavior: "smooth", block: "center" });
-                    el.classList.add("highlight-message");
-                    setTimeout(
-                      () => el.classList.remove("highlight-message"),
-                      2000,
-                    );
-                  }
-                }}
-              >
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest leading-tight">
-                  Ghim tin nhắn{" "}
-                  {pinnedMessages.length > 1
-                    ? `(${currentPinnedIndex + 1}/${pinnedMessages.length})`
-                    : ""}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-300 truncate font-medium leading-normal">
-                  {pinnedMessages[currentPinnedIndex].messageType ===
-                  MessageType.Voice
-                    ? "Tin nhắn thoại"
-                    : pinnedMessages[currentPinnedIndex].content ||
-                      (pinnedMessages[currentPinnedIndex].attachments?.length
-                        ? "Tệp đính kèm"
-                        : "Tin nhắn")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              {pinnedMessages.length > 1 && (
-                <>
-                  <button
-                    onClick={() =>
-                      setCurrentPinnedIndex((prev) =>
-                        prev > 0 ? prev - 1 : pinnedMessages.length - 1,
-                      )
-                    }
-                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      chevron_left
-                    </span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPinnedIndex((prev) =>
-                        prev < pinnedMessages.length - 1 ? prev + 1 : 0,
-                      )
-                    }
-                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      chevron_right
-                    </span>
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => setPinnedMessages([])}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/5 text-slate-500 transition-colors ml-1"
-                title="Ẩn"
-              >
-                <span className="material-symbols-outlined text-base">
-                  close
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
+        <PinnedHeader
+          pinnedMessages={pinnedMessages}
+          onJumpToMessage={handleJumpToMessage}
+          onUnpin={handleUnpinMessage}
+        />
 
         <MessageList
           messages={messages}
