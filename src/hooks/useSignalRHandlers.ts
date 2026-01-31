@@ -76,8 +76,8 @@ export const useSignalRHandlers = () => {
       // Update conversation preview in the list
       updateConversation(message.conversationId, {
         lastMessage: message,
-        // Unread count is usually handled by the backend or separate logic, 
-        // but we can increment it locally if not current conversation
+        // Ensure messages array is also updated if we're using it as fallback
+        messages: [message],
         unreadCount: currentConversation?.id === message.conversationId ? 0 : undefined
       });
     });
@@ -93,18 +93,73 @@ export const useSignalRHandlers = () => {
     on("MessageDeleted", (data: any) => {
       const messageId = data.messageId ?? data.MessageId;
       const conversationId = data.conversationId ?? data.ConversationId;
+
+      // Update current message list if relevant
       if (currentConversation?.id === conversationId) {
         updateMessage(messageId, { isDeleted: true, content: null, attachments: [] });
       }
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversationId) return conv;
+
+          const isLastMessage = conv.lastMessage?.id === messageId;
+          const updatedLastMessage = isLastMessage && conv.lastMessage
+            ? { ...conv.lastMessage, isDeleted: true, content: null, attachments: [] }
+            : conv.lastMessage;
+
+          // Ensure we update lastMessage even if messages array update is redundant
+
+          // Also update the messages array for consistency
+          const updatedMessages = conv.messages.map((msg: Message) =>
+            msg.id === messageId
+              ? { ...msg, isDeleted: true, content: null, attachments: [] }
+              : msg,
+          );
+
+          return {
+            ...conv,
+            messages: updatedMessages,
+            lastMessage: updatedLastMessage
+          };
+        }),
+      );
+
     });
 
     on("MessageEdited", (data: any) => {
       const messageId = data.messageId ?? data.MessageId;
       const newContent = data.newContent ?? data.NewContent;
       const conversationId = data.conversationId ?? data.ConversationId;
+
+      // Update current message list if relevant
       if (currentConversation?.id === conversationId) {
         updateMessage(messageId, { content: newContent, isModified: true });
       }
+
+      // Update conversation list preview
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversationId) return conv;
+
+          const updatedMessages = conv.messages.map((msg: Message) =>
+            msg.id === messageId
+              ? { ...msg, content: newContent, isModified: true }
+              : msg,
+          );
+
+          const isLastMessage = conv.lastMessage?.id === messageId;
+          const updatedLastMessage = isLastMessage && conv.lastMessage
+            ? { ...conv.lastMessage, content: newContent, isModified: true }
+            : conv.lastMessage;
+
+          return {
+            ...conv,
+            messages: updatedMessages,
+            lastMessage: updatedLastMessage
+          };
+        }),
+      );
     });
 
     on("MessagePinnedStatusChanged", (data: any) => {

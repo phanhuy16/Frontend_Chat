@@ -73,7 +73,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 border-2 border-white/20 shadow-lg"
               style={{
                 backgroundImage: `url("${getAvatarUrl(
-                  getOtherMember()?.avatar
+                  getOtherMember()?.avatar,
                 )}")`,
               }}
             />
@@ -99,56 +99,56 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1">
-        <div className="flex items-center bg-slate-100/50 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5">
+        <div className="flex items-center bg-slate-100/50 dark:bg-white/5 p-1.5 rounded-full border border-slate-200/50 dark:border-white/5 gap-1">
           {conversation.conversationType === ConversationType.Group && (
             <button
               onClick={() => setShowGroupMembers(true)}
-              className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
+              className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200"
               title="Members"
             >
-              <span className="material-symbols-outlined !text-[16px]">
+              <span className="material-symbols-outlined !text-[18px]">
                 group
               </span>
             </button>
           )}
           <button
             onClick={() => setIsSearching(!isSearching)}
-            className={`w-6 h-6 flex items-center justify-center rounded-lg transition-all duration-200 ${
+            className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
               isSearching
                 ? "text-primary bg-white dark:bg-slate-800 shadow-sm"
                 : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800"
             }`}
             title="Search Messages"
           >
-            <span className="material-symbols-outlined !text-[16px]">
+            <span className="material-symbols-outlined !text-[18px]">
               search
             </span>
           </button>
           <button
             onClick={onStartVideoCall}
             disabled={isBlocked}
-            className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all duration-200 disabled:opacity-30"
+            className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 disabled:opacity-30"
             title="Video Call"
           >
-            <span className="material-symbols-outlined !text-[16px]">
+            <span className="material-symbols-outlined !text-[18px]">
               videocam
             </span>
           </button>
           <button
             onClick={onStartAudioCall}
             disabled={isBlocked}
-            className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all duration-200 disabled:opacity-30"
+            className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 disabled:opacity-30"
             title="Audio Call"
           >
-            <span className="material-symbols-outlined !text-[16px]">call</span>
+            <span className="material-symbols-outlined !text-[18px]">call</span>
           </button>
-          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
+          <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
           <button
             onClick={() => setShowContactSidebar(!showContactSidebar)}
-            className="w-6 h-6 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
+            className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200"
             title="Info"
           >
-            <span className="material-symbols-outlined !text-[16px]">info</span>
+            <span className="material-symbols-outlined !text-[18px]">info</span>
           </button>
         </div>
       </div>

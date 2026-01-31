@@ -91,6 +91,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [showMoreMenu, setShowMoreMenu] = React.useState(false);
   const moreMenuRef = React.useRef<HTMLDivElement | null>(null);
   const moreButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const internalInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Close menus when clicking outside
   React.useEffect(() => {
@@ -242,11 +243,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <button
                 type="button"
                 onClick={stopRecording}
-                className="w-6 h-6 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
+                className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
               >
-                <span className="material-symbols-outlined text-base">
-                  send
-                </span>
+                <span className="material-symbols-outlined text-xl">send</span>
               </button>
             </div>
           ) : (
@@ -255,9 +254,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowUploadMenu(!showUploadMenu)}
-                  className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
+                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-200 shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[18px]">
+                  <span className="material-symbols-outlined text-[20px]">
                     add
                   </span>
                 </button>
@@ -305,7 +304,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
               <div className="flex-1 relative group">
                 <input
-                  className="w-full pl-4 pr-12 py-1.5 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-[11px] h-7"
+                  ref={internalInputRef}
+                  className="w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10"
                   placeholder={t("chat.input_placeholder")}
                   type="text"
                   value={inputValue}
@@ -353,9 +353,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10 ${showEmojiPicker ? "text-primary" : ""}`}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-primary/10 ${showEmojiPicker ? "text-primary" : ""}`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     sentiment_satisfied
                   </span>
                 </button>
@@ -400,14 +400,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     ref={moreButtonRef}
                     type="button"
                     onClick={() => setShowMoreMenu(!showMoreMenu)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 ${
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
                       showMoreMenu || scheduledAt || selfDestructAfterSeconds
                         ? "text-primary bg-primary/10"
                         : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
                     }`}
                     title="More options"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
+                    <span className="material-symbols-outlined text-[20px]">
                       widgets
                     </span>
                   </button>
@@ -489,9 +489,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   <button
                     type="submit"
                     disabled={!inputValue.trim() || uploadingFiles}
-                    className="w-7 h-7 flex items-center justify-center text-white bg-primary rounded-lg disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
+                    className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
+                    <span className="material-symbols-outlined text-[20px]">
                       send
                     </span>
                   </button>
@@ -499,9 +499,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   <button
                     type="button"
                     onClick={startRecording}
-                    className="w-7 h-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 shrink-0"
+                    className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-200 shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
+                    <span className="material-symbols-outlined text-[20px]">
                       mic
                     </span>
                   </button>

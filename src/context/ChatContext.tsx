@@ -29,12 +29,14 @@ interface ChatContextType {
   removeTypingUser: (userId: number, conversationId: number) => void;
   updateConversation: (
     conversationId: number,
-    updates: Partial<Conversation>
+    updates: Partial<Conversation>,
   ) => void;
+  drafts: { [key: number]: string };
+  setDraft: (conversationId: number, draft: string) => void;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -49,6 +51,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const [typingUsersByConversation, setTypingUsersByConversation] = useState<{
     [key: number]: Set<number>;
   }>({});
+  const [drafts, setDrafts] = useState<{ [key: number]: string }>({});
 
   const fetchPinnedMessages = useCallback(async (conversationId: number) => {
     try {
@@ -78,8 +81,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           // Within 30 seconds of each other
           Math.abs(
             new Date(m.createdAt).getTime() -
-              new Date(message.createdAt).getTime()
-          ) < 30000
+              new Date(message.createdAt).getTime(),
+          ) < 30000,
       );
 
       if (optimisticMatchIndex !== -1) {
@@ -98,10 +101,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateMessage = useCallback(
     (messageId: number, updates: Partial<Message>) => {
       setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, ...updates } : msg,
+        ),
       );
     },
-    []
+    [],
   );
 
   const deleteMessage = useCallback((messageId: number) => {
@@ -118,7 +123,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           (r) =>
             r.userId === reaction.userId &&
             r.emojiType === reaction.emojiType &&
-            !r.isOptimistic
+            !r.isOptimistic,
         );
         if (reactionExists) return msg;
 
@@ -127,7 +132,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           (r) =>
             r.isOptimistic &&
             r.userId === reaction.userId &&
-            r.emojiType === reaction.emojiType
+            r.emojiType === reaction.emojiType,
         );
 
         if (optimisticMatchIndex !== -1) {
@@ -139,7 +144,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // 3. Just add new reaction
         return { ...msg, reactions: [...(msg.reactions || []), reaction] };
-      })
+      }),
     );
   }, []);
 
@@ -150,11 +155,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           ? {
               ...msg,
               reactions: (msg.reactions || []).filter(
-                (r) => r.userId !== userId
+                (r) => r.userId !== userId,
               ),
             }
-          : msg
-      )
+          : msg,
+      ),
     );
   }, []);
 
@@ -171,7 +176,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         setTypingUsers((prev) => new Set(prev).add(userId));
       }
     },
-    [currentConversation?.id]
+    [currentConversation?.id],
   );
 
   const removeTypingUser = useCallback(
@@ -192,22 +197,29 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       }
     },
-    [currentConversation?.id]
+    [currentConversation?.id],
   );
 
   const updateConversation = useCallback(
     (conversationId: number, updates: Partial<Conversation>) => {
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === conversationId ? { ...conv, ...updates } : conv
-        )
+          conv.id === conversationId ? { ...conv, ...updates } : conv,
+        ),
       );
       setCurrentConversation((prev) =>
-        prev?.id === conversationId ? { ...prev, ...updates } : prev
+        prev?.id === conversationId ? { ...prev, ...updates } : prev,
       );
     },
-    []
+    [],
   );
+
+  const setDraft = useCallback((conversationId: number, draft: string) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [conversationId]: draft,
+    }));
+  }, []);
 
   return (
     <ChatContext.Provider
@@ -234,6 +246,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         addTypingUser,
         removeTypingUser,
         updateConversation,
+        drafts,
+        setDraft,
       }}
     >
       {children}

@@ -58,6 +58,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setPinnedMessages,
     fetchPinnedMessages,
     addReaction,
+    drafts,
+    setDraft,
   } = useChat();
 
   const {
@@ -73,7 +75,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   } = useCallIntegration(SIGNALR_HUB_URL_CALL as string);
 
   const { invoke, on, off, isConnected } = useSignalR(
-    SIGNALR_HUB_URL_CHAT as string
+    SIGNALR_HUB_URL_CHAT as string,
   );
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -89,11 +91,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockerId, setBlockerId] = useState<number | undefined>(undefined);
   const [chatWallpaper, setChatWallpaper] = useState(
-    localStorage.getItem("chat-wallpaper") || "default"
+    localStorage.getItem("chat-wallpaper") || "default",
   );
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(
-    null
+    null,
   );
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [forwardingLoading, setForwardingLoading] = useState(false);
@@ -135,30 +137,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Drafts management
-  const [drafts, setDrafts] = useState<{ [key: number]: string }>({});
-
-  const inputRef = useRef(inputValue);
   useEffect(() => {
-    inputRef.current = inputValue;
-  }, [inputValue]);
-
-  useEffect(() => {
-    // Load draft for new conversation
-    const newDraft = drafts[conversation.id] || "";
-    setInputValue(newDraft);
-    inputRef.current = newDraft;
-
-    return () => {
-      // Save draft when leaving this conversation
-      const currentId = conversation.id;
-      const currentVal = inputRef.current;
-      setDrafts((prev) => ({
-        ...prev,
-        [currentId]: currentVal,
-      }));
-    };
+    // Sync local inputValue with draft whenever it changes globally (e.g. from other components)
+    // or when the conversation changes
+    const currentDraft = drafts[conversation.id] || "";
+    if (inputValue !== currentDraft) {
+      setInputValue(currentDraft);
+    }
   }, [conversation.id]);
+
+  // Update global draft when local input changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (conversation.id) {
+        setDraft(conversation.id, inputValue);
+      }
+    }, 300); // Debounce to avoid too many context updates
+
+    return () => clearTimeout(timeoutId);
+  }, [inputValue, conversation.id, setDraft]);
 
   useEffect(() => {
     if (conversation?.id) {
@@ -721,6 +718,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             : m,
         ),
       );
+
+      // Update conversation list preview
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversation.id) return conv;
+          return {
+            ...conv,
+            lastMessage:
+              conv.lastMessage?.id === messageId
+                ? {
+                    ...conv.lastMessage,
+                    isDeletedForMe: true,
+                    content: null,
+                    attachments: [],
+                  }
+                : conv.lastMessage,
+            messages: conv.messages.map((msg) =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    isDeletedForMe: true,
+                    content: null,
+                    attachments: [],
+                  }
+                : msg,
+            ),
+          };
+        }),
+      );
+
       toast.success("Đã xoá tin nhắn ở phía bạn");
     } catch (err) {
       console.error("Failed to delete message for me:", err);
@@ -732,10 +759,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     try {
       await invoke("DeleteMessage", messageId, conversation.id, user?.id);
       // The local state will be updated via SignalR "MessageDeleted" event
-      toast.success("Đã thu hồi tin nhắn");
+      toast.success("Đã xóa tin nhắn");
     } catch (err) {
       console.error("Failed to recall message:", err);
-      toast.error("Không thể thu hồi tin nhắn");
+      toast.error("Không thể xóa tin nhắn");
     }
   };
 

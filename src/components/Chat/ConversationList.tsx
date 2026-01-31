@@ -17,6 +17,7 @@ interface ConversationListProps {
   onDeleteConversation?: (conversation: Conversation) => void;
   user: User;
   unreadCounts?: { [key: number]: number };
+  drafts: { [key: number]: string };
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -28,6 +29,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onDeleteConversation,
   user,
   unreadCounts = {},
+  drafts,
 }) => {
   const { typingUsersByConversation } = useChat();
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
@@ -49,8 +51,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
 
-    const timeA = new Date(a.messages[0]?.createdAt || a.createdAt).getTime();
-    const timeB = new Date(b.messages[0]?.createdAt || b.createdAt).getTime();
+    const timeA = new Date(
+      a.lastMessage?.createdAt || a.messages[0]?.createdAt || a.createdAt,
+    ).getTime();
+    const timeB = new Date(
+      b.lastMessage?.createdAt || b.messages[0]?.createdAt || b.createdAt,
+    ).getTime();
     return timeB - timeA;
   });
   const getConversationName = (conversation: Conversation): string => {
@@ -61,13 +67,41 @@ const ConversationList: React.FC<ConversationListProps> = ({
     return conversation.groupName || "Unnamed Group";
   };
 
-  const getConversationPreview = (conversation: Conversation): string => {
-    if (!conversation.messages || conversation.messages.length === 0) {
+  const getConversationPreview = (
+    conversation: Conversation,
+  ): string | React.ReactNode => {
+    const draft = drafts[conversation.id];
+    if (draft && draft.trim()) {
+      return (
+        <span className="flex items-center gap-1">
+          <span className="text-red-500 font-black uppercase text-[9px] px-1 bg-red-500/10 rounded tracking-tighter">
+            Draft
+          </span>
+          <span className="truncate">{draft}</span>
+        </span>
+      );
+    }
+
+    const lastMessage = conversation.lastMessage || conversation.messages[0];
+    if (!lastMessage) {
       return "Chưa có tin nhắn";
     }
 
-    const lastMessage = conversation.messages[0];
-    if (!lastMessage || !lastMessage.content) {
+    if (lastMessage.isDeleted || lastMessage.isDeletedForMe) {
+      return (
+        <span className="italic opacity-70">
+          {lastMessage.isDeletedForMe
+            ? "Bạn đã xóa một tin nhắn"
+            : lastMessage.senderId === user.id
+              ? "Bạn đã xóa một tin nhắn"
+              : "Tin nhắn đã được xóa"}
+        </span>
+      );
+    }
+
+    console.log(lastMessage);
+
+    if (!lastMessage.content) {
       return "Chưa có tin nhắn";
     }
 
@@ -182,7 +216,9 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 }`}
               >
                 {formatDate(
-                  conversation.messages[0]?.createdAt || conversation.createdAt,
+                  conversation.lastMessage?.createdAt ||
+                    conversation.messages[0]?.createdAt ||
+                    conversation.createdAt,
                 )}
               </span>
             </div>

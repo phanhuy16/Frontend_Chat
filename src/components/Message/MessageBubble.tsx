@@ -7,7 +7,7 @@ import { MessageType } from "../../types";
 import { messageApi } from "../../api/message.api";
 import LinkPreview from "./LinkPreview";
 import PollBucket from "./PollBucket";
-import { parseRichText } from "../../utils/richTextParser";
+// No rich text parsing
 
 interface MessageBubbleProps {
   message: Message;
@@ -45,6 +45,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showOptions, setShowOptions] = React.useState(false);
   const [showReactions, setShowReactions] = React.useState(false);
   const [showReaders, setShowReaders] = React.useState(false);
+  const [showDeleteOptions, setShowDeleteOptions] = React.useState(false);
   const [readers, setReaders] = React.useState<MessageReader[]>([]);
   const [loadingReaders, setLoadingReaders] = React.useState(false);
   const [menuDirection, setMenuDirection] = React.useState<"up" | "down">("up");
@@ -52,6 +53,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const optionsButtonRef = React.useRef<HTMLDivElement>(null);
   const reactionButtonRef = React.useRef<HTMLDivElement>(null);
+
+  // Reset sub-menus when main menu closes
+  React.useEffect(() => {
+    if (!showOptions) {
+      setShowDeleteOptions(false);
+    }
+  }, [showOptions]);
 
   // Self-destruct timer effect
   React.useEffect(() => {
@@ -192,7 +200,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div
               className={`absolute top-1/2 -translate-y-1/2 ${
                 isOwn ? "right-full mr-12" : "left-full ml-12"
-              } opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 scale-90 group-hover:scale-100 flex gap-2`}
+              } ${
+                showOptions || showReactions
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+              } transition-all duration-200 z-10 flex gap-2`}
             >
               {/* Reaction Picker Button */}
               <div className="relative" ref={reactionButtonRef}>
@@ -287,102 +299,129 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         isOwn ? "right-0" : "left-0"
                       } z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-premium border border-white/20 dark:border-white/10 py-1.5 min-w-[200px] animate-slide-up overflow-hidden`}
                     >
-                      {(isOwn || canPin) && (
-                        <button
-                          onClick={() => {
-                            onPin?.(message.id);
-                            setShowOptions(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            push_pin
-                          </span>
-                          {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
-                        </button>
-                      )}
-                      {message.content &&
-                        message.messageType !== MessageType.Voice && (
+                      {!showDeleteOptions ? (
+                        <>
+                          {(isOwn || canPin) && (
+                            <button
+                              onClick={() => {
+                                onPin?.(message.id);
+                                setShowOptions(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                push_pin
+                              </span>
+                              {message.isPinned ? "Bỏ ghim" : "Ghim tin nhắn"}
+                            </button>
+                          )}
+                          {message.content &&
+                            message.messageType !== MessageType.Voice && (
+                              <button
+                                onClick={() => {
+                                  if (message.content) {
+                                    navigator.clipboard.writeText(
+                                      message.content,
+                                    );
+                                  }
+                                  setShowOptions(false);
+                                }}
+                                className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  content_copy
+                                </span>
+                                Sao chép văn bản
+                              </button>
+                            )}
+                          <button
+                            onClick={() => setShowDeleteOptions(true)}
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              delete
+                            </span>
+                            Xoá tin nhắn
+                          </button>
                           <button
                             onClick={() => {
-                              if (message.content) {
-                                navigator.clipboard.writeText(message.content);
-                              }
+                              onForward?.(message);
                               setShowOptions(false);
                             }}
                             className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
                           >
                             <span className="material-symbols-outlined text-[18px]">
-                              content_copy
+                              forward
                             </span>
-                            Sao chép văn bản
+                            Chuyển tiếp
                           </button>
-                        )}
-                      <button
-                        onClick={() => {
-                          onDeleteForMe?.(message.id);
-                          setShowOptions(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          delete
-                        </span>
-                        Xoá ở phía bạn
-                      </button>
-                      <button
-                        onClick={() => {
-                          onForward?.(message);
-                          setShowOptions(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          forward
-                        </span>
-                        Chuyển tiếp
-                      </button>
-                      {(isOwn || canDeleteEveryone) && (
-                        <button
-                          onClick={() => {
-                            onDeleteForEveryone?.(message.id);
-                            setShowOptions(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            history
-                          </span>
-                          Thu hồi cho mọi người
-                        </button>
-                      )}
-                      {isOwn && !message.isDeleted && (
-                        <button
-                          onClick={() => {
-                            onEdit?.(message);
-                            setShowOptions(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            edit
-                          </span>
-                          Chỉnh sửa
-                        </button>
-                      )}
-                      {!isOwn && (
-                        <button
-                          onClick={() => {
-                            onReport?.(message);
-                            setShowOptions(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            report
-                          </span>
-                          Báo cáo
-                        </button>
+                          {isOwn && !message.isDeleted && (
+                            <button
+                              onClick={() => {
+                                onEdit?.(message);
+                                setShowOptions(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                edit
+                              </span>
+                              Chỉnh sửa
+                            </button>
+                          )}
+                          {!isOwn && (
+                            <button
+                              onClick={() => {
+                                onReport?.(message);
+                                setShowOptions(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                report
+                              </span>
+                              Báo cáo
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setShowDeleteOptions(false)}
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-white/5 mb-1"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              arrow_back
+                            </span>
+                            Quay lại
+                          </button>
+                          <button
+                            onClick={() => {
+                              onDeleteForMe?.(message.id);
+                              setShowOptions(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              delete
+                            </span>
+                            Xoá ở phía bạn
+                          </button>
+                          {(isOwn || canDeleteEveryone) && (
+                            <button
+                              onClick={() => {
+                                onDeleteForEveryone?.(message.id);
+                                setShowOptions(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                delete_forever
+                              </span>
+                              Xoá cho mọi người
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </>
@@ -468,8 +507,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     {message.isDeletedForMe
                       ? "Bạn đã xóa một tin nhắn"
                       : isOwn
-                        ? "Bạn đã thu hồi một tin nhắn"
-                        : "Tin nhắn đã được thu hồi"}
+                        ? "Bạn đã xóa một tin nhắn"
+                        : "Tin nhắn đã được xóa"}
                   </p>
                 </div>
               ) : (
@@ -483,8 +522,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           className="w-full h-auto block"
                         />
                       </div>
-                    ) : isPureUrl ? null : isPureEmoji ? (
-                      <div className="text-3xl leading-tight">
+                    ) : isPureEmoji ? (
+                      <div
+                        className={`leading-tight ${
+                          message.content.trim().length <= 2
+                            ? "text-6xl"
+                            : message.content.trim().length <= 4
+                              ? "text-5xl"
+                              : "text-4xl"
+                        }`}
+                      >
                         {message.content}
                       </div>
                     ) : message.messageType === MessageType.Poll ? null : (
@@ -501,7 +548,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             !message.mentionedUsers ||
                             message.mentionedUsers.length === 0
                           )
-                            return parseRichText(message.content);
+                            return message.content;
 
                           const parts = [];
                           let lastIndex = 0;

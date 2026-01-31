@@ -39,6 +39,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     setConversations,
     setCurrentConversation,
     updateConversation,
+    drafts,
   } = useChat();
   const { isConnected, on, off } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const { incrementCount, refreshCount } = useFriendRequest();
@@ -369,6 +370,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           onDeleteConversation={handleDeleteConversation}
           user={user}
           unreadCounts={unreadCounts}
+          drafts={drafts}
         />
       </aside>
 
