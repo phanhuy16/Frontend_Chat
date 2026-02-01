@@ -4,9 +4,14 @@ import metadataApi, { LinkPreviewData } from "../../api/metadata.api";
 interface LinkPreviewProps {
   url: string;
   isOwn?: boolean;
+  hideMargin?: boolean;
 }
 
-const LinkPreview: React.FC<LinkPreviewProps> = ({ url, isOwn }) => {
+const LinkPreview: React.FC<LinkPreviewProps> = ({
+  url,
+  isOwn,
+  hideMargin,
+}) => {
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,11 +48,11 @@ const LinkPreview: React.FC<LinkPreviewProps> = ({ url, isOwn }) => {
       href={preview.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`mt-2 block rounded-xl overflow-hidden border ${
+      className={`${!hideMargin ? "mt-2" : ""} block rounded-xl overflow-hidden border ${
         isOwn
           ? "border-white/20 bg-white/10 hover:bg-white/20"
           : "border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10"
-      } transition-all no-underline text-inherit group shadow-sm max-w-[300px]`}
+      } transition-all no-underline text-inherit group shadow-sm w-full max-w-sm`}
     >
       {preview.imageUrl && (
         <div className="aspect-video w-full overflow-hidden">

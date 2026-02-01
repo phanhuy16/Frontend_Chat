@@ -11,9 +11,9 @@ import blockApi from "../../api/block.api";
 import { conversationApi } from "../../api/conversation.api";
 import { messageApi } from "../../api/message.api";
 import { useAuth } from "../../hooks/useAuth";
-import { useCallIntegration } from "../../hooks/useCallIntegration";
 import { useChat } from "../../hooks/useChat";
 import { useSignalR } from "../../hooks/useSignalR";
+import { useCallContext } from "../../context/CallContext";
 import "../../styles/chat.css";
 import {
   CallType,
@@ -22,18 +22,13 @@ import {
   MessageType,
   StatusUser,
 } from "../../types";
-import { Message, Reaction } from "../../types/message.types";
+import { Message, Reaction, MessageReader } from "../../types/message.types";
 import {
   SIGNALR_HUB_URL_CALL,
   SIGNALR_HUB_URL_CHAT,
   TYPING_TIMEOUT,
 } from "../../utils/constants";
 import { formatLastActive, getAvatarUrl } from "../../utils/helpers";
-import AudioCallWindow from "../Call/AudioCallWindow";
-import CallModal from "../Call/CallModal";
-import GroupCallWindow from "../Call/GroupCallWindow";
-import IncomingCallModal from "../Call/IncomingCallModal";
-import VideoCallWindow from "../Call/VideoCallWindow";
 import { AddMembersModal } from "./AddMembersModal";
 import ChatHeader from "./ChatHeader";
 import ChatSearchPanel from "./ChatSearchPanel";
@@ -45,6 +40,8 @@ import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
 import PollCreationModal from "../CreatePoll/PollCreationModal";
 import PinnedHeader from "./PinnedHeader";
+import LinkPreview from "../Message/LinkPreview";
+import PinnedMessagesModal from "./PinnedMessagesModal";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -79,7 +76,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     endCall,
     toggleAudio,
     toggleVideo,
-  } = useCallIntegration(SIGNALR_HUB_URL_CALL as string);
+  } = useCallContext();
 
   const { invoke, on, off, isConnected } = useSignalR(
     SIGNALR_HUB_URL_CHAT as string,
@@ -133,6 +130,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [searchResults, setSearchResults] = useState<Message[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [currentSearchResultIndex, setCurrentSearchResultIndex] = useState(0);
+  const [showPinnedModal, setShowPinnedModal] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -720,6 +718,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+
+      // Stop all tracks in the stream if we have the reference
+      if (mediaRecorder && mediaRecorder.stream) {
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      }
+
       toast.error("Đã hủy ghi âm");
     }
   };
@@ -939,23 +943,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             </p>
           </div>
         )}
-        {/* Incoming Call Modal */}
-        {incomingCall && (
-          <IncomingCallModal
-            caller={{
-              id: incomingCall.callerId,
-              name: incomingCall.callerName,
-              avatar: getAvatarUrl(incomingCall.callerAvatar),
-            }}
-            callType={
-              incomingCall.callType === "Video"
-                ? CallType.Video
-                : CallType.Audio
-            }
-            onAccept={acceptCall}
-            onReject={rejectCall}
-          />
-        )}
 
         <ReportModal
           isOpen={showReportModal}
@@ -963,61 +950,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           reportedUser={reportTargetUser || undefined}
           conversationId={conversation?.id}
         />
-
-        {/* Call Modal (during ringing) */}
-        <CallModal
-          callState={callState}
-          isIncoming={false}
-          onAnswer={() => {}}
-          onReject={rejectCall}
-          onEnd={endCall}
-          callerAvatar={getAvatarUrl(incomingCall?.callerAvatar)}
-        />
-
-        {/* Video Call Window */}
-        {callState.callStatus === "connected" && !callState.isGroup && (
-          <VideoCallWindow
-            localStream={callState.localStream}
-            remoteStream={callState.remoteStream}
-            remoteUserName={callState.remoteUserName}
-            duration={callState.duration}
-            onEndCall={endCall}
-            onToggleAudio={toggleAudio}
-            onToggleVideo={toggleVideo}
-            audioEnabled={callState.isAudioEnabled}
-            videoEnabled={callState.isVideoEnabled}
-          />
-        )}
-
-        {/* Audio Call Window */}
-        {callState.callStatus === "connected" &&
-          !callState.isGroup &&
-          callState.callType === CallType.Audio && (
-            <AudioCallWindow
-              remoteStream={callState.remoteStream}
-              remoteUserName={callState.remoteUserName}
-              remoteUserAvatar={getAvatarUrl(getOtherMember()?.avatar)}
-              duration={callState.duration}
-              onEndCall={endCall}
-              onToggleAudio={toggleAudio}
-              audioEnabled={callState.isAudioEnabled}
-            />
-          )}
-
-        {/* Group Call Window */}
-        {callState.callStatus === "connected" && callState.isGroup && (
-          <GroupCallWindow
-            participants={callState.participants}
-            localStream={callState.localStream}
-            callType={callState.callType}
-            duration={callState.duration}
-            isAudioEnabled={callState.isAudioEnabled}
-            isVideoEnabled={callState.isVideoEnabled}
-            onEndCall={endCall}
-            onToggleAudio={toggleAudio}
-            onToggleVideo={toggleVideo}
-          />
-        )}
 
         <ChatHeader
           conversation={{ ...conversation, currentUserId: user?.id } as any}
@@ -1033,8 +965,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
         <PinnedHeader
           pinnedMessages={pinnedMessages}
-          onJumpToMessage={handleJumpToMessage}
-          onUnpin={handleUnpinMessage}
+          onJumpToMessage={scrollToMessage}
+          onUnpin={handlePinMessage}
+          onViewAll={() => setShowPinnedModal(true)}
         />
 
         <MessageList
@@ -1218,6 +1151,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         conversationId={conversation.id}
       />
 
+      {showPinnedModal && (
+        <PinnedMessagesModal
+          pinnedMessages={pinnedMessages}
+          onClose={() => setShowPinnedModal(false)}
+          onJumpToMessage={(id) => {
+            scrollToMessage(id);
+            setShowPinnedModal(false);
+          }}
+          onUnpin={(id) => {
+            handlePinMessage(id);
+            // Optimistically update pinnedModal messages if needed,
+            // but handlePinMessage uses conversation.id which triggers a global refresh usually.
+          }}
+        />
+      )}
       {/* Right side: Contact Info Sidebar */}
       {showContactSidebar && (
         <>

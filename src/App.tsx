@@ -4,6 +4,7 @@ import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 import { FriendRequestProvider } from "./context/FriendRequestContext";
+import { CallProvider } from "./context/CallContext";
 import AppRoutes from "./routes/Routes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
@@ -28,9 +29,11 @@ const AppContent = () => {
     >
       <AuthProvider>
         <ChatProvider>
-          <FriendRequestProvider>
-            <AppRoutes />
-          </FriendRequestProvider>
+          <CallProvider>
+            <FriendRequestProvider>
+              <AppRoutes />
+            </FriendRequestProvider>
+          </CallProvider>
         </ChatProvider>
       </AuthProvider>
     </ConfigProvider>

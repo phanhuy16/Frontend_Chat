@@ -71,17 +71,66 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
     [attachments]
   );
 
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "pdf":
+        return {
+          icon: "picture_as_pdf",
+          color: "text-red-500",
+          bg: "bg-red-50 dark:bg-red-900/20",
+        };
+      case "doc":
+      case "docx":
+        return {
+          icon: "description",
+          color: "text-blue-500",
+          bg: "bg-blue-50 dark:bg-blue-900/20",
+        };
+      case "xls":
+      case "xlsx":
+        return {
+          icon: "grid_on",
+          color: "text-emerald-500",
+          bg: "bg-emerald-50 dark:bg-emerald-900/20",
+        };
+      case "ppt":
+      case "pptx":
+        return {
+          icon: "slideshow",
+          color: "text-orange-500",
+          bg: "bg-orange-50 dark:bg-orange-900/20",
+        };
+      case "zip":
+      case "rar":
+      case "7z":
+        return {
+          icon: "folder_zip",
+          color: "text-purple-500",
+          bg: "bg-purple-50 dark:bg-purple-900/20",
+        };
+      case "txt":
+        return {
+          icon: "article",
+          color: "text-slate-500",
+          bg: "bg-slate-50 dark:bg-slate-900/20",
+        };
+      default:
+        return { icon: "draft", color: "text-primary", bg: "bg-primary/10" };
+    }
+  };
+
   const filteredAttachments = useMemo(() => {
     let items: any[] = [];
     if (activeTab === "media") items = mediaItems;
     else if (activeTab === "files") items = fileItems;
     else if (activeTab === "links") items = links;
-    
+
     if (!searchTerm) return items;
-    
+
     return items.filter((item: any) => {
-      if (item.url) return item.url.toLowerCase().includes(searchTerm.toLowerCase());
-      return item.fileName.toLowerCase().includes(searchTerm.toLowerCase());
+      const name = item.fileName || item.url || "";
+      return name.toLowerCase().includes(searchTerm.toLowerCase());
     });
   }, [activeTab, mediaItems, fileItems, links, searchTerm]);
 
@@ -90,7 +139,8 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
 
   // Group media by month
   const groupedMedia = useMemo(() => {
-     return mediaItems.reduce((groups: any, item) => {
+    const itemsToGroup = activeTab === "media" ? mediaItems : [];
+    return itemsToGroup.reduce((groups: any, item) => {
       const date = parseISO(item.uploadedAt);
       let groupName = format(date, "MMMM yyyy", { locale: dateLocale });
 
@@ -103,7 +153,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
       groups[groupName].push(item);
       return groups;
     }, {});
-  }, [mediaItems, dateLocale, i18n.language]);
+  }, [mediaItems, activeTab, dateLocale, i18n.language]);
 
   return (
     <div className="flex flex-col h-full animate-fade-in bg-slate-50 dark:bg-slate-900/20">
@@ -115,12 +165,14 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
               {t("media.title")}
             </h2>
             <p className="text-[11px] text-slate-500 font-medium">
-              {t("media.subtitle", { count: attachments.length + links.length })}
+              {t("media.subtitle", {
+                count: attachments.length + links.length,
+              })}
             </p>
           </div>
           <button
             onClick={() => setShowGallery(true)}
-            className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+            className="px-3 py-1.5 bg-primary/10 text-primary text-[10px] font-bold rounded-lg hover:bg-primary hover:text-white transition-all shadow-sm"
           >
             {t("media.view_all")}
           </button>
@@ -133,7 +185,7 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t("media.search_placeholder")}
-            className="w-full h-9 pl-9 pr-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-xs font-medium placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all shadow-sm"
+            className="w-full h-9 pl-9 pr-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all shadow-sm"
           />
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors !text-[18px]">
             search
@@ -183,8 +235,13 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
           </div>
         ) : activeTab === "media" ? (
           mediaItems.length === 0 ? (
-            <div className="text-center py-20 text-slate-400 text-xs font-medium italic">
-              {t("media.no_media")}
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
+              <span className="material-symbols-outlined text-5xl opacity-20">
+                image
+              </span>
+              <p className="text-xs font-medium italic">
+                {t("media.no_media")}
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -229,90 +286,101 @@ const ConversationMedia: React.FC<ConversationMediaProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                {t("media.recent_files")}
+                {searchTerm
+                  ? `Results for "${searchTerm}"`
+                  : t("media.recent_files")}
               </h3>
-              <button className="text-[10px] font-bold text-primary hover:underline">
-                {t("media.view_all")}
-              </button>
             </div>
 
-            {fileItems.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-xs font-medium italic">
-                {t("media.no_files")}
+            {filteredAttachments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
+                <span className="material-symbols-outlined text-5xl opacity-20">
+                  description
+                </span>
+                <p className="text-xs font-medium italic">
+                  {t("media.no_files")}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {fileItems.map((item) => (
+                {filteredAttachments.map((item) => {
+                  const style = getFileIcon(item.fileName);
+                  return (
+                    <a
+                      key={item.id}
+                      href={getFileUrl(item.fileUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/30 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group shadow-sm"
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-xl ${style.bg} ${style.color} flex items-center justify-center shrink-0`}
+                      >
+                        <span className="material-symbols-outlined !text-[24px]">
+                          {style.icon}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                          {item.fileName}
+                        </p>
+                        <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
+                          {formatFileSize(item.fileSize)} •{" "}
+                          {format(parseISO(item.uploadedAt), "MMM d, yyyy", {
+                            locale: dateLocale,
+                          })}
+                        </p>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                {searchTerm ? `Links matching "${searchTerm}"` : "Shared Links"}
+              </h3>
+            </div>
+            {filteredAttachments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
+                <span className="material-symbols-outlined text-5xl opacity-20">
+                  link
+                </span>
+                <p className="text-xs font-medium italic">No links shared</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredAttachments.map((link: any, idx: number) => (
                   <a
-                    key={item.id}
-                    href={getFileUrl(item.fileUrl)}
+                    key={idx}
+                    href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/30 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group"
+                    className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/30 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group shadow-sm"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined !text-[20px]">
-                        description
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-xl">
+                        link
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
-                        {item.fileName}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
+                        {link.url}
                       </p>
-                      <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
-                        {formatFileSize(item.fileSize)} •{" "}
-                        {format(parseISO(item.uploadedAt), "HH:mm a", {
-                          locale: dateLocale,
-                        })}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">
+                          Shared by {link.senderName}
+                        </span>
+                      </div>
                     </div>
                   </a>
                 ))}
               </div>
             )}
           </div>
-        ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              {t("media.tabs.links")}
-            </h3>
-            <button 
-                onClick={() => setShowGallery(true)}
-                className="text-[10px] font-bold text-primary hover:underline">
-              {t("media.view_all")}
-            </button>
-          </div>
-          {filteredAttachments.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-xs font-medium italic">
-              No links found
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredAttachments.slice(0, 5).map((link: any, idx: number) => (
-                <a
-                  key={idx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-white/5 border border-transparent hover:border-slate-100 dark:hover:border-white/5 transition-all group"
-                >
-                   <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                     <span className="material-symbols-outlined text-lg">link</span>
-                   </div>
-                   <div className="min-w-0 flex-1">
-                     <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
-                       {link.url}
-                     </p>
-                     <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                       {link.senderName}
-                     </p>
-                   </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
         )}
       </div>
 

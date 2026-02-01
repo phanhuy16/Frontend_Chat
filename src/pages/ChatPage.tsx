@@ -23,7 +23,7 @@ import { useChat } from "../hooks/useChat";
 import { useSignalR } from "../hooks/useSignalR";
 import { useSignalRHandlers } from "../hooks/useSignalRHandlers";
 import { useFriendRequest } from "../context/FriendRequestContext";
-import { FriendDto, Conversation } from "../types";
+import { FriendDto, Conversation, CallType } from "../types";
 import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 
 interface ChatPageProps {
@@ -42,6 +42,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     updateConversation,
     drafts,
   } = useChat();
+
   const { isConnected, on, off } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const { incrementCount, refreshCount } = useFriendRequest();
   const [searchTerm, setSearchTerm] = React.useState("");

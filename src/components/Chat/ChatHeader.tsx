@@ -2,6 +2,7 @@ import React from "react";
 import { Conversation, StatusUser, CallType, ConversationType } from "../../types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import { useAuth } from "../../hooks/useAuth";
+import { useChat } from "../../hooks/useChat";
 
 interface ChatHeaderProps {
   conversation: Conversation;
@@ -27,6 +28,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onStartAudioCall,
 }) => {
   const { user } = useAuth();
+  const { typingUsersByConversation } = useChat();
+
+  const typingUsers =
+    typingUsersByConversation[conversation.id] || new Set<number>();
 
   const getOtherMember = () => {
     if (conversation.conversationType === ConversationType.Direct) {
@@ -46,11 +51,32 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   const getHeaderSubtitle = (): string => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = getOtherMember();
+
+      // If other member is typing, show that
+      if (otherMember && typingUsers.has(otherMember.id)) {
+        return "typing...";
+      }
+
       if (otherMember?.status === StatusUser.Online) {
         return "Online";
       }
       return formatLastActive(otherMember?.lastActiveAt);
     }
+
+    // For groups, show who is typing
+    if (typingUsers.size > 0) {
+      const typingMembers = conversation.members
+        .filter((m) => typingUsers.has(m.id) && m.id !== user?.id)
+        .map((m) => m.displayName.split(" ")[0]); // Use first names
+
+      if (typingMembers.length === 1) {
+        return `${typingMembers[0]} is typing...`;
+      }
+      if (typingMembers.length > 1) {
+        return `${typingMembers.length} people are typing...`;
+      }
+    }
+
     return `${conversation.members.length} members`;
   };
 

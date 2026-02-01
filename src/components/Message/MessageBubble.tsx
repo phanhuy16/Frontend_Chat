@@ -99,11 +99,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     message.messageType === MessageType.Image &&
     message.content?.match(/giphy\.com/);
 
-  const isPureUrl =
+  const isPureUrl = Boolean(
     !isPureGif &&
     message.content &&
     urls.length === 1 &&
-    message.content.trim() === urls[0];
+    message.content.trim() === urls[0],
+  );
 
   // Detect if message contains only emoji (no other text)
   const isPureEmoji =
@@ -605,7 +606,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       >
                         {message.content}
                       </div>
-                    ) : message.messageType === MessageType.Poll ? null : (
+                    ) : message.messageType === MessageType.Poll ||
+                      !!isPureUrl ? null : (
                       <p
                         className={`text-sm leading-relaxed whitespace-pre-wrap ${
                           isOwn
@@ -685,7 +687,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       </p>
                     )}
                     {urls.map((url, index) => (
-                      <LinkPreview key={index} url={url} isOwn={isOwn} />
+                      <LinkPreview
+                        key={index}
+                        url={url}
+                        isOwn={isOwn}
+                        hideMargin={isPureUrl}
+                      />
                     ))}
                   </>
                 )

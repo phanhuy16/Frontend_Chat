@@ -4,6 +4,7 @@ import { useSignalR } from "./useSignalR";
 import { useAuth } from "./useAuth";
 import { Message, MessageType, Reaction } from "../types/message.types";
 import { Conversation } from "../types/conversation.types";
+import { StatusUser } from "../types";
 import { SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 import toast from "react-hot-toast";
 
@@ -236,6 +237,104 @@ export const useSignalRHandlers = () => {
       }
     });
 
+    // --- Presence Events ---
+
+    on("UserJoined", (data: any) => {
+      const userId = data.userId ?? data.UserId;
+      const status = data.status ?? data.Status;
+      console.log(`User ${userId} joined, status: ${status}`);
+
+      // Update this user in all conversations they belong to
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.members.some((m) => m.id === userId)) {
+            return {
+              ...conv,
+              members: conv.members.map((m) =>
+                m.id === userId ? { ...m, status: status, lastActiveAt: new Date().toISOString() } : m
+              ),
+            };
+          }
+          return conv;
+        })
+      );
+
+      if (currentConversation?.members.some((m) => m.id === userId)) {
+        setCurrentConversation((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === userId ? { ...m, status: status, lastActiveAt: new Date().toISOString() } : m
+            ),
+          };
+        });
+      }
+    });
+
+    on("UserLeft", (data: any) => {
+      const userId = data.userId ?? data.UserId;
+      console.log(`User ${userId} left`);
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.members.some((m) => m.id === userId)) {
+            return {
+              ...conv,
+              members: conv.members.map((m) =>
+                m.id === userId ? { ...m, status: StatusUser.Offline, lastActiveAt: new Date().toISOString() } : m
+              ),
+            };
+          }
+          return conv;
+        })
+      );
+
+      if (currentConversation?.members.some((m) => m.id === userId)) {
+        setCurrentConversation((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === userId ? { ...m, status: StatusUser.Offline, lastActiveAt: new Date().toISOString() } : m
+            ),
+          };
+        });
+      }
+    });
+
+    on("UserOnlineStatusChanged", (data: any) => {
+      const userId = data.userId ?? data.UserId;
+      const status = data.status ?? data.Status;
+      console.log(`User ${userId} status changed to: ${status}`);
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.members.some((m) => m.id === userId)) {
+            return {
+              ...conv,
+              members: conv.members.map((m) =>
+                m.id === userId ? { ...m, status: status, lastActiveAt: new Date().toISOString() } : m
+              ),
+            };
+          }
+          return conv;
+        })
+      );
+
+      if (currentConversation?.members.some((m) => m.id === userId)) {
+        setCurrentConversation((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === userId ? { ...m, status: status, lastActiveAt: new Date().toISOString() } : m
+            ),
+          };
+        });
+      }
+    });
+
     // --- Conversation Lifecycle Events ---
 
     on("NewConversationCreated", (data: any) => {
@@ -320,6 +419,9 @@ export const useSignalRHandlers = () => {
       off("ReactionRemoved");
       off("UserTyping");
       off("UserStoppedTyping");
+      off("UserJoined");
+      off("UserLeft");
+      off("UserOnlineStatusChanged");
       off("NewConversationCreated");
       off("AddedToConversation");
       off("RemovedFromConversation");
