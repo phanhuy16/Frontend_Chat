@@ -207,7 +207,8 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
       none: {
         text: "Kết bạn",
         icon: "person_add",
-        variant: "bg-primary/20 text-primary hover:bg-primary/30",
+        variant:
+          "bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-hover hover:-translate-y-1",
         disabled: false,
       },
     }[status];
@@ -324,7 +325,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                               className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-full size-11 border-2 border-white/20"
                               style={{
                                 backgroundImage: `url("${getAvatarUrl(
-                                  resultUser.avatar
+                                  resultUser.avatar,
                                 )}")`,
                               }}
                             />
@@ -345,16 +346,16 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                               className="h-2 w-2 rounded-full shadow-[0_0_8px] shadow-current"
                               style={{
                                 backgroundColor: getStatusUserColor(
-                                  resultUser.status as StatusUser
+                                  resultUser.status as StatusUser,
                                 ),
                                 color: getStatusUserColor(
-                                  resultUser.status as StatusUser
+                                  resultUser.status as StatusUser,
                                 ),
                               }}
                             />
                             <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
                               {getStatusUserLabel(
-                                resultUser.status as StatusUser
+                                resultUser.status as StatusUser,
                               )}
                             </span>
                           </div>
@@ -377,7 +378,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                   className="relative bg-center bg-no-repeat aspect-square bg-cover rounded-[2rem] size-32 border-4 border-white dark:border-slate-800 shadow-premium"
                   style={{
                     backgroundImage: `url("${getAvatarUrl(
-                      selectedUser.avatar
+                      selectedUser.avatar,
                     )}")`,
                   }}
                 />
@@ -385,7 +386,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                   className="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700"
                   style={{
                     color: getStatusUserColor(
-                      selectedUser.status as StatusUser
+                      selectedUser.status as StatusUser,
                     ),
                   }}
                 >
@@ -409,7 +410,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                     className="h-2.5 w-2.5 rounded-full"
                     style={{
                       backgroundColor: getStatusUserColor(
-                        selectedUser.status as StatusUser
+                        selectedUser.status as StatusUser,
                       ),
                     }}
                   />
@@ -423,9 +424,9 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                 <button
                   onClick={handleOpenChat}
                   disabled={addingFriend}
-                  className="flex-1 group h-9 flex items-center justify-center gap-2 px-4 rounded-xl bg-primary text-white font-bold text-xs shadow-lg shadow-primary/25 hover:bg-primary-hover hover:-translate-y-1 transition-all duration-300"
+                  className="flex-1 group h-10 flex items-center justify-center gap-2 px-6 rounded-2xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/25 hover:bg-primary-hover hover:-translate-y-1 active:scale-95 transition-all duration-300"
                 >
-                  <span className="material-symbols-outlined !text-[18px] group-hover:animate-bounce-subtle">
+                  <span className="material-symbols-outlined !text-xl group-hover:animate-bounce-subtle">
                     chat
                   </span>
                   <span>Message</span>
@@ -437,13 +438,13 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                     <button
                       onClick={handleAddFriend}
                       disabled={state.disabled || addingFriend}
-                      className={`flex-1 group h-9 flex items-center justify-center gap-2 px-4 rounded-xl font-bold text-xs transition-all duration-300 ${
+                      className={`flex-1 group h-10 flex items-center justify-center gap-2 px-6 rounded-2xl font-bold text-sm transition-all duration-300 ${
                         state.variant === "friend"
                           ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                           : state.variant === "pending"
-                          ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                          : "bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-white/10 hover:-translate-y-1"
-                      } disabled:opacity-50 disabled:hover:translate-y-0`}
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                            : state.variant
+                      } disabled:opacity-50 disabled:hover:translate-y-0 active:scale-95`}
                     >
                       <span className="material-symbols-outlined">
                         {state.icon}

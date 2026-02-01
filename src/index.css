@@ -68,26 +68,31 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.dark .ant-modal-content,
 .dark-modal .ant-modal-content {
   background-color: #1e1e1e !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }
 
+.dark .ant-modal-header,
 .dark-modal .ant-modal-header {
   background-color: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   margin-bottom: 16px !important;
 }
 
+.dark .ant-modal-title,
 .dark-modal .ant-modal-title {
   color: white !important;
 }
 
+.dark .ant-modal-close,
 .dark-modal .ant-modal-close {
   color: rgba(255, 255, 255, 0.45) !important;
 }
 
+.dark .ant-modal-close:hover,
 .dark-modal .ant-modal-close:hover {
   color: white !important;
 }

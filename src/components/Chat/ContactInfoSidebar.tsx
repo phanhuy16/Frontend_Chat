@@ -3,12 +3,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import blockApi from "../../api/block.api";
 import reportApi from "../../api/report.api";
+import { conversationApi } from "../../api/conversation.api";
 import { useAuth } from "../../hooks/useAuth";
-import { Conversation, ConversationMember, StatusUser, User } from "../../types";
+import {
+  Conversation,
+  ConversationMember,
+  StatusUser,
+  User,
+} from "../../types";
 import { Message } from "../../types/message.types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import ConversationMedia from "./ConversationMedia";
 import ReportModal from "./ReportModal";
+import SlowModeSelector from "./SlowModeSelector";
+import { ChatContext } from "../../context/ChatContext";
+import { useContext } from "react";
 
 interface ContactInfoSidebarProps {
   isOpen: boolean;
@@ -20,6 +29,9 @@ interface ContactInfoSidebarProps {
   onBlockChange?: (isBlocked: boolean) => void;
   onStartAudioCall: () => void;
   onStartVideoCall: () => void;
+  onThemeChange?: (theme: "default" | "dark" | "light" | "custom") => void;
+  onNotificationChange?: (settings: any) => void;
+  onConversationUpdate?: (updatedConversation: Conversation) => void;
 }
 
 const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
@@ -31,12 +43,21 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
   onBlockChange,
   onStartAudioCall,
   onStartVideoCall,
+  onThemeChange,
+  onNotificationChange,
+  onConversationUpdate,
 }) => {
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"info" | "media">("info");
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [isAdminToolsOpen, setIsAdminToolsOpen] = useState(false);
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [groupName, setGroupName] = useState(conversation?.groupName || "");
+  const [groupDescription, setGroupDescription] = useState(
+    conversation?.description || "",
+  );
 
   // Notification settings
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -92,9 +113,23 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
       const saved = localStorage.getItem(`theme_${convId}`);
       if (saved) {
         setSelectedTheme(saved as any);
+      } else {
+        setSelectedTheme("default");
       }
     }
   }, [conversation?.id]);
+
+  useEffect(() => {
+    if (conversation) {
+      setGroupName(conversation.groupName || "");
+      setGroupDescription(conversation.description || "");
+    }
+  }, [conversation]);
+
+  const isGroupAdmin = useMemo(() => {
+    if (!conversation || !user) return false;
+    return conversation.createdBy === user.id;
+  }, [conversation, user]);
 
   // Handle block/unblock
   const handleBlockUser = async () => {
@@ -127,8 +162,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     if (convId) {
       localStorage.setItem(
         `notif_${convId}`,
-        JSON.stringify(notificationSettings)
+        JSON.stringify(notificationSettings),
       );
+      onNotificationChange?.(notificationSettings);
       toast.success("Đã lưu cài đặt thông báo");
       setNotificationModalOpen(false);
     }
@@ -139,6 +175,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     const convId = conversation?.id;
     if (convId) {
       localStorage.setItem(`theme_${convId}`, selectedTheme);
+      onThemeChange?.(selectedTheme);
       toast.success("Đã lưu chủ đề cuộc trò chuyện");
       setThemeModalOpen(false);
     }
@@ -177,13 +214,13 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     });
 
     return attachments.sort(
-      (a, b) => new Date(b.fileUrl).getTime() - new Date(a.fileUrl).getTime()
+      (a, b) => new Date(b.fileUrl).getTime() - new Date(a.fileUrl).getTime(),
     );
   }, [messages]);
 
   const pinnedMessages = useMemo(() => {
     return messages.filter(
-      (m) => m.isPinned && !m.isDeleted && !m.isDeletedForMe
+      (m) => m.isPinned && !m.isDeleted && !m.isDeletedForMe,
     );
   }, [messages]);
 
@@ -407,7 +444,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                           className="group/pin p-3 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-900/30 hover:border-amber-400/50 transition-all cursor-pointer relative overflow-hidden"
                           onClick={() => {
                             const el = document.getElementById(
-                              `message-${msg.id}`
+                              `message-${msg.id}`,
                             );
                             el?.scrollIntoView({
                               behavior: "smooth",
@@ -416,7 +453,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                             el?.classList.add("highlight-message");
                             setTimeout(
                               () => el?.classList.remove("highlight-message"),
-                              2000
+                              2000,
                             );
                           }}
                         >
@@ -492,6 +529,126 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Admin Tools - Only for Group Admins */}
+                {conversation?.conversationType === 1 && isGroupAdmin && (
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setIsAdminToolsOpen(!isAdminToolsOpen)}
+                      className="w-full flex items-center justify-between px-2 group"
+                    >
+                      <h4 className="text-[9px] font-black text-primary tracking-[0.2em] uppercase">
+                        Admin Tools
+                      </h4>
+                      <span
+                        className={`material-symbols-outlined text-sm text-primary transition-transform duration-300 ${isAdminToolsOpen ? "rotate-180" : ""}`}
+                      >
+                        expand_more
+                      </span>
+                    </button>
+
+                    {isAdminToolsOpen && (
+                      <div className="space-y-1 animate-in slide-in-from-top-1 px-1">
+                        {/* Edit Group Info */}
+                        <div className="p-3 bg-white/40 dark:bg-white/[0.03] border border-slate-200/50 dark:border-white/5 rounded-2xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                              Group Identity
+                            </span>
+                            <button
+                              onClick={async () => {
+                                if (isEditingGroup) {
+                                  try {
+                                    if (conversation) {
+                                      const updated =
+                                        await conversationApi.updateGroupInfo(
+                                          conversation.id,
+                                          {
+                                            groupName,
+                                            description: groupDescription,
+                                          },
+                                        );
+                                      onConversationUpdate?.(updated);
+                                      toast.success("Group info updated");
+                                    }
+                                  } catch (error) {
+                                    toast.error("Failed to update group info");
+                                  }
+                                }
+                                setIsEditingGroup(!isEditingGroup);
+                              }}
+                              className="text-[10px] font-bold text-primary hover:underline"
+                            >
+                              {isEditingGroup ? "Save" : "Edit"}
+                            </button>
+                          </div>
+
+                          {isEditingGroup ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={groupName}
+                                onChange={(e) => setGroupName(e.target.value)}
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary placeholder:text-slate-400 dark:text-white font-medium shadow-sm transition-all"
+                                placeholder="Group Name"
+                              />
+                              <textarea
+                                value={groupDescription}
+                                onChange={(e) =>
+                                  setGroupDescription(e.target.value)
+                                }
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary min-h-[60px] placeholder:text-slate-400 dark:text-white font-medium shadow-sm transition-all"
+                                placeholder="Group Description..."
+                              />
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                {groupName}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                {groupDescription ||
+                                  "No description set (tap Edit to add one)."}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Global Permissions */}
+                        <div className="p-3 bg-white/40 dark:bg-white/[0.03] border border-slate-200/50 dark:border-white/5 rounded-2xl space-y-3">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Global Restrictions
+                          </span>
+
+                          <div className="pt-2">
+                            <SlowModeSelector
+                              value={conversation?.slowMode || 0}
+                              onChange={async (val) => {
+                                if (conversation) {
+                                  try {
+                                    const updated =
+                                      await conversationApi.updateGroupInfo(
+                                        conversation.id,
+                                        { slowMode: val },
+                                      );
+                                    onConversationUpdate?.(updated);
+                                    toast.success(
+                                      `Slow Mode updated to ${val}s`,
+                                    );
+                                  } catch (error) {
+                                    toast.error("Failed to update slow mode");
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+
+                          {/* Removed redundant Admin Only switches as they were not connected to backend */}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (

@@ -95,91 +95,115 @@ const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden animate-fade-in">
       {/* Remote Video */}
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className="flex-1 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Local Video (Picture in Picture) */}
-      {localStream && (
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute bottom-20 right-4 w-32 h-48 bg-gray-900 rounded-lg border-2 border-white object-cover"
-        />
-      )}
+      {/* Grid Overlay Pattern (optional subtle texture) */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.1)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20" />
 
-      {/* Top Bar - User Info and Duration */}
-      <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/50 to-transparent p-4 text-white">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">
-            {remoteUserName || "Cuộc gọi"}
-          </h3>
-          <span className="text-sm font-medium">
-            {formatDuration(duration)}
-          </span>
+      {/* Top Bar - Glassmorphism */}
+      <div className="absolute top-0 left-0 right-0 p-6 z-20">
+        <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex justify-between items-center shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <h3 className="text-lg font-bold text-white tracking-wide shadow-sm">
+              {remoteUserName || "Unknown User"}
+            </h3>
+          </div>
+          <div className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 backdrop-blur-md">
+            <span className="text-sm font-black text-white tracking-widest font-mono">
+              {formatDuration(duration)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* No Video Indicator (Background when video is off) */}
-      {!videoEnabled && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10">
-          <div className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-4xl text-gray-400">
-              videocam_off
-            </span>
+      {/* Local Video - Floating & Draggable style (visual only) */}
+      {localStream && (
+        <div className="absolute bottom-32 right-6 w-36 h-56 z-30 group overflow-hidden rounded-2xl shadow-2xl border-2 border-white/20 hover:scale-105 transition-transform duration-300 bg-gray-900">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm text-[10px] font-bold text-white">
+            YOU
           </div>
-          <p className="text-white text-lg font-semibold">{remoteUserName}</p>
-          <p className="text-gray-400 text-sm">Camera đã bị tắt</p>
         </div>
       )}
 
-      {/* Bottom Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 flex justify-center gap-6 z-20">
-        {/* Mute/Unmute Audio Button */}
-        <button
-          onClick={onToggleAudio}
-          className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
-            audioEnabled
-              ? "bg-white text-black hover:bg-gray-200"
-              : "bg-red-500 text-white hover:bg-red-600 ring-2 ring-white/50"
-          }`}
-          title={audioEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
-        >
-          <span className="material-symbols-outlined text-2xl">
-            {audioEnabled ? "mic" : "mic_off"}
-          </span>
-        </button>
+      {/* No Video Indicator */}
+      {!videoEnabled && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-3xl z-10 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+            <div className="w-32 h-32 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative shadow-2xl">
+              <span className="material-symbols-outlined text-5xl text-white/50">
+                videocam_off
+              </span>
+            </div>
+          </div>
+          <p className="text-white text-2xl font-bold tracking-tight mb-2">
+            {remoteUserName}
+          </p>
+          <p className="text-white/50 text-sm font-medium uppercase tracking-widest">
+            Camera Off
+          </p>
+        </div>
+      )}
 
-        {/* Mute/Unmute Video Button */}
-        <button
-          onClick={onToggleVideo}
-          className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
-            videoEnabled
-              ? "bg-white text-black hover:bg-gray-200"
-              : "bg-red-500 text-white hover:bg-red-600 ring-2 ring-white/50"
-          }`}
-          title={videoEnabled ? "Tắt camera" : "Bật camera"}
-        >
-          <span className="material-symbols-outlined text-2xl">
-            {videoEnabled ? "videocam" : "videocam_off"}
-          </span>
-        </button>
+      {/* Bottom Controls - Floating Glass Bar */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 w-auto">
+        <div className="flex items-center gap-4 bg-black/30 backdrop-blur-2xl border border-white/10 p-4 rounded-[2rem] shadow-2xl hover:bg-black/40 transition-colors duration-300">
+          {/* Mute/Unmute Audio */}
+          <button
+            onClick={onToggleAudio}
+            className={`w-14 h-14 flex items-center justify-center rounded-full transition-all duration-300 group ${
+              audioEnabled
+                ? "bg-white/10 text-white hover:bg-white/20 border border-white/5"
+                : "bg-red-500/80 text-white hover:bg-red-500 border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+            }`}
+            title={audioEnabled ? "Tắt Micro" : "Bật Micro"}
+          >
+            <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">
+              {audioEnabled ? "mic" : "mic_off"}
+            </span>
+          </button>
 
-        {/* End Call Button */}
-        <button
-          onClick={onEndCall}
-          className="w-14 h-14 flex items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
-          title="Kết thúc cuộc gọi"
-        >
-          <span className="material-symbols-outlined text-2xl">call_end</span>
-        </button>
+          {/* End Call - Large Primary Action */}
+          <button
+            onClick={onEndCall}
+            className="w-20 h-20 flex items-center justify-center rounded-[2rem] bg-red-500 hover:bg-red-600 active:scale-95 transition-all duration-300 shadow-[0_0_30px_rgba(239,68,68,0.4)] mx-2 border-4 border-black/20"
+            title="Kết thúc"
+          >
+            <span className="material-symbols-outlined text-4xl text-white">
+              call_end
+            </span>
+          </button>
+
+          {/* Mute/Unmute Video */}
+          <button
+            onClick={onToggleVideo}
+            className={`w-14 h-14 flex items-center justify-center rounded-full transition-all duration-300 group ${
+              videoEnabled
+                ? "bg-white/10 text-white hover:bg-white/20 border border-white/5"
+                : "bg-red-500/80 text-white hover:bg-red-500 border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+            }`}
+            title={videoEnabled ? "Tắt Camera" : "Bật Camera"}
+          >
+            <span className="material-symbols-outlined text-2xl group-active:scale-95 transition-transform">
+              {videoEnabled ? "videocam" : "videocam_off"}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

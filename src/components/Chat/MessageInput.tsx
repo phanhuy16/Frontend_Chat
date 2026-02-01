@@ -42,6 +42,8 @@ interface MessageInputProps {
   isGroup: boolean;
   selfDestructAfterSeconds: number | null;
   setSelfDestructAfterSeconds: (seconds: number | null) => void;
+  slowMode?: number;
+  isAdmin?: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -80,6 +82,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isGroup,
   selfDestructAfterSeconds,
   setSelfDestructAfterSeconds,
+  slowMode = 0,
+  isAdmin = false,
 }) => {
   const { t } = useTranslation();
   const [showMentions, setShowMentions] = React.useState(false);
@@ -92,6 +96,57 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const moreMenuRef = React.useRef<HTMLDivElement | null>(null);
   const moreButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const internalInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Slow Mode Logic
+  const [cooldown, setCooldown] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!slowMode || isAdmin) {
+      setCooldown(0);
+      return;
+    }
+
+    const checkCooldown = () => {
+      const lastSent = localStorage.getItem(`lastSent_${conversationId}`);
+      if (lastSent) {
+        const timePassed = (Date.now() - parseInt(lastSent)) / 1000;
+        if (timePassed < slowMode) {
+          setCooldown(Math.ceil(slowMode - timePassed));
+        } else {
+          setCooldown(0);
+        }
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(() => {
+      const lastSent = localStorage.getItem(`lastSent_${conversationId}`);
+      if (lastSent) {
+        const timePassed = (Date.now() - parseInt(lastSent)) / 1000;
+        if (timePassed < slowMode) {
+          setCooldown(Math.ceil(slowMode - timePassed));
+        } else {
+          setCooldown(0);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [slowMode, isAdmin, conversationId]);
+
+  const onSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cooldown > 0 && !isAdmin) {
+      return;
+    }
+
+    if (slowMode > 0 && !isAdmin) {
+      localStorage.setItem(`lastSent_${conversationId}`, Date.now().toString());
+      setCooldown(slowMode);
+    }
+
+    handleSendMessage(e);
+  };
 
   // Close menus when clicking outside
   React.useEffect(() => {
@@ -210,7 +265,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSendMessage} className="flex items-center gap-4">
+        <form onSubmit={onSendMessage} className="flex items-center gap-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -220,36 +275,62 @@ const MessageInput: React.FC<MessageInputProps> = ({
           />
 
           {isRecording ? (
-            <div className="flex-1 flex items-center gap-3 bg-slate-100 dark:bg-slate-800/50 px-3 py-1 rounded-xl animate-fade-in">
-              <div className="flex items-center gap-2 text-red-500 animate-pulse">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                <span className="text-sm font-bold">
-                  {Math.floor(recordingTime / 60)}:
-                  {(recordingTime % 60).toString().padStart(2, "0")}
-                </span>
+            <div className="flex-1 flex items-center justify-between gap-4 bg-gradient-to-r from-red-500/10 via-transparent to-transparent pl-4 pr-2 py-2 rounded-full border border-red-500/20 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 text-red-500 animate-pulse">
+                  <span className="material-symbols-outlined text-lg">mic</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-red-500 uppercase tracking-wider animate-pulse">
+                    Recording
+                  </span>
+                  <span className="font-mono text-sm font-black text-slate-700 dark:text-white tabular-nums">
+                    {Math.floor(recordingTime / 60)}:
+                    {(recordingTime % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 text-slate-500 text-xs italic truncate">
-                {t("chat.recording") || "Recording..."}
+
+              {/* Simulated Waveform Visualizer */}
+              <div className="flex-1 flex items-center justify-center gap-1 h-6 opacity-50">
+                {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3].map((h, i) => (
+                  <div
+                    key={i}
+                    className="w-1 bg-red-500 rounded-full animate-wave"
+                    style={{
+                      height: `${h * 20}%`,
+                      animationDelay: `${i * 0.1}s`,
+                    }}
+                  />
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={cancelRecording}
-                className="text-slate-400 hover:text-red-500 transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">
-                  delete
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={stopRecording}
-                className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-110"
-              >
-                <span className="material-symbols-outlined text-xl">send</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelRecording}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all hover:scale-110 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    send
+                  </span>
+                </button>
+              </div>
             </div>
           ) : (
             <>
+              {cooldown > 0 && !isAdmin && (
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded-md animate-bounce z-30">
+                  Slow Mode: {cooldown}s
+                </div>
+              )}
               <div className="relative">
                 <button
                   type="button"
@@ -305,12 +386,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <div className="flex-1 relative group">
                 <input
                   ref={internalInputRef}
-                  className="w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10"
-                  placeholder={t("chat.input_placeholder")}
+                  className={`w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10 ${cooldown > 0 && !isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
+                  placeholder={
+                    cooldown > 0 && !isAdmin
+                      ? `Slow mode: wait ${cooldown}s`
+                      : t("chat.input_placeholder")
+                  }
                   type="text"
                   value={inputValue}
                   onChange={onInputChange}
                   onKeyDown={handleKeyDown}
+                  disabled={cooldown > 0 && !isAdmin}
                 />
 
                 {showMentions && filteredMembers.length > 0 && (
@@ -488,8 +574,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 {inputValue.trim() ? (
                   <button
                     type="submit"
-                    disabled={!inputValue.trim() || uploadingFiles}
-                    className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95"
+                    disabled={
+                      !inputValue.trim() ||
+                      uploadingFiles ||
+                      (cooldown > 0 && !isAdmin)
+                    }
+                    className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95 disabled:cursor-not-allowed"
                   >
                     <span className="material-symbols-outlined text-[20px]">
                       send

@@ -213,7 +213,7 @@ const FriendsListPage: React.FC = () => {
                           className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
                           style={{
                             backgroundColor: getStatusUserColor(
-                              friend.status as StatusUser
+                              friend.status as StatusUser,
                             ),
                           }}
                         />
@@ -235,13 +235,13 @@ const FriendsListPage: React.FC = () => {
                       </div>
 
                       {/* Hover Actions */}
-                      <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1.5">
+                      <div className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
                         <button
                           onClick={() => handleOpenChat(friend)}
-                          className="w-6 h-6 flex items-center justify-center bg-primary text-white rounded-lg shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
+                          className="w-9 h-9 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:scale-110 active:scale-95 transition-all duration-200"
                           title="Gửi tin nhắn"
                         >
-                          <span className="material-symbols-outlined text-base">
+                          <span className="material-symbols-outlined text-lg">
                             chat
                           </span>
                         </button>
@@ -250,13 +250,13 @@ const FriendsListPage: React.FC = () => {
                             handleRemoveFriend(friend.id, friend.displayName)
                           }
                           disabled={removing[friend.id]}
-                          className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all"
+                          className="w-9 h-9 flex items-center justify-center bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/50 hover:scale-110 active:scale-95 transition-all duration-200"
                           title="Xoá bạn bè"
                         >
                           {removing[friend.id] ? (
-                            <div className="w-3 h-3 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                            <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
                           ) : (
-                            <span className="material-symbols-outlined text-base">
+                            <span className="material-symbols-outlined text-lg">
                               person_remove
                             </span>
                           )}

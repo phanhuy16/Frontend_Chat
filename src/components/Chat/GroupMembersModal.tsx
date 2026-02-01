@@ -41,6 +41,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
     any | null
   >(null);
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [updatedConversation, setUpdatedConversation] = useState(conversation);
 
   const currentUserMember = updatedConversation?.members?.find(
@@ -51,6 +52,17 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   const canRemoveMembers = isGroupAdmin || currentUserMember?.canRemoveMembers;
   const canManagePermissions =
     isGroupAdmin || currentUserMember?.canChangePermissions;
+
+  const filteredMembers = updatedConversation?.members?.filter(
+    (member: any) => {
+      const searchLow = searchTerm.toLowerCase();
+      return (
+        member.displayName?.toLowerCase().includes(searchLow) ||
+        member.userName?.toLowerCase().includes(searchLow)
+      );
+    },
+  );
+
   const isMember = updatedConversation?.members?.some(
     (m: any) => m.id === user?.id,
   );
@@ -196,14 +208,30 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                 {updatedConversation.members?.length || 0}
               </span>
             </div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1 mb-4">
               {updatedConversation.groupName || t("group_members.no_name")}
             </p>
+
+            {/* Search Bar */}
+            <div className="relative group px-1">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                <span className="material-symbols-outlined text-[18px]">
+                  search
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder={t("Tìm kiếm thành viên...") || "Search members..."}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-gray-800/80 border border-transparent focus:border-blue-500/50 focus:bg-white dark:focus:bg-gray-800 rounded-xl py-2 pl-10 pr-4 text-xs font-medium transition-all outline-none"
+              />
+            </div>
           </div>
 
           {/* Members List */}
           <div className="flex-1 overflow-y-auto py-4 space-y-2">
-            {updatedConversation.members?.map((member: any) => (
+            {filteredMembers?.map((member: any) => (
               <div
                 key={member.id}
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"

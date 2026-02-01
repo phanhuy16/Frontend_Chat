@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import toast from "react-hot-toast";
 import attachmentApi from "../../api/attachment.api";
 import blockApi from "../../api/block.api";
@@ -131,8 +137,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Pinned messages index
   const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Jump to bottom state
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
@@ -147,6 +153,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
   }, [conversation.id]);
 
+  const isGroupAdmin = useMemo(() => {
+    return conversation && user && conversation.createdBy === user.id;
+  }, [conversation, user]);
+
   // Update global draft when local input changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -157,6 +167,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
     return () => clearTimeout(timeoutId);
   }, [inputValue, conversation.id, setDraft]);
+
+  useEffect(() => {
+    if (conversation?.id) {
+      const savedTheme = localStorage.getItem(`theme_${conversation.id}`);
+      if (savedTheme) {
+        setChatWallpaper(savedTheme);
+      } else {
+        setChatWallpaper("default");
+      }
+    }
+  }, [conversation?.id]);
 
   useEffect(() => {
     if (conversation?.id) {
@@ -270,20 +291,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
 
   const getWallpaperStyle = () => {
     switch (chatWallpaper) {
-      case "solid-dark":
-        return { backgroundColor: "#0f172a" };
-      case "gradient-blue":
-        return { background: "linear-gradient(135deg, #1e3a8a, #1d4ed8)" };
-      case "gradient-purple":
-        return { background: "linear-gradient(135deg, #4c1d95, #7c3aed)" };
-      case "pattern-dots":
+      case "dark":
         return {
-          backgroundColor: "#1e293b",
-          backgroundImage: "radial-gradient(#ffffff11 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
+          backgroundColor: "#0f172a",
+          backgroundImage:
+            "radial-gradient(circle at top right, #1e293b, #0f172a)",
         };
+      case "light":
+        return {
+          backgroundColor: "#f8fafc",
+          backgroundImage: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+        };
+      case "custom":
+        return {
+          background:
+            "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%)",
+        };
+      case "default":
       default:
-        return {};
+        return {
+          backgroundColor: "transparent", // Use container default (glassmorphism look)
+        };
     }
   };
 
@@ -800,11 +828,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set false if we are actually leaving the window, not entering a child
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragging(false);
     handleFileUpload(e.dataTransfer.files);
   };
 
@@ -880,10 +918,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     <div className="flex h-full w-full overflow-hidden">
       {/* Left side: Chat window */}
       <div
-        className="flex flex-1 flex-col h-full"
+        className="relative flex flex-1 flex-col h-full"
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Drop Zone Overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 bg-primary/20 backdrop-blur-sm border-4 border-primary border-dashed rounded-3xl m-4 flex flex-col items-center justify-center animate-fade-in pointer-events-none">
+            <div className="w-32 h-32 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-2xl mb-6">
+              <span className="material-symbols-outlined text-6xl text-primary animate-bounce">
+                cloud_upload
+              </span>
+            </div>
+            <h3 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-widest">
+              Drop Files Here
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-2">
+              to upload instantly
+            </p>
+          </div>
+        )}
         {/* Incoming Call Modal */}
         {incomingCall && (
           <IncomingCallModal
@@ -1122,6 +1177,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           fileInputRef={fileInputRef}
           handleFileInput={handleFileInput}
           isRecording={isRecording}
+          slowMode={conversation.slowMode}
+          isAdmin={!!isGroupAdmin}
           recordingTime={recordingTime}
           startRecording={startRecording}
           stopRecording={stopRecording}
@@ -1181,6 +1238,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         onBlockChange={setIsBlocked}
         onStartAudioCall={handleStartAudioCall}
         onStartVideoCall={handleStartVideoCall}
+        onThemeChange={(theme) => {
+          setChatWallpaper(theme);
+          if (conversation?.id) {
+            localStorage.setItem(`theme_${conversation.id}`, theme);
+          }
+        }}
+        onNotificationChange={(settings) => {
+          // Handle notification settings change if needed
+          console.log("Notification settings updated:", settings);
+        }}
+        onConversationUpdate={(updated) => {
+          setCurrentConversation(updated);
+          // Also update in the list
+          setConversations((prev) =>
+            prev.map((c) => (c.id === updated.id ? updated : c)),
+          );
+        }}
       />
 
       {/* Group Members Modal */}

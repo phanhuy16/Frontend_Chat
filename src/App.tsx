@@ -8,14 +8,18 @@ import AppRoutes from "./routes/Routes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
-import { ConfigProvider } from "antd";
+import { ConfigProvider, theme as antdTheme } from "antd";
 
 const AppContent = () => {
-  const { accentColor } = useTheme();
+  const { accentColor, theme } = useTheme();
 
   return (
     <ConfigProvider
       theme={{
+        algorithm:
+          theme === "dark"
+            ? antdTheme.darkAlgorithm
+            : antdTheme.defaultAlgorithm,
         token: {
           colorPrimary: accentColor,
           borderRadius: 12,

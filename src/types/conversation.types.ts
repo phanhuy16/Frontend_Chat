@@ -6,6 +6,7 @@ export interface Conversation {
   id: number;
   conversationType: ConversationType;
   groupName?: string;
+  description?: string;
   members: ConversationMember[]; // Changed from User[]
   messages: Message[];
   lastMessage?: Message;
@@ -15,6 +16,7 @@ export interface Conversation {
   isPinned?: boolean;
   isArchived?: boolean;
   createdBy: number;
+  slowMode?: number; // in seconds
 }
 
 export interface MemberPermissions {

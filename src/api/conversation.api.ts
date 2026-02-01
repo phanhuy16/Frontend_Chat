@@ -52,4 +52,7 @@ export const conversationApi = {
 
   toggleArchive: (conversationId: number, userId: number): Promise<{ isArchived: boolean }> =>
     axiosInstance.post(`/conversations/${conversationId}/archive/${userId}`).then((res) => res.data),
+
+  updateGroupInfo: (conversationId: number, data: { groupName?: string; description?: string; slowMode?: number }): Promise<Conversation> =>
+    axiosInstance.put(`/conversations/${conversationId}`, data).then((res) => res.data),
 };

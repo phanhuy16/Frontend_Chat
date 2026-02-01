@@ -144,8 +144,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   groups
                 </span>
               </div>
-              <div className="absolute -bottom-1 -right-1 size-7 bg-primary rounded-xl flex items-center justify-center text-white border-2 border-white dark:border-slate-800 shadow-lg cursor-pointer hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-[12px]">
+              <div className="absolute -bottom-1 -right-1 size-9 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex items-center justify-center text-white border-2 border-white dark:border-slate-800 shadow-xl cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 group-hover:shadow-primary/30">
+                <span className="material-symbols-outlined text-[18px]">
                   add_a_photo
                 </span>
               </div>
@@ -210,7 +210,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             className="size-8 rounded-xl bg-center bg-no-repeat bg-cover border border-white dark:border-slate-800 shadow-sm"
                             style={{
                               backgroundImage: `url("${getAvatarUrl(
-                                friend.avatar
+                                friend.avatar,
                               )}")`,
                             }}
                           />
@@ -218,7 +218,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"
                             style={{
                               backgroundColor: getStatusUserColor(
-                                friend.status as StatusUser
+                                friend.status as StatusUser,
                               ),
                             }}
                           />
@@ -233,14 +233,14 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                         </div>
                       </div>
                       <div
-                        className={`size-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        className={`size-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                           selectedMembers.includes(friend.id)
-                            ? "bg-primary border-primary text-white scale-110"
-                            : "border-slate-200 dark:border-slate-700 bg-transparent group-hover:border-primary/40"
+                            ? "bg-emerald-500 border-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/20"
+                            : "border-slate-200 dark:border-slate-700 bg-transparent group-hover:border-emerald-400/50"
                         }`}
                       >
                         {selectedMembers.includes(friend.id) && (
-                          <span className="material-symbols-outlined text-[14px] font-black">
+                          <span className="material-symbols-outlined text-[16px] font-black animate-scale-in">
                             done
                           </span>
                         )}

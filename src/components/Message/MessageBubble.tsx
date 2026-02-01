@@ -514,11 +514,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
           {/* Message Content Bubble */}
           {((message.content && message.messageType !== MessageType.Voice) ||
-            (!isOwn &&
-              message.sender &&
-              message.messageType !== MessageType.Voice) ||
             message.isDeleted ||
-            message.isDeletedForMe) && (
+            message.isDeletedForMe ||
+            message.forwardedFromId ||
+            message.parentMessage) && (
             <div
               className={`relative rounded-[1.25rem] ${
                 isPureGif ||
@@ -785,14 +784,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     key={attachment.id}
                     className="w-full relative group/attachment"
                   >
-                    <a
-                      href={getFileUrl(attachment.fileUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm"
-                    >
+                    <div className="block overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm transition-all duration-300">
                       {attachment.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                        <div className="relative">
+                        <a
+                          href={getFileUrl(attachment.fileUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative block"
+                        >
                           <img
                             src={getFileUrl(attachment.fileUrl)}
                             alt={attachment.fileName}
@@ -805,7 +804,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               </span>
                             </div>
                           </div>
-                        </div>
+                        </a>
                       ) : (
                         <div
                           className={`p-4 flex items-center gap-4 transition-all duration-300 ${
@@ -819,17 +818,51 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               description
                             </span>
                           </div>
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 flex-1">
                             <span className="text-sm font-bold truncate">
                               {attachment.fileName}
                             </span>
-                            <span className="text-[10px] uppercase tracking-wider font-black opacity-50">
-                              Download File
-                            </span>
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  window.open(
+                                    getFileUrl(attachment.fileUrl),
+                                    "_blank",
+                                  );
+                                }}
+                                className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">
+                                  visibility
+                                </span>
+                                Xem file
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Trigger download
+                                  const link = document.createElement("a");
+                                  link.href = getFileUrl(attachment.fileUrl);
+                                  link.download = attachment.fileName;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="px-3 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">
+                                  download
+                                </span>
+                                Tải file
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
-                    </a>
+                    </div>
                   </div>
                 ))}
 
