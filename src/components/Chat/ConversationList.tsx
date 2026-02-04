@@ -99,8 +99,6 @@ const ConversationList: React.FC<ConversationListProps> = ({
       );
     }
 
-    console.log(lastMessage);
-
     if (!lastMessage.content) {
       return "Chưa có tin nhắn";
     }

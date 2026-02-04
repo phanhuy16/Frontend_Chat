@@ -37,13 +37,21 @@ interface MessageInputProps {
   setScheduledAt: (val: string | null) => void;
   showDateTimePicker: boolean;
   setShowDateTimePicker: (show: boolean) => void;
-  members: { id: number; displayName: string; avatar: string }[];
+  members: {
+    id: number;
+    displayName: string;
+    avatar: string;
+    userName?: string;
+  }[];
   onMentionSelect?: (userId: number) => void;
   isGroup: boolean;
   selfDestructAfterSeconds: number | null;
   setSelfDestructAfterSeconds: (seconds: number | null) => void;
   slowMode?: number;
   isAdmin?: boolean;
+  smartReplies?: string[];
+  onSmartReplyClick?: (reply: string) => void;
+  onAiClick?: () => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -84,6 +92,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   setSelfDestructAfterSeconds,
   slowMode = 0,
   isAdmin = false,
+  smartReplies = [],
+  onSmartReplyClick,
+  onAiClick,
 }) => {
   const { t } = useTranslation();
   const [showMentions, setShowMentions] = React.useState(false);
@@ -92,6 +103,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [cursorPosition, setCursorPosition] = React.useState(0);
   const [showSelfDestructSelector, setShowSelfDestructSelector] =
     React.useState(false);
+  const [showCommands, setShowCommands] = React.useState(false);
+  const [commandQuery, setCommandQuery] = React.useState("");
+  const [commandIndex, setCommandIndex] = React.useState(0);
   const [showMoreMenu, setShowMoreMenu] = React.useState(false);
   const moreMenuRef = React.useRef<HTMLDivElement | null>(null);
   const moreButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -175,12 +189,58 @@ const MessageInput: React.FC<MessageInputProps> = ({
     );
   }, [members, mentionQuery, currentUserId]);
 
+  const AVAILABLE_COMMANDS = React.useMemo(
+    () => [
+      { command: "/ai", icon: "smart_toy", desc: "Ask AI Assistant" },
+      { command: "/weather", icon: "sunny", desc: "Current weather" },
+      {
+        command: "/remind",
+        icon: "notifications_active",
+        desc: "Set a reminder",
+      },
+    ],
+    [],
+  );
+
+  const isAiChat = React.useMemo(() => {
+    return members.some((m) => m.userName === "ai_bot");
+  }, [members]);
+
+  const filteredCommands = React.useMemo(() => {
+    let commands = AVAILABLE_COMMANDS;
+
+    if (isAiChat) {
+      // In AI Chat: Show everything EXCEPT /ai (redundant)
+      commands = commands.filter((c) => c.command !== "/ai");
+    } else {
+      // Normal Chat: Show ONLY /ai (to switch context)
+      commands = commands.filter((c) => c.command === "/ai");
+    }
+
+    if (!commandQuery) return commands;
+    return commands.filter((c) =>
+      c.command.toLowerCase().includes(commandQuery.toLowerCase()),
+    );
+  }, [commandQuery, AVAILABLE_COMMANDS, isAiChat]);
+
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const selectionStart = e.target.selectionStart || 0;
     setCursorPosition(selectionStart);
 
     handleInputChange(e);
+
+    // Slash Commands Logic
+    if (value.startsWith("/")) {
+      const spaceIndex = value.indexOf(" ");
+      if (spaceIndex === -1 || selectionStart <= spaceIndex) {
+        setCommandQuery(value.substring(0, selectionStart));
+        setShowCommands(true);
+        setMentionIndex(0); // reuse index or use commandIndex
+        return;
+      }
+    }
+    setShowCommands(false);
 
     // Mention logic - ONLY in Group Chats
     if (!isGroup) {
@@ -239,6 +299,31 @@ const MessageInput: React.FC<MessageInputProps> = ({
         setShowMentions(false);
       }
     }
+
+    if (showCommands && filteredCommands.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setCommandIndex((prev) => (prev + 1) % filteredCommands.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setCommandIndex(
+          (prev) =>
+            (prev - 1 + filteredCommands.length) % filteredCommands.length,
+        );
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        const cmd = filteredCommands[commandIndex].command;
+        if (cmd === "/poll") {
+          onOpenPollModal?.();
+          setInputValue("");
+        } else {
+          setInputValue(cmd + " ");
+        }
+        setShowCommands(false);
+      } else if (e.key === "Escape") {
+        setShowCommands(false);
+      }
+    }
   };
 
   return (
@@ -265,341 +350,411 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </p>
         </div>
       ) : (
-        <form onSubmit={onSendMessage} className="flex items-center gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileInput}
-          />
-
-          {isRecording ? (
-            <div className="flex-1 flex items-center justify-between gap-4 bg-gradient-to-r from-red-500/10 via-transparent to-transparent pl-4 pr-2 py-2 rounded-full border border-red-500/20 animate-fade-in">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 text-red-500 animate-pulse">
-                  <span className="material-symbols-outlined text-lg">mic</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-red-500 uppercase tracking-wider animate-pulse">
-                    Recording
-                  </span>
-                  <span className="font-mono text-sm font-black text-slate-700 dark:text-white tabular-nums">
-                    {Math.floor(recordingTime / 60)}:
-                    {(recordingTime % 60).toString().padStart(2, "0")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Simulated Waveform Visualizer */}
-              <div className="flex-1 flex items-center justify-center gap-1 h-6 opacity-50">
-                {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3].map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-1 bg-red-500 rounded-full animate-wave"
-                    style={{
-                      height: `${h * 20}%`,
-                      animationDelay: `${i * 0.1}s`,
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
+        <div className="flex flex-col w-full relative">
+          {/* Smart Replies */}
+          {smartReplies.length > 0 && !inputValue && (
+            <div className="flex items-center gap-2 px-1 mb-3 overflow-x-auto no-scrollbar animate-fade-in-up">
+              {smartReplies.map((reply, idx) => (
                 <button
+                  key={idx}
                   type="button"
-                  onClick={cancelRecording}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all uppercase tracking-wider"
+                  onClick={() => onSmartReplyClick?.(reply)}
+                  className="px-4 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm whitespace-nowrap active:scale-95"
                 >
-                  Cancel
+                  {reply}
                 </button>
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all hover:scale-110 active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-xl">
-                    send
-                  </span>
-                </button>
-              </div>
+              ))}
             </div>
-          ) : (
-            <>
-              {cooldown > 0 && !isAdmin && (
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded-md animate-bounce z-30">
-                  Slow Mode: {cooldown}s
-                </div>
-              )}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadMenu(!showUploadMenu)}
-                  className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-200 shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    add
-                  </span>
-                </button>
+          )}
 
-                {showUploadMenu && (
-                  <div
-                    ref={uploadMenuRef}
-                    className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fileInputRef.current) {
-                          fileInputRef.current.accept = "image/*";
-                          fileInputRef.current.click();
-                        }
-                        setShowUploadMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-primary">
-                        image
-                      </span>
-                      <span className="text-sm">Images</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fileInputRef.current) {
-                          fileInputRef.current.accept = "*/*";
-                          fileInputRef.current.click();
-                        }
-                        setShowUploadMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-secondary">
-                        description
-                      </span>
-                      <span className="text-sm">Files</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+          <form onSubmit={onSendMessage} className="flex items-center gap-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileInput}
+            />
 
-              <div className="flex-1 relative group">
-                <input
-                  ref={internalInputRef}
-                  className={`w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10 ${cooldown > 0 && !isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
-                  placeholder={
-                    cooldown > 0 && !isAdmin
-                      ? `Slow mode: wait ${cooldown}s`
-                      : t("chat.input_placeholder")
-                  }
-                  type="text"
-                  value={inputValue}
-                  onChange={onInputChange}
-                  onKeyDown={handleKeyDown}
-                  disabled={cooldown > 0 && !isAdmin}
-                />
-
-                {showMentions && filteredMembers.length > 0 && (
-                  <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
-                    <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        Mention someone
-                      </p>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {filteredMembers.map((member, index) => (
-                        <button
-                          key={member.id}
-                          type="button"
-                          onClick={() => insertMention(member)}
-                          className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
-                            index === mentionIndex
-                              ? "bg-primary/10 dark:bg-primary/20"
-                              : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                          }`}
-                        >
-                          <img
-                            src={member.avatar || "/default-avatar.png"}
-                            alt=""
-                            className="size-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                            onError={(e) =>
-                              (e.currentTarget.src = "/default-avatar.png")
-                            }
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                              {member.displayName}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-primary/10 ${showEmojiPicker ? "text-primary" : ""}`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    sentiment_satisfied
-                  </span>
-                </button>
-                <div className="absolute right-0 bottom-full mb-4">
-                  <ChatMediaPicker
-                    isOpen={showEmojiPicker || showGiphyPicker}
-                    onClose={() => {
-                      setShowEmojiPicker(false);
-                      setShowGiphyPicker(false);
-                    }}
-                    onEmojiSelect={(emoji) => {
-                      setInputValue((prev) => prev + emoji);
-                    }}
-                    onGifSelect={(gif) => {
-                      onGifSelect(gif);
-                      setShowGiphyPicker(false);
-                      setShowEmojiPicker(false);
-                    }}
-                  />
-                  {showDateTimePicker && (
-                    <DateTimePicker
-                      value={scheduledAt || ""}
-                      onChange={(val) => setScheduledAt(val)}
-                      onClose={() => setShowDateTimePicker(false)}
-                      onConfirm={() => setShowDateTimePicker(false)}
-                    />
-                  )}
-                  {showSelfDestructSelector && (
-                    <SelfDestructSelector
-                      value={selfDestructAfterSeconds}
-                      onChange={setSelfDestructAfterSeconds}
-                      isOpen={showSelfDestructSelector}
-                      onClose={() => setShowSelfDestructSelector(false)}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <div className="relative">
-                  <button
-                    ref={moreButtonRef}
-                    type="button"
-                    onClick={() => setShowMoreMenu(!showMoreMenu)}
-                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
-                      showMoreMenu || scheduledAt || selfDestructAfterSeconds
-                        ? "text-primary bg-primary/10"
-                        : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
-                    }`}
-                    title="More options"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">
-                      widgets
+            {isRecording ? (
+              <div className="flex-1 flex items-center justify-between gap-4 bg-gradient-to-r from-red-500/10 via-transparent to-transparent pl-4 pr-2 py-2 rounded-full border border-red-500/20 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 text-red-500 animate-pulse">
+                    <span className="material-symbols-outlined text-lg">
+                      mic
                     </span>
-                  </button>
-
-                  {showMoreMenu && (
-                    <div
-                      ref={moreMenuRef}
-                      className="absolute bottom-10 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[200px] animate-slide-up"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onOpenPollModal?.();
-                          setShowMoreMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
-                      >
-                        <span className="material-symbols-outlined text-orange-500">
-                          poll
-                        </span>
-                        <div className="flex flex-col">
-                          <span className="text-sm">Poll</span>
-                          <span className="text-[10px] font-normal text-slate-500">
-                            Create a survey
-                          </span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowDateTimePicker(true);
-                          setShowMoreMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
-                          scheduledAt
-                            ? "text-blue-500"
-                            : "text-slate-700 dark:text-slate-300"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-blue-500">
-                          schedule
-                        </span>
-                        <div className="flex flex-col">
-                          <span className="text-sm">Schedule Message</span>
-                          <span className="text-[10px] font-normal text-slate-500">
-                            Send later
-                          </span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowSelfDestructSelector(true);
-                          setShowMoreMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
-                          selfDestructAfterSeconds
-                            ? "text-red-500"
-                            : "text-slate-700 dark:text-slate-300"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-red-500">
-                          timer
-                        </span>
-                        <div className="flex flex-col">
-                          <span className="text-sm">Self-destruct Timer</span>
-                          <span className="text-[10px] font-normal text-slate-500">
-                            Automatic delete
-                          </span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-red-500 uppercase tracking-wider animate-pulse">
+                      Recording
+                    </span>
+                    <span className="font-mono text-sm font-black text-slate-700 dark:text-white tabular-nums">
+                      {Math.floor(recordingTime / 60)}:
+                      {(recordingTime % 60).toString().padStart(2, "0")}
+                    </span>
+                  </div>
                 </div>
 
-                {inputValue.trim() ? (
+                {/* Simulated Waveform Visualizer */}
+                <div className="flex-1 flex items-center justify-center gap-1 h-6 opacity-50">
+                  {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-red-500 rounded-full animate-wave"
+                      style={{
+                        height: `${h * 20}%`,
+                        animationDelay: `${i * 0.1}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
                   <button
-                    type="submit"
-                    disabled={
-                      !inputValue.trim() ||
-                      uploadingFiles ||
-                      (cooldown > 0 && !isAdmin)
-                    }
-                    className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95 disabled:cursor-not-allowed"
+                    type="button"
+                    onClick={cancelRecording}
+                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all uppercase tracking-wider"
                   >
-                    <span className="material-symbols-outlined text-[20px]">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopRecording}
+                    className="w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all hover:scale-110 active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-xl">
                       send
                     </span>
                   </button>
-                ) : (
+                </div>
+              </div>
+            ) : (
+              <>
+                {cooldown > 0 && !isAdmin && (
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded-md animate-bounce z-30">
+                    Slow Mode: {cooldown}s
+                  </div>
+                )}
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={startRecording}
+                    onClick={() => setShowUploadMenu(!showUploadMenu)}
                     className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-200 shrink-0"
                   >
                     <span className="material-symbols-outlined text-[20px]">
-                      mic
+                      add
                     </span>
                   </button>
-                )}
-              </div>
-            </>
-          )}
-        </form>
+                  {showUploadMenu && (
+                    <div
+                      ref={uploadMenuRef}
+                      className="absolute bottom-16 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[180px] animate-slide-up"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.accept = "image/*";
+                            fileInputRef.current.click();
+                          }
+                          setShowUploadMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                      >
+                        <span className="material-symbols-outlined text-primary">
+                          image
+                        </span>
+                        <span className="text-sm">Images</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.accept = "*/*";
+                            fileInputRef.current.click();
+                          }
+                          setShowUploadMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                      >
+                        <span className="material-symbols-outlined text-secondary">
+                          description
+                        </span>
+                        <span className="text-sm">Files</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 relative group">
+                  <input
+                    ref={internalInputRef}
+                    className={`w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10 ${cooldown > 0 && !isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
+                    placeholder={
+                      cooldown > 0 && !isAdmin
+                        ? `Slow mode: wait ${cooldown}s`
+                        : t("chat.input_placeholder")
+                    }
+                    type="text"
+                    value={inputValue}
+                    onChange={onInputChange}
+                    onKeyDown={handleKeyDown}
+                    disabled={cooldown > 0 && !isAdmin}
+                  />
+
+                  {showCommands && filteredCommands.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Slash Commands
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredCommands.length === 0 && (
+                          <div className="p-3 text-sm text-slate-500 text-center italic">
+                            No commands available
+                          </div>
+                        )}
+                        {filteredCommands.map((cmd, index) => (
+                          <button
+                            key={cmd.command}
+                            type="button"
+                            onClick={() => {
+                              if (cmd.command === "/poll") {
+                                onOpenPollModal?.();
+                                setInputValue("");
+                              } else {
+                                setInputValue(cmd.command + " ");
+                              }
+                              setShowCommands(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                              index === commandIndex
+                                ? "bg-primary/10 dark:bg-primary/20"
+                                : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                            }`}
+                          >
+                            <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-primary">
+                              <span className="material-symbols-outlined text-lg">
+                                {cmd.icon}
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                {cmd.command}
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                {cmd.desc}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {showMentions && filteredMembers.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Mention someone
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredMembers.map((member, index) => (
+                          <button
+                            key={member.id}
+                            type="button"
+                            onClick={() => insertMention(member)}
+                            className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                              index === mentionIndex
+                                ? "bg-primary/10 dark:bg-primary/20"
+                                : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                            }`}
+                          >
+                            <img
+                              src={member.avatar || "/default-avatar.png"}
+                              alt=""
+                              className="size-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                              onError={(e) =>
+                                (e.currentTarget.src = "/default-avatar.png")
+                              }
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                {member.displayName}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-primary/10 ${showEmojiPicker ? "text-primary" : ""}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      sentiment_satisfied
+                    </span>
+                  </button>
+                  <div className="absolute right-0 bottom-full mb-4">
+                    <ChatMediaPicker
+                      isOpen={showEmojiPicker || showGiphyPicker}
+                      onClose={() => {
+                        setShowEmojiPicker(false);
+                        setShowGiphyPicker(false);
+                      }}
+                      onEmojiSelect={(emoji) => {
+                        setInputValue((prev) => prev + emoji);
+                      }}
+                      onGifSelect={(gif) => {
+                        onGifSelect(gif);
+                        setShowGiphyPicker(false);
+                        setShowEmojiPicker(false);
+                      }}
+                    />
+                    {showDateTimePicker && (
+                      <DateTimePicker
+                        value={scheduledAt || ""}
+                        onChange={(val) => setScheduledAt(val)}
+                        onClose={() => setShowDateTimePicker(false)}
+                        onConfirm={() => setShowDateTimePicker(false)}
+                      />
+                    )}
+                    {showSelfDestructSelector && (
+                      <SelfDestructSelector
+                        value={selfDestructAfterSeconds}
+                        onChange={setSelfDestructAfterSeconds}
+                        isOpen={showSelfDestructSelector}
+                        onClose={() => setShowSelfDestructSelector(false)}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="relative">
+                    <button
+                      ref={moreButtonRef}
+                      type="button"
+                      onClick={() => setShowMoreMenu(!showMoreMenu)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ${
+                        showMoreMenu || scheduledAt || selfDestructAfterSeconds
+                          ? "text-primary bg-primary/10"
+                          : "text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10"
+                      }`}
+                      title="More options"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        widgets
+                      </span>
+                    </button>
+
+                    {showMoreMenu && (
+                      <div
+                        ref={moreMenuRef}
+                        className="absolute bottom-10 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 min-w-[200px] animate-slide-up"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onOpenPollModal?.();
+                            setShowMoreMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                        >
+                          <span className="material-symbols-outlined text-orange-500">
+                            poll
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-sm">Poll</span>
+                            <span className="text-[10px] font-normal text-slate-500">
+                              Create a survey
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowDateTimePicker(true);
+                            setShowMoreMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
+                            scheduledAt
+                              ? "text-blue-500"
+                              : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-blue-500">
+                            schedule
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-sm">Schedule Message</span>
+                            <span className="text-[10px] font-normal text-slate-500">
+                              Send later
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSelfDestructSelector(true);
+                            setShowMoreMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors font-bold ${
+                            selfDestructAfterSeconds
+                              ? "text-red-500"
+                              : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-red-500">
+                            timer
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-sm">Self-destruct Timer</span>
+                            <span className="text-[10px] font-normal text-slate-500">
+                              Automatic delete
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {inputValue.trim() ? (
+                    <button
+                      type="submit"
+                      disabled={
+                        !inputValue.trim() ||
+                        uploadingFiles ||
+                        (cooldown > 0 && !isAdmin)
+                      }
+                      className="w-10 h-10 flex items-center justify-center text-white bg-primary rounded-full disabled:opacity-30 hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all duration-200 shrink-0 transform active:scale-95 disabled:cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        send
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-200 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        mic
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </form>
+        </div>
       )}
 
       {scheduledAt && (

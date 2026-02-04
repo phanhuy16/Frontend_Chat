@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { userApi } from "../../api/user.api";
 import { REACT_APP_AVATAR_URL } from "../../utils/constants";
@@ -7,14 +8,14 @@ import { useChat } from "../../hooks/useChat";
 import SidebarNav from "../Chat/SidebarNav";
 import SearchUsersModal from "../Chat/SearchUsersModal";
 import { CreateGroupModal } from "../Chat/CreateGroupModal";
-import GlobalSearchModal from "../Chat/GlobalSearchModal";
+import GlobalSearch from "../Search/GlobalSearch";
 import { useCallContext } from "../../context/CallContext";
 import AudioCallWindow from "../Call/AudioCallWindow";
 import CallModal from "../Call/CallModal";
 import GroupCallWindow from "../Call/GroupCallWindow";
 import IncomingCallModal from "../Call/IncomingCallModal";
 import VideoCallWindow from "../Call/VideoCallWindow";
-import { CallType } from "../../types";
+import { CallType, ConversationType } from "../../types";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -22,11 +23,55 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { user } = useAuth();
-  const { setConversations } = useChat();
+  const navigate = useNavigate();
+  const { conversations, setConversations } = useChat();
   const [avatar, setAvatar] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [searchGlobal, setSearchGlobal] = useState(false);
+  const location = useLocation();
+  // Only hide if we are inside a specific conversation (URL matches /chat/xyz)
+  // If we are at /chat (conversation list only), we still show the button
+  const isConversationOpen = location.pathname.startsWith("/chat/");
+
+  const handleAiClick = async () => {
+    if (!user) return;
+
+    // 1. Check if AI conversation already exists
+    const existingAiConv = conversations.find(
+      (c) =>
+        c.conversationType === ConversationType.Direct &&
+        c.members.some((m) => m.userName === "ai_bot"),
+    );
+
+    if (existingAiConv) {
+      navigate(`/chat/${existingAiConv.id}`);
+      return;
+    }
+
+    // 2. If not, find the AI bot user
+    try {
+      const searchResult = await userApi.searchUsers("ai_bot");
+      const aiBotUser = searchResult.find((u) => u.userName === "ai_bot");
+
+      if (aiBotUser) {
+        // 3. Create new conversation
+        const newConv = await conversationApi.createDirectConversation({
+          userId1: user.id,
+          userId2: aiBotUser.id,
+        });
+        // Check if it already exists in the list before adding
+        if (!conversations.some((c) => c.id === newConv.id)) {
+          setConversations((prev) => [newConv, ...prev]);
+        }
+        navigate(`/chat/${newConv.id}`);
+      } else {
+        console.error("AI Bot user found not found in search");
+      }
+    } catch (error) {
+      console.error("Failed to setup AI chat", error);
+    }
+  };
 
   const {
     callState,
@@ -55,6 +100,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchGlobal(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   if (!user) return null;
 
   return (
@@ -81,6 +137,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </div>
 
+      {/* Global AI FAB - Only show if NOT in a specific conversation */}
+      {!isConversationOpen && (
+        <button
+          onClick={handleAiClick}
+          className="fixed bottom-10 right-10 w-12 h-12 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-[100] group animate-bounce-in"
+          title="Chat with AI Assistant"
+        >
+          <span className="material-symbols-outlined text-xl group-hover:rotate-12 transition-transform">
+            smart_toy
+          </span>
+          <span className="absolute right-full mr-3 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Ask AI
+          </span>
+        </button>
+      )}
+
       <SearchUsersModal
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
@@ -90,10 +162,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         onClose={() => setShowCreateGroup(false)}
         onGroupCreated={reloadConversations}
       />
-      <GlobalSearchModal
-        isOpen={searchGlobal}
-        onClose={() => setSearchGlobal(false)}
-      />
+      {searchGlobal && (
+        <GlobalSearch
+          onClose={() => setSearchGlobal(false)}
+          onSelectMessage={(cid, mid) => {
+            navigate(`/chat/${cid}`);
+            setSearchGlobal(false);
+            // We might need to pass messageId to highlight it,
+            // but the current ChatWindow handles search highlight via state.
+            // For now, navigating to chat is the priority.
+          }}
+          onSelectUser={(uid) => {
+            navigate(`/profile/${uid}`);
+            setSearchGlobal(false);
+          }}
+          onSelectFile={(url) => {
+            window.open(url, "_blank");
+            setSearchGlobal(false);
+          }}
+        />
+      )}
 
       {/* Global Call UI */}
       {incomingCall && (

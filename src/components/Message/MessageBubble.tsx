@@ -20,6 +20,7 @@ interface MessageBubbleProps {
   onForward?: (message: Message) => void;
   onEdit?: (message: Message) => void;
   onReport?: (message: Message) => void;
+  onSetReminder?: (message: Message) => void;
   currentUserId: number;
   canPin?: boolean;
   canDeleteEveryone?: boolean;
@@ -38,6 +39,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onForward,
   onEdit,
   onReport,
+  onSetReminder,
   currentUserId,
   canPin = false,
   canDeleteEveryone = false,
@@ -390,6 +392,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               Sao chép văn bản
                             </button>
                           )}
+                        <button
+                          onClick={() => {
+                            onSetReminder?.(message);
+                            setShowOptions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-primary transition-colors flex items-center gap-3 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            notifications_active
+                          </span>
+                          Nhắc tôi sau
+                        </button>
                         <button
                           onClick={() => setShowDeleteOptions(true)}
                           className="w-full px-4 py-2 text-left text-[13px] font-semibold hover:bg-red-500/10 text-red-500 transition-colors flex items-center gap-3 cursor-pointer"

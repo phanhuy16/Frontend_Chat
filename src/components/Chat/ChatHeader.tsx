@@ -1,8 +1,15 @@
-import React from "react";
-import { Conversation, StatusUser, CallType, ConversationType } from "../../types";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Conversation,
+  StatusUser,
+  CallType,
+  ConversationType,
+  Message,
+} from "../../types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
+import { exportToPDF, exportToText } from "../../services/ExportService";
 
 interface ChatHeaderProps {
   conversation: Conversation;
@@ -14,6 +21,7 @@ interface ChatHeaderProps {
   showContactSidebar: boolean;
   onStartVideoCall: () => void;
   onStartAudioCall: () => void;
+  messages: Message[];
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -26,9 +34,29 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   showContactSidebar,
   onStartVideoCall,
   onStartAudioCall,
+  messages,
 }) => {
   const { user } = useAuth();
   const { typingUsersByConversation } = useChat();
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const exportButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showExportMenu &&
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node) &&
+        exportButtonRef.current &&
+        !exportButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showExportMenu]);
 
   const typingUsers =
     typingUsersByConversation[conversation.id] || new Set<number>();
@@ -169,6 +197,57 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             <span className="material-symbols-outlined !text-[18px]">call</span>
           </button>
           <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+          {/* Export Menu */}
+          <div className="relative">
+            <button
+              ref={exportButtonRef}
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
+                showExportMenu
+                  ? "text-primary bg-white dark:bg-slate-800 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800"
+              }`}
+              title="Export Chat"
+            >
+              <span className="material-symbols-outlined !text-[18px]">
+                ios_share
+              </span>
+            </button>
+
+            {showExportMenu && (
+              <div
+                ref={exportMenuRef}
+                className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 py-2 animate-slide-up"
+              >
+                <button
+                  onClick={() => {
+                    exportToPDF(messages, getHeaderTitle());
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                >
+                  <span className="material-symbols-outlined text-red-500">
+                    picture_as_pdf
+                  </span>
+                  <span className="text-sm">Export to PDF</span>
+                </button>
+                <button
+                  onClick={() => {
+                    exportToText(messages, getHeaderTitle());
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors text-slate-700 dark:text-slate-300 font-bold"
+                >
+                  <span className="material-symbols-outlined text-blue-500">
+                    description
+                  </span>
+                  <span className="text-sm">Export to Text</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setShowContactSidebar(!showContactSidebar)}
             className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200"

@@ -27,6 +27,7 @@ interface MessageListProps {
   hasMore: boolean;
   loadingMore: boolean;
   onReportMessage?: (msg: Message) => void;
+  onSetReminder?: (msg: Message) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -52,6 +53,7 @@ const MessageList: React.FC<MessageListProps> = ({
   hasMore,
   loadingMore,
   onReportMessage,
+  onSetReminder,
 }) => {
   const topObserverRef = React.useRef<HTMLDivElement>(null);
 
@@ -62,7 +64,7 @@ const MessageList: React.FC<MessageListProps> = ({
           loadMoreMessages();
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     if (topObserverRef.current) {
@@ -120,9 +122,15 @@ const MessageList: React.FC<MessageListProps> = ({
           </div>
           {messages.map((message) => {
             const isOwn = message.senderId === user?.id;
-            const currentUserMember = conversation.members.find(m => m.id === user?.id);
-            const canPin = currentUserMember?.canPinMessages || currentUserMember?.role === "Admin";
-            const canDeleteEveryone = currentUserMember?.canDeleteMessages || currentUserMember?.role === "Admin";
+            const currentUserMember = conversation.members.find(
+              (m) => m.id === user?.id,
+            );
+            const canPin =
+              currentUserMember?.canPinMessages ||
+              currentUserMember?.role === "Admin";
+            const canDeleteEveryone =
+              currentUserMember?.canDeleteMessages ||
+              currentUserMember?.role === "Admin";
 
             return (
               <div
@@ -151,6 +159,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   currentUserId={user?.id || 0}
                   canPin={canPin}
                   canDeleteEveryone={canDeleteEveryone}
+                  onSetReminder={onSetReminder}
                 />
               </div>
             );
@@ -158,7 +167,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
           {Array.from(typingUsers).map((typingUserId) => {
             const typingUser = conversation.members.find(
-              (m) => m.id === typingUserId
+              (m) => m.id === typingUserId,
             );
             if (!typingUser || typingUserId === user?.id) return null;
             return (

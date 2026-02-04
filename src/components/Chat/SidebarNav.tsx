@@ -2,6 +2,7 @@ import React from "react";
 import { User } from "../../types";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useFriendRequest } from "../../context/FriendRequestContext";
+import { useTranslation } from "react-i18next";
 
 interface SidebarNavProps {
   user: User;
@@ -21,6 +22,12 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { pendingCount } = useFriendRequest();
+  const { i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "vi" ? "en" : "vi";
+    i18n.changeLanguage(newLang);
+  };
 
   const navItems = [
     { id: "chats", icon: "forum", label: "Chats", path: "/chat" },
@@ -142,6 +149,19 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         >
           <span className="material-symbols-outlined text-[20px] font-black group-hover:rotate-12 transition-transform">
             add
+          </span>
+        </button>
+
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-white/10 text-slate-400 hover:text-secondary hover:bg-secondary/10 transition-all duration-300 group border border-white/10"
+          title={`Switch to ${i18n.language === "vi" ? "English" : "Tiếng Việt"}`}
+        >
+          <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">
+            translate
+          </span>
+          <span className="absolute -top-1 -right-1 flex items-center justify-center bg-secondary text-white text-[8px] font-black rounded-full size-3.5 border border-white dark:border-slate-900">
+            {i18n.language.toUpperCase()}
           </span>
         </button>
       </div>

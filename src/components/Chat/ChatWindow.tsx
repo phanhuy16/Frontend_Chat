@@ -1,3 +1,4 @@
+import { format, addHours, addDays, startOfHour } from "date-fns";
 import React, {
   useState,
   useEffect,
@@ -10,6 +11,7 @@ import attachmentApi from "../../api/attachment.api";
 import blockApi from "../../api/block.api";
 import { conversationApi } from "../../api/conversation.api";
 import { messageApi } from "../../api/message.api";
+import { userApi } from "../../api/user.api";
 import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
 import { useSignalR } from "../../hooks/useSignalR";
@@ -42,6 +44,8 @@ import PollCreationModal from "../CreatePoll/PollCreationModal";
 import PinnedHeader from "./PinnedHeader";
 import LinkPreview from "../Message/LinkPreview";
 import PinnedMessagesModal from "./PinnedMessagesModal";
+import { generateSmartReplies } from "../../utils/ai";
+import ReminderModal from "../Message/ReminderModal";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -50,6 +54,7 @@ interface ChatWindowProps {
 const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const { user } = useAuth();
   const {
+    conversations,
     messages,
     setMessages,
     addMessage,
@@ -131,6 +136,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [currentSearchResultIndex, setCurrentSearchResultIndex] = useState(0);
   const [showPinnedModal, setShowPinnedModal] = useState(false);
+  const [smartReplies, setSmartReplies] = useState<string[]>([]);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedReminderMessage, setSelectedReminderMessage] =
+    useState<Message | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -271,8 +280,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
   }, []);
 
-  const handleJumpToMessage = (messageId: number) => {
-    scrollToMessage(messageId);
+  // When messages update, generate smart replies if the last message is from someone else
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.senderId !== user?.id && lastMsg.content) {
+        setSmartReplies(generateSmartReplies(lastMsg.content));
+      } else {
+        setSmartReplies([]);
+      }
+    }
+  }, [messages, user?.id]);
+
+  const handleSmartReplyClick = (reply: string) => {
+    handleSendMessage_manual(reply);
+    setSmartReplies([]);
+  };
+
+  const handleSendMessage_manual = async (content: string) => {
+    if (!content.trim() || !conversation?.id || !user?.id) return;
+    try {
+      await messageApi.sendMessage({
+        conversationId: conversation.id,
+        senderId: user.id,
+        content: content,
+        messageType: MessageType.Text,
+      });
+    } catch (err) {
+      console.error("Failed to send smart reply", err);
+    }
   };
 
   const handleUnpinMessage = async (messageId: number) => {
@@ -285,6 +321,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       toast.error("Failed to unpin message");
       console.error(err);
     }
+  };
+
+  const handleSetReminder = (msg: Date) => {
+    if (!selectedReminderMessage) return;
+
+    const reminder = {
+      id: Date.now(),
+      messageId: selectedReminderMessage.id,
+      content: selectedReminderMessage.content,
+      remindAt: msg.getTime(),
+      conversationId: conversation?.id,
+    };
+
+    // Store in localStorage for persistence
+    const savedReminders = JSON.parse(
+      localStorage.getItem("message_reminders") || "[]",
+    );
+    savedReminders.push(reminder);
+    localStorage.setItem("message_reminders", JSON.stringify(savedReminders));
+
+    // Schedule a local timeout if it's within 24h
+    const delay = msg.getTime() - Date.now();
+    if (delay > 0 && delay < 86400000) {
+      setTimeout(() => {
+        toast(`🔔 Reminder: ${reminder.content}`, {
+          duration: 5000,
+          icon: "⏰",
+        });
+      }, delay);
+    }
+
+    toast.success(`Reminder set for ${format(msg, "MMM d, HH:mm")}`);
+    setShowReminderModal(false);
   };
 
   const getWallpaperStyle = () => {
@@ -855,6 +924,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     handleFileUpload(e.target.files);
   };
 
+  const handleAiClick = useCallback(async () => {
+    try {
+      const botConv = conversations.find(
+        (c) =>
+          c.conversationType === ConversationType.Direct &&
+          c.members.some((m) => m.userName === "ai_bot"),
+      );
+
+      if (botConv) {
+        setCurrentConversation(botConv);
+        return;
+      }
+
+      const botUser = await userApi.getUserByUsername("ai_bot");
+      if (botUser && user?.id) {
+        const newConv = await conversationApi.createDirectConversation({
+          userId1: user.id,
+          userId2: botUser.id,
+        });
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === newConv.id)) return prev;
+          return [newConv, ...prev];
+        });
+        setCurrentConversation(newConv);
+      } else {
+        toast.error("AI Bot not found");
+      }
+    } catch (error) {
+      console.error("AI Bot Error", error);
+      toast.error("Could not open AI Chat");
+    }
+  }, [conversations, user?.id, setConversations, setCurrentConversation]);
+
   const getOtherMember = () => {
     if (conversation.conversationType === ConversationType.Direct) {
       return conversation.members.find((m) => m.id !== user?.id);
@@ -880,7 +982,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     }
     return `${conversation.members.length} members`;
   };
-
   const handleStartAudioCall = async () => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = getOtherMember();
@@ -952,7 +1053,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         />
 
         <ChatHeader
-          conversation={{ ...conversation, currentUserId: user?.id } as any}
+          conversation={conversation}
+          messages={messages}
           isBlocked={isBlocked}
           isSearching={isSearching}
           setIsSearching={setIsSearching}
@@ -1018,6 +1120,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           setEditingMessage={setEditingMessage}
           setInputValue={setInputValue}
           onReportMessage={handleReportMessage}
+          onSetReminder={(msg) => {
+            setSelectedReminderMessage(msg);
+            setShowReminderModal(true);
+          }}
           scrollToBottom={scrollToBottom}
           loadMoreMessages={loadMoreMessages}
           hasMore={hasMore}
@@ -1135,6 +1241,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
             id: m.id,
             displayName: m.displayName,
             avatar: m.avatar,
+            userName: m.userName,
           }))}
           onMentionSelect={(userId) =>
             setMentionedUserIds((prev) => [...prev, userId])
@@ -1142,6 +1249,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           isGroup={conversation.conversationType === ConversationType.Group}
           selfDestructAfterSeconds={selfDestructAfterSeconds}
           setSelfDestructAfterSeconds={setSelfDestructAfterSeconds}
+          smartReplies={smartReplies}
+          onSmartReplyClick={handleSmartReplyClick}
+          onAiClick={handleAiClick}
         />
       </div>
 
@@ -1232,6 +1342,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           loading={forwardingLoading}
         />
       )}
+
+      <ReminderModal
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+        onConfirm={handleSetReminder}
+        messageContent={
+          selectedReminderMessage?.content || "Attached file/media"
+        }
+      />
     </div>
   );
 };
