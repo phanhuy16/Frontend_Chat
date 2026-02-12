@@ -49,4 +49,10 @@ export const userApi = {
 
   updateCustomStatus: (customStatus: string | null): Promise<any> =>
     axiosInstance.put('/users/custom-status', { customStatus }).then((res) => res.data),
+
+  getThemePreference: (): Promise<{ themePreference: string }> =>
+    axiosInstance.get('/users/theme').then((res) => res.data),
+
+  updateThemePreference: (themePreference: string): Promise<{ message: string }> =>
+    axiosInstance.put('/users/theme', { themePreference }).then((res) => res.data),
 }

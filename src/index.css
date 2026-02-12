@@ -92,7 +92,69 @@
   color: rgba(255, 255, 255, 0.45) !important;
 }
 
-.dark .ant-modal-close:hover,
-.dark-modal .ant-modal-close:hover {
-  color: white !important;
+/* Theme-specific background overrides */
+html.theme-gradient-ocean body,
+html.theme-gradient-sunset body,
+html.theme-gradient-forest body,
+html.theme-glass-dark body {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+html.theme-glass-light body {
+  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+  color: #1e293b !important; /* Force dark text for light glass */
+}
+
+html.theme-gradient-ocean body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background-attachment: fixed;
+}
+
+
+html.theme-gradient-sunset body {
+  background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%) !important;
+  background-attachment: fixed;
+}
+
+html.theme-gradient-forest body {
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%) !important;
+  background-attachment: fixed;
+}
+
+html.theme-glass-light body {
+  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80') no-repeat center center fixed !important;
+  background-size: cover !important;
+}
+
+html.theme-glass-dark body {
+  background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80') no-repeat center center fixed !important;
+  background-size: cover !important;
+}
+
+/* Glass effect overlays */
+html.theme-glass-light #root {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px);
+}
+
+html.theme-glass-dark #root {
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Make cards semi-transparent in glass themes */
+html[class*="theme-glass"] .bg-white,
+html[class*="theme-glass"] .dark\:bg-gray-800,
+html[class*="theme-glass"] .dark\:bg-gray-900,
+html[class*="theme-glass"] .bg-background-card-light,
+html[class*="theme-glass"] .dark\:bg-background-card-dark {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(5px);
+}
+
+html[class*="theme-glass"].dark .bg-white,
+html[class*="theme-glass"].dark .dark\:bg-gray-800,
+html[class*="theme-glass"].dark .dark\:bg-gray-900,
+html[class*="theme-glass"].dark .dark\:bg-background-card-dark {
+  background-color: rgba(30, 41, 59, 0.7) !important;
 }

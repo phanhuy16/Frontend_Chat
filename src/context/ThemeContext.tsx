@@ -1,13 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
+import {
+  THEME_CONFIGS,
+  ThemePreference,
+  ThemeConfig,
+} from "../config/themes.config";
+import { userApi } from "../api/user.api";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: ThemePreference;
+  themeConfig: ThemeConfig;
   accentColor: string;
   fontSize: string;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: ThemePreference) => void;
   updateAccentColor: (color: string) => void;
   updateFontSize: (size: string) => void;
 }
@@ -17,77 +21,102 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme;
-    if (savedTheme === "light" || savedTheme === "dark") {
-      return savedTheme;
-    }
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
+  const [theme, setThemeState] = useState<ThemePreference>(() => {
+    const saved = localStorage.getItem("theme") as ThemePreference;
+    if (saved && THEME_CONFIGS[saved]) {
+      return saved;
     }
     return "light";
   });
 
   const [accentColor, setAccentColor] = useState(
-    localStorage.getItem("theme-accent") || "#6366f1"
+    localStorage.getItem("theme-accent") || "#6366f1",
   );
+
   const [fontSize, setFontSizeState] = useState(
-    localStorage.getItem("font-size") || "normal"
+    localStorage.getItem("font-size") || "normal",
   );
 
-  useEffect(() => {
-    // Apply theme to document element
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const themeConfig = THEME_CONFIGS[theme];
 
+  // Apply theme classes and CSS variables
   useEffect(() => {
-    // Apply accent color
+    const root = document.documentElement;
+
+    // Remove all theme classes
+    Object.keys(THEME_CONFIGS).forEach((t) => {
+      root.classList.remove(`theme-${t}`);
+    });
+
+    // Add current theme class
+    root.classList.add(`theme-${theme}`);
+
+    // Handle dark mode for basic themes
+    if (
+      theme === "dark" ||
+      theme.includes("glass-dark") ||
+      theme.includes("gradient-")
+    ) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    // Apply theme CSS variables
+    root.style.setProperty("--theme-primary", themeConfig.colors.primary);
+    root.style.setProperty("--theme-secondary", themeConfig.colors.secondary);
+    root.style.setProperty("--theme-background", themeConfig.colors.background);
+    root.style.setProperty("--theme-surface", themeConfig.colors.surface);
+    root.style.setProperty("--theme-text", themeConfig.colors.text);
+
+    // Apply gradients if available
+    if (themeConfig.gradients) {
+      const gradientCSS = `linear-gradient(135deg, ${themeConfig.gradients.join(", ")})`;
+      root.style.setProperty("--theme-gradient", gradientCSS);
+    }
+
+    localStorage.setItem("theme", theme);
+  }, [theme, themeConfig]);
+
+  // Apply accent color
+  useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty("--primary", accentColor);
-
-    // Generate variants if needed (simple hex manipulation or just using the same color)
-    // For simplicity, we'll just set the primary and use opacity in tailwind for hover/light
     root.style.setProperty("--primary-hover", `${accentColor}ee`);
     root.style.setProperty("--primary-light", `${accentColor}88`);
     root.style.setProperty("--primary-dark", `${accentColor}cc`);
-
     localStorage.setItem("theme-accent", accentColor);
   }, [accentColor]);
 
+  // Apply font size
   useEffect(() => {
-    // Apply font size globally by setting root font-size
-    // Default browser font-size is usually 16px
     const root = document.documentElement;
-    let sizeValue = "16px"; // Normal
+    let sizeValue = "16px";
     if (fontSize === "small") sizeValue = "14px";
     if (fontSize === "large") sizeValue = "18px";
 
     root.style.fontSize = sizeValue;
-
-    // Also keep the custom variable for messages if we want to fine-tune them
     root.style.setProperty(
       "--message-text",
       fontSize === "small"
         ? "0.9375rem"
         : fontSize === "large"
-        ? "1.125rem"
-        : "1rem"
+          ? "1.125rem"
+          : "1rem",
     );
 
     localStorage.setItem("font-size", fontSize);
   }, [fontSize]);
 
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === "light" ? "dark" : "light"));
-  };
-
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = async (newTheme: ThemePreference) => {
     setThemeState(newTheme);
+
+    // Sync with backend
+    try {
+      await userApi.updateThemePreference(newTheme);
+    } catch (error) {
+      console.error("Failed to sync theme with backend:", error);
+    }
   };
 
   const updateAccentColor = (color: string) => {
@@ -102,9 +131,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     <ThemeContext.Provider
       value={{
         theme,
+        themeConfig,
         accentColor,
         fontSize,
-        toggleTheme,
         setTheme,
         updateAccentColor,
         updateFontSize,

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
+import ThemeSelector from "./ThemeSelector";
 
 const ACCENT_COLORS = [
   { name: "Indigo", value: "#6366f1", class: "bg-[#6366f1]" },
@@ -13,12 +14,13 @@ const ACCENT_COLORS = [
 ];
 
 const InterfaceTab: React.FC = () => {
-  const { accentColor, fontSize, updateAccentColor, updateFontSize } =
+  const { theme, accentColor, fontSize, updateAccentColor, updateFontSize } =
     useTheme();
   const { t, i18n } = useTranslation();
   const [wallpaper, setWallpaperState] = useState(
-    localStorage.getItem("chat-wallpaper") || "default"
+    localStorage.getItem("chat-wallpaper") || "default",
   );
+  const [themeSelectorOpen, setThemeSelectorOpen] = useState(false);
 
   const WALLPAPERS = [
     {
@@ -68,7 +70,7 @@ const InterfaceTab: React.FC = () => {
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
     toast.success(
-      lng === "vi" ? "Đã chuyển sang Tiếng Việt" : "Switched to English"
+      lng === "vi" ? "Đã chuyển sang Tiếng Việt" : "Switched to English",
     );
   };
 
@@ -84,6 +86,25 @@ const InterfaceTab: React.FC = () => {
       </div>
 
       <div className="space-y-8">
+        {/* Theme Selection */}
+        <div className="space-y-4">
+          <label className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">
+              palette
+            </span>
+            Giao diện
+          </label>
+          <button
+            onClick={() => setThemeSelectorOpen(true)}
+            className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined">brush</span>
+            Chọn giao diện ({theme})
+          </button>
+        </div>
+
+        <hr className="border-t border-slate-200 dark:border-white/10" />
+
         {/* Language Settings */}
         <div className="space-y-4">
           <label className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -220,13 +241,19 @@ const InterfaceTab: React.FC = () => {
                 {size === "small"
                   ? t("settings.interface.sizes.small")
                   : size === "normal"
-                  ? t("settings.interface.sizes.medium")
-                  : t("settings.interface.sizes.large")}
+                    ? t("settings.interface.sizes.medium")
+                    : t("settings.interface.sizes.large")}
               </button>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Theme Selector Modal */}
+      <ThemeSelector
+        open={themeSelectorOpen}
+        onClose={() => setThemeSelectorOpen(false)}
+      />
     </div>
   );
 };

@@ -114,7 +114,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   if (!user) return null;
 
   return (
-    <div className="relative flex h-screen w-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="relative flex h-screen w-full bg-transparent overflow-hidden">
       {/* Background Decorations */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px]" />
@@ -141,7 +141,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {!isConversationOpen && (
         <button
           onClick={handleAiClick}
-          className="fixed bottom-10 right-10 w-12 h-12 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-[100] group animate-bounce-in"
+          className="fixed bottom-10 right-10 w-12 h-12 bg-gradient-to-tr from-primary to-primary-dark rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-[100] group animate-bounce-in"
           title="Chat with AI Assistant"
         >
           <span className="material-symbols-outlined text-xl group-hover:rotate-12 transition-transform">
