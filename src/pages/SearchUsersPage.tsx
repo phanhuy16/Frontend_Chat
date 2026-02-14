@@ -5,10 +5,12 @@ import { userApi } from "../api/user.api";
 import { friendApi } from "../api/friend.api";
 import { User } from "../types";
 import { useAuth } from "../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const SearchUsersPage: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,9 +27,9 @@ const SearchUsersPage: React.FC = () => {
     try {
       const data = await userApi.searchUsers(searchTerm);
       // Filter out current user from results
-      setResults(data.filter(u => u.id !== currentUser?.id));
+      setResults(data.filter((u) => u.id !== currentUser?.id));
     } catch (err) {
-      toast.error("Tìm kiếm người dùng thất bại");
+      toast.error(t("toast.search_error"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -36,13 +38,13 @@ const SearchUsersPage: React.FC = () => {
 
   const handleSendRequest = async (userId: number) => {
     try {
-      setRequesting(prev => ({ ...prev, [userId]: true }));
+      setRequesting((prev) => ({ ...prev, [userId]: true }));
       await friendApi.sendFriendRequest(userId);
-      toast.success("Đã gửi lời mời kết bạn");
+      toast.success(t("toast.friend_request_sent"));
     } catch (err) {
-      toast.error("Không thể gửi lời mời kết bạn (có thể đã là bạn bè hoặc đang chờ)");
+      toast.error(t("toast.friend_request_error"));
     } finally {
-      setRequesting(prev => ({ ...prev, [userId]: false }));
+      setRequesting((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -53,10 +55,10 @@ const SearchUsersPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Tìm kiếm bạn bè
+              {t("search_users.title")}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              Kết nối với mọi người xung quanh
+              {t("search_users.subtitle")}
             </p>
           </div>
           <button
@@ -76,7 +78,7 @@ const SearchUsersPage: React.FC = () => {
             </span>
             <input
               type="text"
-              placeholder="Nhập tên người dùng hoặc email để tìm kiếm..."
+              placeholder={t("search_users.placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent border-none outline-none w-full text-lg text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-semibold"
@@ -98,12 +100,14 @@ const SearchUsersPage: React.FC = () => {
               </span>
             </div>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3">
-              {searchTerm ? "Không có kết quả nào" : "Bắt đầu tìm kiếm"}
+              {searchTerm
+                ? t("search_users.no_results_title")
+                : t("search_users.start_search_title")}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-sm font-bold text-sm uppercase tracking-widest leading-relaxed">
               {searchTerm
-                ? `Chúng tôi không tìm thấy ai trùng khớp với "${searchTerm}"`
-                : "Nhập tên hoặc email vào ô tìm kiếm bên trên để tìm bạn bè mới"}
+                ? t("search_users.no_results_desc", { term: searchTerm })
+                : t("search_users.start_search_desc")}
             </p>
           </div>
         ) : (
@@ -154,7 +158,7 @@ const SearchUsersPage: React.FC = () => {
                           <span className="material-symbols-outlined text-lg">
                             person_add
                           </span>
-                          Kết bạn
+                          {t("search_users.connect")}
                         </>
                       )}
                     </button>

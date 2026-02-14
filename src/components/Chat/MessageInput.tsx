@@ -191,15 +191,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const AVAILABLE_COMMANDS = React.useMemo(
     () => [
-      { command: "/ai", icon: "smart_toy", desc: "Ask AI Assistant" },
-      { command: "/weather", icon: "sunny", desc: "Current weather" },
+      { command: "/ai", icon: "smart_toy", desc: t("chat.commands.ai") },
+      { command: "/weather", icon: "sunny", desc: t("chat.commands.weather") },
       {
         command: "/remind",
         icon: "notifications_active",
-        desc: "Set a reminder",
+        desc: t("chat.commands.remind"),
       },
     ],
-    [],
+    [t],
   );
 
   const isAiChat = React.useMemo(() => {
@@ -432,7 +432,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <>
                 {cooldown > 0 && !isAdmin && (
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded-md animate-bounce z-30">
-                    Slow Mode: {cooldown}s
+                    {t("chat.slow_mode_wait", { seconds: cooldown })}
                   </div>
                 )}
                 <div className="relative">
@@ -464,7 +464,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         <span className="material-symbols-outlined text-primary">
                           image
                         </span>
-                        <span className="text-sm">Images</span>
+                        <span className="text-sm">
+                          {t("chat.upload.images")}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -480,7 +482,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         <span className="material-symbols-outlined text-secondary">
                           description
                         </span>
-                        <span className="text-sm">Files</span>
+                        <span className="text-sm">
+                          {t("chat.upload.files")}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -492,7 +496,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     className={`w-full pl-5 pr-14 py-2.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 font-medium text-sm h-10 ${cooldown > 0 && !isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
                     placeholder={
                       cooldown > 0 && !isAdmin
-                        ? `Slow mode: wait ${cooldown}s`
+                        ? t("chat.slow_mode_wait", { seconds: cooldown })
                         : t("chat.input_placeholder")
                     }
                     type="text"
@@ -506,13 +510,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
                       <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Slash Commands
+                          {t("chat.commands.title")}
                         </p>
                       </div>
                       <div className="max-h-48 overflow-y-auto">
                         {filteredCommands.length === 0 && (
                           <div className="p-3 text-sm text-slate-500 text-center italic">
-                            No commands available
+                            {t("chat.commands.no_results")}
                           </div>
                         )}
                         {filteredCommands.map((cmd, index) => (
@@ -557,7 +561,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
                       <div className="p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Mention someone
+                          {t("chat.mention_title")}
                         </p>
                       </div>
                       <div className="max-h-48 overflow-y-auto">

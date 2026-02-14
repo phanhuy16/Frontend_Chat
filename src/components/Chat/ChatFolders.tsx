@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export type FolderType = "all" | "direct" | "groups" | "archived";
 
@@ -18,11 +19,33 @@ const ChatFolders: React.FC<ChatFoldersProps> = ({
   onFolderChange,
   counts,
 }) => {
+  const { t } = useTranslation();
+
   const folders = [
-    { id: "all", label: "Tất cả", icon: "forum", count: counts.all },
-    { id: "direct", label: "Cá nhân", icon: "person", count: counts.direct },
-    { id: "groups", label: "Nhóm", icon: "group", count: counts.groups },
-    { id: "archived", label: "Lưu trữ", icon: "archive", count: counts.archived },
+    {
+      id: "all",
+      label: t("chat_folders.all"),
+      icon: "forum",
+      count: counts.all,
+    },
+    {
+      id: "direct",
+      label: t("chat_folders.direct"),
+      icon: "person",
+      count: counts.direct,
+    },
+    {
+      id: "groups",
+      label: t("chat_folders.groups"),
+      icon: "group",
+      count: counts.groups,
+    },
+    {
+      id: "archived",
+      label: t("chat_folders.archived"),
+      icon: "archive",
+      count: counts.archived,
+    },
   ] as const;
 
   return (

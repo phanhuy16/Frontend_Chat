@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { conversationApi } from "../api/conversation.api";
@@ -13,10 +14,11 @@ import { Conversation } from "../types";
 import { SIGNALR_HUB_URL_CHAT } from "../utils/constants";
 
 const ArchivedChatsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
-  const { currentConversation, setCurrentConversation } = useChat();
+  const { currentConversation, setCurrentConversation, drafts } = useChat();
   const { isConnected } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const [archivedConversations, setArchivedConversations] = useState<
     Conversation[]
@@ -114,7 +116,7 @@ const ArchivedChatsPage: React.FC = () => {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -131,7 +133,7 @@ const ArchivedChatsPage: React.FC = () => {
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Archived Chats
+              {t("archived_page.title")}
             </h2>
           </div>
         </div>
@@ -149,10 +151,10 @@ const ArchivedChatsPage: React.FC = () => {
                 </span>
               </div>
               <p className="text-slate-900 dark:text-white font-bold">
-                No archived chats
+                {t("archived_page.no_archived")}
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Chats you archive will appear here
+                {t("archived_page.no_archived_desc")}
               </p>
             </div>
           </div>
@@ -164,6 +166,7 @@ const ArchivedChatsPage: React.FC = () => {
             onToggleArchive={handleToggleArchive}
             user={user}
             unreadCounts={{}}
+            drafts={drafts}
           />
         )}
       </aside>
@@ -174,7 +177,7 @@ const ArchivedChatsPage: React.FC = () => {
         ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
-            <p className="font-bold">Connecting...</p>
+            <p className="font-bold">{t("chat_list.connecting")}</p>
           </div>
         ) : (
           <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-slate-500">
@@ -185,11 +188,10 @@ const ArchivedChatsPage: React.FC = () => {
                 </span>
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                Your Archive
+                {t("archived_page.center_title")}
               </h3>
               <p className="text-slate-500 dark:text-slate-400">
-                Select a conversation to view it or unarchive it to bring it
-                back to your main chat list.
+                {t("archived_page.center_desc")}
               </p>
             </div>
           </div>

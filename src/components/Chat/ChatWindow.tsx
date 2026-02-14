@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import attachmentApi from "../../api/attachment.api";
 import blockApi from "../../api/block.api";
@@ -16,6 +17,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
 import { useSignalR } from "../../hooks/useSignalR";
 import { useCallContext } from "../../context/CallContext";
+import { useTheme } from "../../context/ThemeContext";
 import "../../styles/chat.css";
 import {
   CallType,
@@ -31,6 +33,7 @@ import {
   TYPING_TIMEOUT,
 } from "../../utils/constants";
 import { formatLastActive, getAvatarUrl } from "../../utils/helpers";
+import { CHAT_WALLPAPERS } from "../../config/themes.config";
 import { AddMembersModal } from "./AddMembersModal";
 import ChatHeader from "./ChatHeader";
 import ChatSearchPanel from "./ChatSearchPanel";
@@ -71,6 +74,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     setDraft,
   } = useChat();
 
+  const { t } = useTranslation();
+
   const {
     callState,
     incomingCall,
@@ -82,6 +87,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     toggleAudio,
     toggleVideo,
   } = useCallContext();
+
+  const { globalChatWallpaper } = useTheme();
 
   const { invoke, on, off, isConnected } = useSignalR(
     SIGNALR_HUB_URL_CHAT as string,
@@ -100,7 +107,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockerId, setBlockerId] = useState<number | undefined>(undefined);
   const [chatWallpaper, setChatWallpaper] = useState(
-    localStorage.getItem("chat-wallpaper") || "default",
+    localStorage.getItem(`theme_${conversation.id}`) || globalChatWallpaper,
   );
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(
@@ -181,10 +188,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       if (savedTheme) {
         setChatWallpaper(savedTheme);
       } else {
-        setChatWallpaper("default");
+        setChatWallpaper(globalChatWallpaper);
       }
     }
-  }, [conversation?.id]);
+  }, [conversation?.id, globalChatWallpaper]);
 
   useEffect(() => {
     if (conversation?.id) {
@@ -276,7 +283,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       setTimeout(() => el.classList.remove("highlight-message"), 2000);
     } else {
       // If message not in DOM, we might need to load it (advanced feature)
-      toast.error("Message not found in local view");
+      toast.error(t("common.error"));
     }
   }, []);
 
@@ -357,6 +364,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
   };
 
   const getWallpaperStyle = () => {
+    // 1. Try to find in explicit shared wallpapers
+    const wallpaper = CHAT_WALLPAPERS.find((w) => w.id === chatWallpaper);
+    if (wallpaper) {
+      if (
+        wallpaper.value.startsWith("linear") ||
+        wallpaper.value.startsWith("radial")
+      ) {
+        return {
+          background: wallpaper.value,
+          backgroundSize: (wallpaper as any).size || "cover",
+        };
+      }
+      return { backgroundColor: wallpaper.value };
+    }
+
+    // 2. Fallback for legacy values or specific names
     switch (chatWallpaper) {
       case "dark":
         return {
@@ -377,7 +400,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       case "default":
       default:
         return {
-          backgroundColor: "transparent", // Use container default (glassmorphism look)
+          backgroundColor: "transparent",
         };
     }
   };
@@ -515,7 +538,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     if (!inputValue.trim() || !user) return;
 
     if (isBlocked) {
-      toast.error("Bạn đã chặn người dùng này, không thể gửi tin nhắn");
+      toast.error(t("chat.disabled_blocked"));
       return;
     }
 
@@ -602,7 +625,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }
     } catch (err) {
       console.error("Failed to send GIF:", err);
-      toast.error("Failed to send GIF");
+      toast.error(t("toast.upload_error"));
     }
   };
 
@@ -611,7 +634,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       await invoke("PinMessage", messageId, conversation.id, user?.id);
     } catch (err) {
       console.error("Failed to pin message:", err);
-      toast.error("Không thể ghim tin nhắn");
+      toast.error(t("common.error"));
     }
   };
 
@@ -628,12 +651,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         );
       }
       toast.success(
-        `Đã chuyển tiếp tới ${targetConversationIds.length} cuộc trò chuyện`,
+        t("toast.uploaded_success", { count: targetConversationIds.length }),
       );
       setForwardingMessage(null);
     } catch (err) {
       console.error("Forward error:", err);
-      toast.error("Có lỗi xảy ra khi chuyển tiếp");
+      toast.error(t("common.error"));
     } finally {
       setForwardingLoading(false);
     }
@@ -653,7 +676,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     // Clear current conversation
     setCurrentConversation(null);
     setShowGroupMembers(false);
-    toast.success("Nhóm đã được xoá");
+    toast.success(t("toast.delete_everyone_success"));
   };
 
   // Handle file upload
@@ -661,7 +684,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     if (!files || files.length === 0) return;
 
     if (isBlocked) {
-      toast.error("Bạn đã chặn người dùng này, không thể gửi file");
+      toast.error(t("chat.disabled_blocked"));
       return;
     }
 
@@ -713,7 +736,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           toast.success("Uploaded " + file.name);
         } catch (err) {
           console.error(`Failed to upload ${file.name}:`, err);
-          toast.error("Lỗi khi tải lên " + file.name);
+          toast.error(t("toast.upload_error") + " " + file.name);
         }
       }
 
@@ -726,11 +749,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         );
         const sortedMessages = [...updatedMessages].reverse();
         setMessages(sortedMessages);
-        toast.success(`Uploaded ${successCount} of ${totalFiles} files`);
+        toast.success(t("toast.uploaded_success", { count: successCount }));
       }
     } catch (err) {
       console.error("Failed to upload files:", err);
-      toast.error("Failed to upload files");
+      toast.error(t("toast.upload_error"));
     } finally {
       setUploadingFiles(false);
       setUploadProgress(0);
@@ -765,7 +788,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }, 1000);
     } catch (err) {
       console.error("Failed to start recording:", err);
-      toast.error("Không thể truy cập micro");
+      toast.error(t("toast.error_mic"));
     }
   };
 
@@ -793,7 +816,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         mediaRecorder.stream.getTracks().forEach((track) => track.stop());
       }
 
-      toast.error("Đã hủy ghi âm");
+      toast.error(t("toast.cancel_recording"));
     }
   };
 
@@ -807,7 +830,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       const sentMessage = await messageApi.sendMessage({
         conversationId: conversationIdAtStart,
         senderId: userIdAtStart,
-        content: "[Voice Message]",
+        content: t("chat.voice_msg_text"),
         messageType: MessageType.Voice,
       });
 
@@ -823,7 +846,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
       }
     } catch (err) {
       console.error("Failed to upload voice message:", err);
-      toast.error("Lỗi khi gửi tin nhắn thoại");
+      toast.error(t("toast.error_send_voice"));
     } finally {
       setUploadingFiles(false);
     }
@@ -869,10 +892,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         }),
       );
 
-      toast.success("Đã xoá tin nhắn ở phía bạn");
+      toast.success(t("toast.delete_for_me_success"));
     } catch (err) {
       console.error("Failed to delete message for me:", err);
-      toast.error("Không thể xoá tin nhắn");
+      toast.error(t("common.error"));
     }
   };
 
@@ -880,10 +903,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     try {
       await invoke("DeleteMessage", messageId, conversation.id, user?.id);
       // The local state will be updated via SignalR "MessageDeleted" event
-      toast.success("Đã xóa tin nhắn");
+      toast.success(t("toast.delete_everyone_success"));
     } catch (err) {
       console.error("Failed to recall message:", err);
-      toast.error("Không thể xóa tin nhắn");
+      toast.error(t("common.error"));
     }
   };
 
@@ -976,11 +999,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = getOtherMember();
       if (otherMember?.status === StatusUser.Online) {
-        return "Online";
+        return t("chat.online");
       }
-      return formatLastActive(otherMember?.lastActiveAt);
+      return formatLastActive(otherMember?.lastActiveAt, t);
     }
-    return `${conversation.members.length} members`;
+    return t("chat.members", { count: conversation.members.length });
   };
   const handleStartAudioCall = async () => {
     if (conversation.conversationType === ConversationType.Direct) {
@@ -1023,7 +1046,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
     <div className="flex h-full w-full overflow-hidden">
       {/* Left side: Chat window */}
       <div
-        className="relative flex flex-1 flex-col h-full"
+        className="relative flex flex-1 flex-col h-full min-w-0"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -1037,10 +1060,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               </span>
             </div>
             <h3 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-widest">
-              Drop Files Here
+              {t("chat.drop_files")}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-2">
-              to upload instantly
+              {t("chat.drop_hint")}
             </p>
           </div>
         )}
@@ -1134,7 +1157,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           <button
             onClick={scrollToBottom}
             className="fixed bottom-32 right-12 z-50 size-10 flex items-center justify-center rounded-full bg-primary text-white shadow-premium animate-bounce-slow hover:scale-110 active:scale-95 transition-all"
-            title="Cuộn xuống dưới cùng"
+            title={t("chat.scroll_bottom")}
           >
             <span className="material-symbols-outlined text-xl font-black">
               keyboard_double_arrow_down
@@ -1162,10 +1185,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               <div className="w-1 bg-primary h-10 rounded-full" />
               <div className="flex flex-col min-w-0">
                 <p className="text-xs font-bold text-primary">
-                  Đang trả lời {replyingTo.sender.displayName}
+                  {t("chat.replying")} {replyingTo.sender.displayName}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                  {replyingTo.content || "Tin nhắn"}
+                  {replyingTo.content || t("chat.message_default")}
                 </p>
               </div>
             </div>
@@ -1185,7 +1208,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
               <div className="w-1 bg-amber-500 h-10 rounded-full" />
               <div className="flex flex-col min-w-0">
                 <p className="text-xs font-bold text-amber-600 dark:text-amber-500">
-                  Đang chỉnh sửa tin nhắn
+                  {t("chat.editing")}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                   {editingMessage.content}
@@ -1348,7 +1371,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         onClose={() => setShowReminderModal(false)}
         onConfirm={handleSetReminder}
         messageContent={
-          selectedReminderMessage?.content || "Attached file/media"
+          selectedReminderMessage?.content || t("chat.attached_file")
         }
       />
     </div>

@@ -25,6 +25,7 @@ import { useSignalRHandlers } from "../hooks/useSignalRHandlers";
 import { useFriendRequest } from "../context/FriendRequestContext";
 import { FriendDto, Conversation, CallType } from "../types";
 import { REACT_APP_AVATAR_URL, SIGNALR_HUB_URL_CHAT } from "../utils/constants";
+import { useTranslation } from "react-i18next";
 
 interface ChatPageProps {
   pendingRequestCount?: number;
@@ -42,6 +43,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     updateConversation,
     drafts,
   } = useChat();
+  const { t } = useTranslation();
 
   const { isConnected, on, off } = useSignalR(SIGNALR_HUB_URL_CHAT as string);
   const { incrementCount, refreshCount } = useFriendRequest();
@@ -137,9 +139,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       navigate(`/chat/${newConversation.id}`);
       setSearchTerm("");
       setShowSearchResults(false);
-      toast.success("Chat opened!");
+      toast.success(t("toast.opening_chat"));
     } catch (err) {
-      toast.error("Failed to open chat");
+      toast.error(t("toast.error_open_chat"));
       console.error(err);
     }
   };
@@ -161,9 +163,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     try {
       const { isPinned } = await conversationApi.togglePin(conv.id, user.id);
       updateConversation(conv.id, { isPinned });
-      toast.success(isPinned ? "Chat pinned" : "Chat unpinned");
+      toast.success(
+        isPinned ? t("chat_list.menu.pin") : t("chat_list.menu.unpin"),
+      );
     } catch (err) {
-      toast.error("Failed to toggle pin");
+      toast.error(t("toast.action_failed"));
       console.error(err);
     }
   };
@@ -188,9 +192,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
         updateConversation(conv.id, { isArchived });
       }
 
-      toast.success(isArchived ? "Chat archived" : "Chat unarchived");
+      toast.success(
+        isArchived
+          ? t("chat_list.menu.archive")
+          : t("chat_list.menu.unarchive"),
+      );
     } catch (err) {
-      toast.error("Failed to toggle archive");
+      toast.error(t("toast.action_failed"));
       console.error(err);
     }
   };
@@ -199,9 +207,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     if (!user) return;
     if (
       !window.confirm(
-        `Are you sure you want to delete "${
-          conv.groupName || "this conversation"
-        }"?`,
+        t("chat_list.menu.confirm_delete", {
+          name: conv.groupName || t("chat_list.title"),
+        }),
       )
     ) {
       return;
@@ -211,7 +219,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       if (conv.conversationType === 1) {
         // Direct chat - currently just hide locally or show toast until backend supports hide
         // Assuming backend might have delete endpoint or we wait for feature
-        toast.error("Deleting direct chats is not supported yet.");
+        toast.error(t("chat_list.menu.delete_direct_error"));
         return;
       }
 
@@ -221,9 +229,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       if (currentConversation?.id === conv.id) {
         setCurrentConversation(null);
       }
-      toast.success("Conversation deleted");
+      toast.success(t("chat_list.menu.delete"));
     } catch (err) {
-      toast.error("Failed to delete conversation");
+      toast.error(t("toast.action_failed"));
       console.error(err);
     }
   };
@@ -356,7 +364,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
         <div className="flex flex-col gap-6 p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Conversations
+              {t("chat_list.title")}
             </h2>
           </div>
 
@@ -364,7 +372,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
           <div className="relative w-full group" ref={searchRef}>
             <input
               className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-500 border-none focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-sm"
-              placeholder="Search conversations..."
+              placeholder={t("chat_list.search_placeholder")}
               type="search"
               value={searchTerm}
               onChange={(e) => {
@@ -417,7 +425,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
         ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
-            <p className="font-bold">Connecting...</p>
+            <p className="font-bold">{t("chat_list.connecting")}</p>
           </div>
         ) : (
           <ChatEmptyState onStartNewChat={() => setShowSearchModal(true)} />

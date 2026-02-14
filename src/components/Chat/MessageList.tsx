@@ -78,7 +78,7 @@ const MessageList: React.FC<MessageListProps> = ({
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto px-6 py-6 space-y-6 transition-all duration-500 relative"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 space-y-6 transition-all duration-500 relative"
       style={getWallpaperStyle()}
     >
       {loading ? (

@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
 import ThemeSelector from "./ThemeSelector";
+import { CHAT_WALLPAPERS } from "../../config/themes.config";
 
 const ACCENT_COLORS = [
   { name: "Indigo", value: "#6366f1", class: "bg-[#6366f1]" },
@@ -14,63 +15,37 @@ const ACCENT_COLORS = [
 ];
 
 const InterfaceTab: React.FC = () => {
-  const { theme, accentColor, fontSize, updateAccentColor, updateFontSize } =
-    useTheme();
+  const {
+    theme,
+    accentColor,
+    fontSize,
+    updateAccentColor,
+    updateFontSize,
+    globalChatWallpaper,
+    setGlobalChatWallpaper,
+  } = useTheme();
   const { t, i18n } = useTranslation();
-  const [wallpaper, setWallpaperState] = useState(
-    localStorage.getItem("chat-wallpaper") || "default",
-  );
   const [themeSelectorOpen, setThemeSelectorOpen] = useState(false);
-
-  const WALLPAPERS = [
-    {
-      id: "default",
-      name: t("settings.interface.wallpapers.default"),
-      value: "transparent",
-    },
-    {
-      id: "solid-dark",
-      name: t("settings.interface.wallpapers.minimal"),
-      value: "#0f172a",
-    },
-    {
-      id: "gradient-blue",
-      name: t("settings.interface.wallpapers.ocean"),
-      value: "linear-gradient(135deg, #1e3a8a, #1d4ed8)",
-    },
-    {
-      id: "gradient-purple",
-      name: t("settings.interface.wallpapers.dream"),
-      value: "linear-gradient(135deg, #4c1d95, #7c3aed)",
-    },
-    {
-      id: "pattern-dots",
-      name: t("settings.interface.wallpapers.pattern"),
-      value: "radial-gradient(#ffffff22 1px, transparent 1px)",
-      size: "20px 20px",
-    },
-  ];
 
   const handleAccentUpdate = (color: string) => {
     updateAccentColor(color);
-    toast.success("Đã cập nhật màu chủ đạo!");
+    toast.success(t("toast.success_update_accent"));
   };
 
   const updateWallpaper = (id: string) => {
-    setWallpaperState(id);
-    localStorage.setItem("chat-wallpaper", id);
-    toast.success("Đã cài đặt hình nền chat!");
+    setGlobalChatWallpaper(id);
+    toast.success(t("toast.success_bg_set"));
   };
 
   const handleFontSizeUpdate = (size: string) => {
     updateFontSize(size);
-    toast.success("Đã điều chỉnh cỡ chữ!");
+    toast.success(t("toast.success_font_size"));
   };
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
     toast.success(
-      lng === "vi" ? "Đã chuyển sang Tiếng Việt" : "Switched to English",
+      lng === "vi" ? t("toast.switched_to_vi") : t("toast.switched_to_en"),
     );
   };
 
@@ -92,14 +67,14 @@ const InterfaceTab: React.FC = () => {
             <span className="material-symbols-outlined text-primary">
               palette
             </span>
-            Giao diện
+            {t("settings.interface.theme_label")}
           </label>
           <button
             onClick={() => setThemeSelectorOpen(true)}
             className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
           >
             <span className="material-symbols-outlined">brush</span>
-            Chọn giao diện ({theme})
+            {t("settings.interface.theme_select")} ({theme})
           </button>
         </div>
 
@@ -192,12 +167,12 @@ const InterfaceTab: React.FC = () => {
             {t("settings.interface.wallpaper")}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {WALLPAPERS.map((wp) => (
+            {CHAT_WALLPAPERS.map((wp) => (
               <button
                 key={wp.id}
                 onClick={() => updateWallpaper(wp.id)}
                 className={`flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all ${
-                  wallpaper === wp.id
+                  globalChatWallpaper === wp.id
                     ? "border-primary bg-primary/5"
                     : "border-transparent bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10"
                 }`}

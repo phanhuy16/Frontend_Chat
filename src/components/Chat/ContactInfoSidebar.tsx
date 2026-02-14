@@ -11,6 +11,7 @@ import {
   StatusUser,
   User,
 } from "../../types";
+import { useTranslation } from "react-i18next";
 import { Message } from "../../types/message.types";
 import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import ConversationMedia from "./ConversationMedia";
@@ -47,6 +48,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
   onNotificationChange,
   onConversationUpdate,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"info" | "media">("info");
@@ -139,18 +141,22 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     try {
       if (isBlocked) {
         await blockApi.unblockUser(user.id, otherMember.id);
-        toast.success(`Đã bỏ chặn ${otherMember.displayName}`);
+        toast.success(
+          t("toast.unblock_success", { name: otherMember.displayName }),
+        );
         setIsBlocked(false);
         onBlockChange?.(false);
       } else {
         await blockApi.blockUser(user.id, otherMember.id);
-        toast.success(`Đã chặn ${otherMember.displayName}`);
+        toast.success(
+          t("toast.block_success", { name: otherMember.displayName }),
+        );
         setIsBlocked(true);
         onBlockChange?.(true);
       }
     } catch (err) {
       console.error("Error blocking user:", err);
-      toast.error("Lỗi khi chặn người dùng");
+      toast.error(t("toast.block_error"));
     } finally {
       setBlockLoading(false);
     }
@@ -165,7 +171,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
         JSON.stringify(notificationSettings),
       );
       onNotificationChange?.(notificationSettings);
-      toast.success("Đã lưu cài đặt thông báo");
+      toast.success(t("toast.save_notif_success"));
       setNotificationModalOpen(false);
     }
   };
@@ -176,7 +182,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
     if (convId) {
       localStorage.setItem(`theme_${convId}`, selectedTheme);
       onThemeChange?.(selectedTheme);
-      toast.success("Đã lưu chủ đề cuộc trò chuyện");
+      toast.success(t("toast.save_theme_success"));
       setThemeModalOpen(false);
     }
   };
@@ -258,7 +264,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
         {/* Header */}
         <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
           <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {activeTab === "info" ? "Thông tin" : "Kho lưu trữ"}
+            {activeTab === "info"
+              ? t("contact_info.title_info")
+              : t("contact_info.title_media")}
           </h3>
           <button
             onClick={onClose}
@@ -280,7 +288,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-white/5"
             }`}
           >
-            Hồ sơ
+            {t("common.profile")}
           </button>
           <button
             onClick={() => setActiveTab("media")}
@@ -290,7 +298,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-white/5"
             }`}
           >
-            Media
+            {t("contact_info.title_media")}
             {allAttachments.length > 0 && (
               <span className="ml-2 px-1 py-0.5 text-[9px] bg-primary text-white rounded">
                 {allAttachments.length}
@@ -332,8 +340,8 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                     )}
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                       {otherMember?.status === StatusUser.Online
-                        ? "Active Now"
-                        : formatLastActive(otherMember?.lastActiveAt)}
+                        ? t("contact_info.active_now")
+                        : formatLastActive(otherMember?.lastActiveAt, t)}
                     </p>
                   </div>
                 </div>
@@ -349,7 +357,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                       call
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-widest">
-                      Gọi
+                      {t("contact_info.call")}
                     </span>
                   </button>
                   <button
@@ -361,7 +369,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                       videocam
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-widest">
-                      Video
+                      {t("contact_info.video")}
                     </span>
                   </button>
                 </div>
@@ -372,7 +380,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 {/* Preferences */}
                 <div className="space-y-3">
                   <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase px-2">
-                    CƠ BẢN
+                    {t("contact_info.section_basic")}
                   </h4>
 
                   <div className="space-y-0.5">
@@ -388,10 +396,12 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <p className="text-slate-900 dark:text-white font-bold text-[13px]">
-                          Thông báo
+                          {t("contact_info.notifications.title")}
                         </p>
                         <p className="text-[10px] text-slate-500 font-medium truncate">
-                          {notificationSettings.mute ? "Đã tắt" : "Đang bật"}
+                          {notificationSettings.mute
+                            ? t("contact_info.notifications.off")
+                            : t("contact_info.notifications.on")}
                         </p>
                       </div>
                       <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform !text-[18px]">
@@ -411,11 +421,12 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <p className="text-slate-900 dark:text-white font-bold text-[13px]">
-                          Chủ đề
+                          {t("contact_info.theme.title")}
                         </p>
                         <p className="text-[10px] text-slate-500 font-medium truncate">
-                          {selectedTheme.charAt(0).toUpperCase() +
-                            selectedTheme.slice(1)}
+                          {t(
+                            `contact_info.theme.${selectedTheme as "default" | "dark"}`,
+                          )}
                         </p>
                       </div>
                       <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform !text-[18px]">
@@ -430,7 +441,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-2">
                       <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase">
-                        TIN NHẮN ĐÃ GHIM
+                        {t("contact_info.section_pinned")}
                       </h4>
                       <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 text-[9px] font-black rounded-md">
                         {pinnedMessages.length}
@@ -463,13 +474,14 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                             </span>
                             <div className="flex flex-col min-w-0 flex-1">
                               <p className="text-[11px] font-black text-amber-600 uppercase tracking-wide">
-                                {msg.sender?.displayName || "User"}
+                                {msg.sender?.displayName ||
+                                  t("chat.unknown_user")}
                               </p>
                               <p className="text-[13px] text-slate-700 dark:text-slate-300 font-medium truncate line-clamp-2">
                                 {msg.content ||
                                   (msg.attachments?.length
-                                    ? "Đã gửi một tập tin"
-                                    : "Tin nhắn")}
+                                    ? t("settings.profile.save_changes") // Reuse or add specific key
+                                    : t("chat.pinned"))}
                               </p>
                             </div>
                           </div>
@@ -482,7 +494,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                 {/* Privacy & Safety */}
                 <div className="space-y-3">
                   <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase px-2">
-                    BẢO MẬT & HỖ TRỢ
+                    {t("contact_info.section_security")}
                   </h4>
 
                   <div className="space-y-0.5">
@@ -507,7 +519,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                         </span>
                       </div>
                       <span className="flex-1 text-left font-bold text-[13px]">
-                        {isBlocked ? "Bỏ chặn" : "Chặn người dùng"}
+                        {isBlocked
+                          ? t("contact_info.unblock_user")
+                          : t("contact_info.block_user")}
                       </span>
                     </button>
 
@@ -521,7 +535,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                         </span>
                       </div>
                       <span className="flex-1 text-left font-bold text-[13px]">
-                        Báo cáo vi phạm
+                        {t("contact_info.report")}
                       </span>
                       <span className="material-symbols-outlined text-red-300 group-hover:translate-x-1 transition-transform !text-[18px]">
                         chevron_right
@@ -538,7 +552,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                       className="w-full flex items-center justify-between px-2 group"
                     >
                       <h4 className="text-[9px] font-black text-primary tracking-[0.2em] uppercase">
-                        Admin Tools
+                        {t("chat.admin_tools")}
                       </h4>
                       <span
                         className={`material-symbols-outlined text-sm text-primary transition-transform duration-300 ${isAdminToolsOpen ? "rotate-180" : ""}`}
@@ -553,7 +567,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                         <div className="p-3 bg-white/40 dark:bg-white/[0.03] border border-slate-200/50 dark:border-white/5 rounded-2xl space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                              Group Identity
+                              {t("contact_info.group_identity")}
                             </span>
                             <button
                               onClick={async () => {
@@ -569,7 +583,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                                           },
                                         );
                                       onConversationUpdate?.(updated);
-                                      toast.success("Group info updated");
+                                      toast.success(
+                                        t("toast.update_group_success"),
+                                      );
                                     }
                                   } catch (error) {
                                     toast.error("Failed to update group info");
@@ -579,7 +595,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                               }}
                               className="text-[10px] font-bold text-primary hover:underline"
                             >
-                              {isEditingGroup ? "Save" : "Edit"}
+                              {isEditingGroup
+                                ? t("common.save")
+                                : t("common.edit")}
                             </button>
                           </div>
 
@@ -617,7 +635,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                         {/* Global Permissions */}
                         <div className="p-3 bg-white/40 dark:bg-white/[0.03] border border-slate-200/50 dark:border-white/5 rounded-2xl space-y-3">
                           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Global Restrictions
+                            {t("contact_info.global_restrictions")}
                           </span>
 
                           <div className="pt-2">
@@ -633,7 +651,9 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                                       );
                                     onConversationUpdate?.(updated);
                                     toast.success(
-                                      `Slow Mode updated to ${val}s`,
+                                      t("toast.update_slow_mode_success", {
+                                        val: val,
+                                      }),
                                     );
                                   } catch (error) {
                                     toast.error("Failed to update slow mode");
@@ -776,7 +796,7 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
                   Mặc định
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Xanh dương tiêu chuẩn
+                  Sử dụng hình nền chung
                 </p>
               </div>
             </div>

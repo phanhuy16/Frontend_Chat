@@ -7,6 +7,7 @@ import { formatDate } from "../../utils/formatters";
 import { getAvatarUrl } from "../../utils/helpers";
 import { useChat } from "../../hooks/useChat";
 import { MessageType } from "../../types/enums";
+import { useTranslation } from "react-i18next";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -32,6 +33,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   drafts,
 }) => {
   const { typingUsersByConversation } = useChat();
+  const { t } = useTranslation();
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -62,9 +64,9 @@ const ConversationList: React.FC<ConversationListProps> = ({
   const getConversationName = (conversation: Conversation): string => {
     if (conversation.conversationType === ConversationType.Direct) {
       const otherMember = conversation.members.find((m) => m.id !== user.id);
-      return otherMember?.displayName || "Unknown";
+      return otherMember?.displayName || t("chat_list.user_deleted");
     }
-    return conversation.groupName || "Unnamed Group";
+    return conversation.groupName || t("group_members.no_name");
   };
 
   const getConversationPreview = (
@@ -75,7 +77,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
       return (
         <span className="flex items-center gap-1">
           <span className="text-red-500 font-black uppercase text-[9px] px-1 bg-red-500/10 rounded tracking-tighter">
-            Draft
+            {t("chat_list.draft")}
           </span>
           <span className="truncate">{draft}</span>
         </span>
@@ -84,29 +86,29 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
     const lastMessage = conversation.lastMessage || conversation.messages[0];
     if (!lastMessage) {
-      return "Chưa có tin nhắn";
+      return t("chat_list.no_conversations");
     }
 
     if (lastMessage.isDeleted || lastMessage.isDeletedForMe) {
       return (
         <span className="italic opacity-70">
           {lastMessage.isDeletedForMe
-            ? "Bạn đã xóa một tin nhắn"
+            ? t("chat_list.msg_deleted_me")
             : lastMessage.senderId === user.id
-              ? "Bạn đã xóa một tin nhắn"
-              : "Tin nhắn đã được xóa"}
+              ? t("chat_list.msg_deleted_me")
+              : t("chat_list.msg_deleted")}
         </span>
       );
     }
 
     if (!lastMessage.content) {
-      return "Chưa có tin nhắn";
+      return t("chat_list.no_conversations");
     }
 
     const senderName =
       lastMessage.senderId === user.id
-        ? "Bạn"
-        : lastMessage.sender?.displayName || "Người dùng";
+        ? t("chat_list.you")
+        : lastMessage.sender?.displayName || t("chat_list.user_deleted");
 
     const preview = lastMessage.content.substring(0, 40);
     const suffix = lastMessage.content.length > 40 ? "..." : "";
@@ -135,10 +137,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
       <div className="flex-1 flex items-center justify-center text-center px-4">
         <div>
           <p className="text-gray-500 dark:text-gray-400">
-            No conversations yet
+            {t("chat_list.no_conversations")}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-            Start a new chat to begin messaging
+            {t("chat_list.start_new")}
           </p>
         </div>
       </div>
@@ -236,7 +238,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
                     </span>
-                    Đang soạn tin...
+                    {t("chat_list.is_typing")}
                   </span>
                 ) : (
                   getConversationPreview(conversation)
@@ -310,7 +312,9 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     >
                       push_pin
                     </span>
-                    {conversation.isPinned ? "Unpin chat" : "Pin chat"}
+                    {conversation.isPinned
+                      ? t("chat_list.menu.unpin")
+                      : t("chat_list.menu.pin")}
                   </button>
                 )}
 
@@ -332,8 +336,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       archive
                     </span>
                     {conversation.isArchived
-                      ? "Unarchive chat"
-                      : "Archive chat"}
+                      ? t("chat_list.menu.unarchive")
+                      : t("chat_list.menu.archive")}
                   </button>
                 )}
 
@@ -350,7 +354,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     <span className="material-symbols-outlined text-[18px]">
                       delete
                     </span>
-                    Delete chat
+                    {t("chat_list.menu.delete")}
                   </button>
                 )}
               </div>

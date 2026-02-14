@@ -11,9 +11,11 @@ interface ThemeContextType {
   themeConfig: ThemeConfig;
   accentColor: string;
   fontSize: string;
+  globalChatWallpaper: string;
   setTheme: (theme: ThemePreference) => void;
   updateAccentColor: (color: string) => void;
   updateFontSize: (size: string) => void;
+  setGlobalChatWallpaper: (wallpaper: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -35,6 +37,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [fontSize, setFontSizeState] = useState(
     localStorage.getItem("font-size") || "normal",
+  );
+
+  const [globalChatWallpaper, setGlobalChatWallpaperState] = useState(
+    localStorage.getItem("chat-wallpaper") || "default",
   );
 
   const themeConfig = THEME_CONFIGS[theme];
@@ -127,6 +133,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     setFontSizeState(size);
   };
 
+  const setGlobalChatWallpaper = (wallpaper: string) => {
+    setGlobalChatWallpaperState(wallpaper);
+    localStorage.setItem("chat-wallpaper", wallpaper);
+  };
+
   return (
     <ThemeContext.Provider
       value={{
@@ -134,9 +145,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         themeConfig,
         accentColor,
         fontSize,
+        globalChatWallpaper,
         setTheme,
         updateAccentColor,
         updateFontSize,
+        setGlobalChatWallpaper,
       }}
     >
       {children}

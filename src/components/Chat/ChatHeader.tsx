@@ -10,6 +10,7 @@ import { getAvatarUrl, formatLastActive } from "../../utils/helpers";
 import { useAuth } from "../../hooks/useAuth";
 import { useChat } from "../../hooks/useChat";
 import { exportToPDF, exportToText } from "../../services/ExportService";
+import { useTranslation } from "react-i18next";
 
 interface ChatHeaderProps {
   conversation: Conversation;
@@ -38,6 +39,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const { user } = useAuth();
   const { typingUsersByConversation } = useChat();
+  const { t } = useTranslation();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const exportButtonRef = useRef<HTMLButtonElement>(null);
@@ -88,7 +90,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       if (otherMember?.status === StatusUser.Online) {
         return "Online";
       }
-      return formatLastActive(otherMember?.lastActiveAt);
+      return formatLastActive(otherMember?.lastActiveAt, t);
     }
 
     // For groups, show who is typing

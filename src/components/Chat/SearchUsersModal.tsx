@@ -11,6 +11,7 @@ import {
   getStatusUserLabel,
 } from "../../utils/enum-helpers";
 import { getAvatarUrl } from "../../utils/helpers";
+import { useTranslation } from "react-i18next";
 
 interface SearchUsersModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { setCurrentConversation, setConversations, conversations } = useChat();
   const [searchTerm, setSearchTerm] = useState("");
@@ -133,7 +135,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
       const existingConversation = conversations.find(
         (conv) =>
           conv.conversationType === 1 &&
-          conv.members.some((m) => m.id === selectedUser.id)
+          conv.members.some((m) => m.id === selectedUser.id),
       );
 
       if (existingConversation) {
@@ -191,21 +193,21 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
     const status = friendshipStatus[userId] || "none";
     const config = {
       friend: {
-        text: "Bạn bè",
+        text: t("find_people.status.friend"),
         icon: "done",
         variant:
           "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
         disabled: true,
       },
       pending: {
-        text: "Đã gửi",
+        text: t("find_people.status.sent"),
         icon: "schedule",
         variant:
           "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
         disabled: true,
       },
       none: {
-        text: "Kết bạn",
+        text: t("find_people.status.add"),
         icon: "person_add",
         variant:
           "bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-hover hover:-translate-y-1",
@@ -233,7 +235,9 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            {selectedUser ? "User Profile" : "Find People"}
+            {selectedUser
+              ? t("find_people.title_profile")
+              : t("find_people.title_find")}
           </h2>
           <button
             onClick={onClose}
@@ -258,7 +262,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                       type="text"
                       value={searchTerm}
                       onChange={(e) => handleSearch(e.target.value)}
-                      placeholder="Search name or @username..."
+                      placeholder={t("find_people.search_placeholder")}
                       className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-800 border-none text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50 transition-all font-medium text-xs shadow-sm h-9"
                       autoFocus
                     />
@@ -286,8 +290,10 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                         face
                       </span>
                     </div>
-                    <p className="text-lg font-bold">Discover new friends</p>
-                    <p className="text-sm">Type a name to start searching</p>
+                    <p className="text-lg font-bold">
+                      {t("find_people.discover_title")}
+                    </p>
+                    <p className="text-sm">{t("find_people.discover_desc")}</p>
                   </div>
                 ) : loading ? (
                   <div className="py-12 text-center">
@@ -297,7 +303,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                       </span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 font-bold tracking-wide uppercase text-xs">
-                      Looking for users...
+                      {t("find_people.loading")}
                     </p>
                   </div>
                 ) : results.length === 0 ? (
@@ -305,9 +311,11 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                     <span className="material-symbols-outlined text-7xl mb-4">
                       search_off
                     </span>
-                    <p className="text-lg font-bold">No results found</p>
+                    <p className="text-lg font-bold">
+                      {t("find_people.no_results")}
+                    </p>
                     <p className="text-sm">
-                      We couldn't find anyone matching "{searchTerm}"
+                      {t("find_people.no_results_desc", { query: searchTerm })}
                     </p>
                   </div>
                 ) : (
@@ -429,7 +437,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                   <span className="material-symbols-outlined !text-xl group-hover:animate-bounce-subtle">
                     chat
                   </span>
-                  <span>Message</span>
+                  <span>{t("find_people.btn_message")}</span>
                 </button>
 
                 {(() => {
@@ -462,7 +470,7 @@ const SearchUsersModal: React.FC<SearchUsersModalProps> = ({
                 <span className="material-symbols-outlined text-lg">
                   arrow_back
                 </span>
-                Back to search
+                {t("find_people.btn_back")}
               </button>
             </div>
           )}

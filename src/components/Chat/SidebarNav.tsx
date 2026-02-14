@@ -22,34 +22,34 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { pendingCount } = useFriendRequest();
-  const { i18n } = useTranslation();
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === "vi" ? "en" : "vi";
-    i18n.changeLanguage(newLang);
-  };
+  const { i18n, t } = useTranslation();
 
   const navItems = [
-    { id: "chats", icon: "forum", label: "Chats", path: "/chat" },
+    { id: "chats", icon: "forum", label: t("sidebar.chats"), path: "/chat" },
     {
       id: "contacts",
       icon: "contacts",
-      label: "Contacts",
+      label: t("sidebar.contacts"),
       path: "/friends/list",
     },
     {
       id: "requests",
       icon: "person_add",
-      label: "Requests",
+      label: t("sidebar.requests"),
       path: "/friends/requests",
     },
     {
       id: "archived",
       icon: "archive",
-      label: "Archived",
+      label: t("sidebar.archived"),
       path: "/chat/archived",
     },
-    { id: "settings", icon: "settings", label: "Settings", path: "/settings" },
+    {
+      id: "settings",
+      icon: "settings",
+      label: t("sidebar.settings"),
+      path: "/settings",
+    },
   ];
 
   const handleNavClick = (path: string) => {
@@ -127,7 +127,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         <button
           onClick={onGlobalSearch}
           className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-300 group"
-          title="Global Search (Ctrl+K)"
+          title={t("sidebar.global_search")}
         >
           <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
             manage_search
@@ -136,7 +136,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         <button
           onClick={onNewGroup}
           className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary hover:bg-slate-200 dark:hover:bg-white/10 transition-all duration-300 group"
-          title="New Group"
+          title={t("sidebar.new_group")}
         >
           <span className="material-symbols-outlined text-[20px] group-hover:rotate-6 transition-transform">
             group_add
@@ -145,23 +145,10 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         <button
           onClick={onNewChat}
           className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-primary text-white shadow-xl shadow-primary/30 hover:scale-110 active:scale-95 transition-all duration-300 group"
-          title="New Chat"
+          title={t("sidebar.new_chat")}
         >
           <span className="material-symbols-outlined text-[20px] font-black group-hover:rotate-12 transition-transform">
             add
-          </span>
-        </button>
-
-        <button
-          onClick={toggleLanguage}
-          className="flex items-center justify-center size-9 lg:size-10 rounded-2xl bg-white/10 text-slate-400 hover:text-secondary hover:bg-secondary/10 transition-all duration-300 group border border-white/10"
-          title={`Switch to ${i18n.language === "vi" ? "English" : "Tiếng Việt"}`}
-        >
-          <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">
-            translate
-          </span>
-          <span className="absolute -top-1 -right-1 flex items-center justify-center bg-secondary text-white text-[8px] font-black rounded-full size-3.5 border border-white dark:border-slate-900">
-            {i18n.language.toUpperCase()}
           </span>
         </button>
       </div>

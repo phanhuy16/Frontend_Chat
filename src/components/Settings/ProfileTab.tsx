@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import { Modal } from "antd";
 import { User } from "../../types/user.types";
+import { useTranslation } from "react-i18next";
 
 const { confirm } = Modal;
 
@@ -14,6 +15,7 @@ interface ProfileTabProps {
 }
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     displayName: user?.displayName || "",
     email: user?.email || "",
@@ -63,11 +65,11 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
         .uploadAvatar(file)
         .then((data) => {
           setAvatarPreview(data.avatarUrl);
-          toast.success("Ảnh đại diện đã được cập nhật!");
+          toast.success(t("toast.avatar_updated"));
         })
         .catch((err) => {
           console.error("Avatar upload error:", err);
-          toast.error("Lỗi khi tải ảnh lên");
+          toast.error(t("toast.avatar_error"));
         });
     }
   };
@@ -86,10 +88,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
         await userApi.updateCustomStatus(formData.customStatus || null);
       }
 
-      toast.success("Thay đổi đã được lưu thành công!");
+      toast.success(t("toast.profile_saved"));
     } catch (error) {
       // Changed err to error for consistency
-      toast.error("Lỗi khi lưu thay đổi");
+      toast.error(t("toast.save_error"));
       console.error(error);
     } finally {
       setLoading(false);
@@ -99,7 +101,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.currentPassword || !formData.newPassword) {
-      toast.error("Vui lòng nhập cả mật khẩu hiện tại và mật khẩu mới");
+      toast.error(t("settings.profile.enter_passwords"));
       return;
     }
 
@@ -109,14 +111,14 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
-      toast.success("Mật khẩu đã được thay đổi thành công!");
+      toast.success(t("toast.password_changed"));
       setFormData((prev) => ({
         ...prev,
         currentPassword: "",
         newPassword: "",
       }));
     } catch (err) {
-      toast.error("Lỗi khi thay đổi mật khẩu");
+      toast.error(t("toast.password_error"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -125,18 +127,18 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
 
   const handleDeleteAccount = async () => {
     confirm({
-      title: "Xác nhận xóa tài khoản",
+      title: t("settings.profile.delete_modal_title"),
       icon: <ExclamationCircleFilled style={{ color: "red" }} />,
-      content: `Bạn chắc chứ? Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.`,
+      content: t("settings.profile.delete_modal_content"),
       onOk: async () => {
         setLoading(true);
         try {
           await userApi.deleteAccount();
-          toast.success("Tài khoản của bạn đã bị xóa.");
+          toast.success(t("toast.account_deleted"));
           await logout();
           window.location.href = "/auth";
         } catch (err) {
-          toast.error("Lỗi khi xóa tài khoản");
+          toast.error(t("toast.delete_account_error"));
           console.error(err);
         } finally {
           setLoading(false);
@@ -175,12 +177,14 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
                 {user?.displayName}
               </p>
               <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-0.5">
-                Cập nhật ảnh và chi tiết cá nhân của bạn.
+                {t("settings.descriptions.profile")}
               </p>
             </div>
           </div>
           <label className="flex min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-8 px-4 bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition-all sm:w-auto">
-            <span className="truncate">Tải ảnh lên</span>
+            <span className="truncate">
+              {t("settings.profile.upload_photo")}
+            </span>
             <input
               type="file"
               accept="image/*"
@@ -199,7 +203,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
               htmlFor="displayName"
             >
-              Tên hiển thị
+              {t("settings.profile.display_name")}
             </label>
             <input
               className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
@@ -214,7 +218,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
               htmlFor="email"
             >
-              Email
+              {t("settings.profile.email")}
             </label>
             <input
               className="w-full rounded-xl text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 h-9 px-4 cursor-not-allowed text-sm"
@@ -231,14 +235,14 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
             htmlFor="bio"
           >
-            Tiểu sử ngắn
+            {t("settings.profile.bio")}
           </label>
           <textarea
             className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 min-h-[100px] resize-none text-sm"
             id="bio"
             value={formData.bio}
             onChange={handleInputChange}
-            placeholder="Giới thiệu về bạn..."
+            placeholder={t("settings.profile.placeholder_bio")}
           />
         </div>
 
@@ -248,7 +252,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
             htmlFor="customStatus"
           >
-            Trạng thái tùy chỉnh
+            {t("settings.profile.custom_status")}
           </label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
@@ -259,7 +263,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             <input
               id="customStatus"
               type="text"
-              placeholder="Bạn đang nghĩ gì?"
+              placeholder={t("settings.profile.placeholder_status")}
               className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400"
               value={formData.customStatus}
               onChange={handleInputChange}
@@ -273,7 +277,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
             disabled={loading}
             className="flex items-center gap-2 rounded-xl h-9 px-6 bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 transition-all"
           >
-            {loading ? "Đang lưu..." : "Lưu thay đổi"}
+            {loading ? t("common.loading") : t("settings.profile.save_changes")}
           </button>
         </div>
       </form>
@@ -283,10 +287,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
       {/* Security Section */}
       <div className="text-left">
         <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">
-          Đổi mật khẩu
+          {t("settings.profile.change_password")}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
-          Để bảo mật, vui lòng nhập mật khẩu hiện tại của bạn để thay đổi.
+          {t("settings.profile.enter_passwords")}
         </p>
 
         <form onSubmit={handleChangePassword} className="space-y-6">
@@ -296,7 +300,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
                 className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
                 htmlFor="currentPassword"
               >
-                Mật khẩu hiện tại
+                {t("settings.profile.current_password")}
               </label>
               <input
                 className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
@@ -312,7 +316,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
                 className="text-slate-700 dark:text-slate-300 text-sm font-bold px-1"
                 htmlFor="newPassword"
               >
-                Mật khẩu mới
+                {t("settings.profile.new_password")}
               </label>
               <input
                 className="w-full rounded-xl text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 h-9 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-slate-400 text-sm"
@@ -331,7 +335,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
               disabled={loading}
               className="flex items-center gap-2 rounded-xl h-9 px-6 bg-slate-800 dark:bg-white/10 text-white text-xs font-bold hover:bg-slate-900 dark:hover:bg-white/20 disabled:opacity-50 transition-all"
             >
-              {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+              {loading
+                ? t("common.loading")
+                : t("settings.profile.update_password")}
             </button>
           </div>
         </form>
@@ -342,11 +348,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
       {/* Danger Zone */}
       <div className="text-left bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
         <h2 className="text-xl font-black text-red-600 dark:text-red-500 mb-2">
-          Vùng nguy hiểm
+          {t("settings.profile.danger_zone")}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
-          Một khi bạn xóa tài khoản, sẽ không có cách nào để khôi phục. Vui lòng
-          cân nhắc kỹ.
+          {t("settings.profile.delete_confirm")}
         </p>
         <button
           type="button"
@@ -354,7 +359,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user, logout }) => {
           disabled={loading}
           className="flex items-center gap-2 rounded-xl h-9 px-5 bg-red-600 text-white text-xs font-bold shadow-lg shadow-red-600/20 hover:bg-red-700 transition-all"
         >
-          {loading ? "Đang xử lý..." : "Xóa tài khoản của tôi"}
+          {loading ? t("common.loading") : t("settings.profile.delete_account")}
         </button>
       </div>
     </div>

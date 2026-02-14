@@ -106,3 +106,32 @@ export const THEME_CONFIGS: Record<ThemePreference, ThemeConfig> = {
     glassEffect: true,
   },
 };
+
+export const CHAT_WALLPAPERS = [
+  {
+    id: "default",
+    name: "Mặc định",
+    value: "transparent",
+  },
+  {
+    id: "solid-dark",
+    name: "Tối giản",
+    value: "#0f172a",
+  },
+  {
+    id: "gradient-blue",
+    name: "Xanh biển",
+    value: "linear-gradient(135deg, #1e3a8a, #1d4ed8)",
+  },
+  {
+    id: "gradient-purple",
+    name: "Tím mộng",
+    value: "linear-gradient(135deg, #4c1d95, #7c3aed)",
+  },
+  {
+    id: "pattern-dots",
+    name: "Họa tiết",
+    value: "radial-gradient(#ffffff22 1px, transparent 1px)",
+    size: "20px 20px",
+  },
+];

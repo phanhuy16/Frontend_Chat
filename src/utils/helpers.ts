@@ -57,30 +57,30 @@ export const getAvatarUrl = (avatarPath: string | null | undefined): string | un
   return `${baseUrl}${avatarPath}`;
 };
 
-export const formatLastActive = (lastActiveAt: string | null | undefined): string => {
-  if (!lastActiveAt) return "Hoạt động gần đây";
+export const formatLastActive = (lastActiveAt: string | null | undefined, t: (key: string, options?: any) => string): string => {
+  if (!lastActiveAt) return t("status.recent");
 
   const lastActive = new Date(lastActiveAt);
 
   // Kiểm tra ngày không hợp lệ (NaN hoặc ngày mặc định từ C# như 0001-01-01)
   if (isNaN(lastActive.getTime()) || lastActive.getFullYear() < 1970) {
-    return "Hoạt động gần đây";
+    return t("status.recent");
   }
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - lastActive.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "Vừa mới hoạt động";
+    return t("status.active_now");
   }
 
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
-    return `Hoạt động ${diffInMinutes} phút trước`;
+    return t("status.active_min_ago", { count: diffInMinutes });
   }
 
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
-    return `Hoạt động ${diffInHours} giờ trước`;
+    return t("status.active_hour_ago", { count: diffInHours });
   }
 
   const diffInDays = Math.floor(diffInHours / 24);

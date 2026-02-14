@@ -1,9 +1,154 @@
 {
+  "chat_folders": {
+    "all": "All",
+    "direct": "Personal",
+    "groups": "Groups",
+    "archived": "Archived"
+  },
+  "chat_list": {
+    "title": "Conversations",
+    "search_placeholder": "Search conversations...",
+    "connecting": "Connecting...",
+    "no_conversations": "No conversations yet",
+    "start_new": "Start a new chat to begin messaging",
+    "draft": "Draft",
+    "you": "You",
+    "user_deleted": "User",
+    "voice_message": "Voice message",
+    "msg_deleted": "Message deleted",
+    "msg_deleted_me": "You deleted a message",
+    "is_typing": "is typing...",
+    "menu": {
+      "pin": "Pin chat",
+      "unpin": "Unpin chat",
+      "archive": "Archive chat",
+      "unarchive": "Unarchive chat",
+      "delete": "Delete chat",
+      "confirm_delete": "Are you sure you want to delete \"{{name}}\"?",
+      "delete_direct_error": "Deleting direct chats is not supported yet."
+    }
+  },
+  "status": {
+    "active_now": "Just active",
+    "active_min_ago": "Active {{count}} minute(s) ago",
+    "active_hour_ago": "Active {{count}} hour(s) ago",
+    "active_day_ago": "Active {{count}} day(s) ago",
+    "active_date": "Active on {{date}}",
+    "recent": "Recently active"
+  },
   "common": {
     "search": "Search",
     "settings": "Settings",
     "logout": "Logout",
-    "profile": "Profile"
+    "profile": "Profile",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error"
+  },
+  "toast": {
+    "success_update_accent": "Accent color updated!",
+    "success_bg_set": "Chat wallpaper set!",
+    "success_font_size": "Font size adjusted!",
+    "switched_to_vi": "Đã chuyển sang Tiếng Việt",
+    "switched_to_en": "Switched to English",
+    "cancel_recording": "Recording cancelled",
+    "error_mic": "Cannot access microphone",
+    "sent_voice": "Voice message sent",
+    "error_send_voice": "Error sending voice message",
+    "delete_for_me_success": "Message deleted for you",
+    "delete_everyone_success": "Message deleted for everyone",
+    "uploaded_success": "Uploaded {{count}} files",
+    "upload_error": "Failed to upload files",
+    "block_success": "Blocked {{name}}",
+    "unblock_success": "Unblocked {{name}}",
+    "block_error": "Error blocking user",
+    "save_notif_success": "Notification settings saved",
+    "save_theme_success": "Chat theme saved",
+    "update_group_success": "Group info updated",
+    "update_slow_mode_success": "Slow Mode updated to {{val}}s",
+    "avatar_updated": "Avatar updated!",
+    "avatar_error": "Error uploading avatar",
+    "profile_saved": "Changes saved successfully!",
+    "save_error": "Error saving changes",
+    "password_changed": "Password changed successfully!",
+    "password_error": "Error changing password",
+    "account_deleted": "Your account has been deleted.",
+    "delete_account_error": "Error deleting account",
+    "opening_chat": "Opening chat...",
+    "error_open_chat": "Could not open chat",
+    "friend_removed": "Friend removed",
+    "error_remove_friend": "Could not remove friend",
+    "load_requests_error": "Could not load requests",
+    "accept_friend_success": "Friend request accepted",
+    "error_accept_friend": "Could not accept request",
+    "reject_friend_success": "Request rejected",
+    "cancel_friend_success": "Request cancelled",
+    "action_failed": "Action failed",
+    "search_error": "Search failed",
+    "friend_request_sent": "Friend request sent",
+    "friend_request_error": "Could not send request (maybe already friends or pending)"
+  },
+  "sidebar": {
+    "chats": "Chats",
+    "contacts": "Contacts",
+    "requests": "Requests",
+    "archived": "Archived",
+    "settings": "Settings",
+    "global_search": "Global Search (Ctrl+K)",
+    "new_group": "New Group",
+    "new_chat": "New Chat",
+    "switch_language": "Switch to {{lang}}"
+  },
+  "friends": {
+    "title": "Friends List",
+    "count_friends": "You have {{count}} connected friends",
+    "add_friend": "Add Friend",
+    "search_placeholder": "Search in friends list...",
+    "loading": "Loading list...",
+    "no_results": "No results found",
+    "no_friends": "No friends yet",
+    "no_results_desc": "No friends found matching \"{{term}}\"",
+    "no_friends_desc": "Start searching and adding friends to chat!",
+    "friend_since": "Friend since {{date}}",
+    "send_message": "Send Message",
+    "remove_friend": "Remove Friend",
+    "confirm_remove_title": "Remove Friend",
+    "confirm_remove_content": "Are you sure you want to remove {{name}} from your friends list?"
+  },
+  "friend_requests": {
+    "title": "Friend Requests",
+    "count_text": "You have {{count}} {{type}} requests",
+    "pending": "pending",
+    "sent": "sent",
+    "tab_received": "Received",
+    "tab_sent": "Sent",
+    "loading": "Loading...",
+    "no_received": "No new requests",
+    "no_sent": "No sent requests",
+    "no_received_desc": "When someone sends you a friend request, it will appear here.",
+    "no_sent_desc": "Find friends and send requests to start chatting!",
+    "sent_you_request": "Sent you a request",
+    "waiting_confirmation": "Waiting for confirmation",
+    "accept": "Accept",
+    "later": "Later",
+    "cancel_request": "Cancel Request",
+    "pending_response": "Pending Response"
+  },
+  "search_users": {
+    "title": "Find Friends",
+    "subtitle": "Connect with people around you",
+    "placeholder": "Enter username or email to search...",
+    "no_results_title": "No results found",
+    "start_search_title": "Start searching",
+    "no_results_desc": "We couldn't find anyone matching \"{{term}}\"",
+    "start_search_desc": "Enter a name or email in the search box above to find new friends",
+    "connect": "Connect"
   },
   "chat": {
     "typing": "is typing...",
@@ -16,7 +161,101 @@
     "pinned": "Pinned Message",
     "replying": "Replying to",
     "editing": "Editing message",
-    "disabled_blocked": "You cannot send messages to this user."
+    "disabled_blocked": "You cannot send messages to this user.",
+    "drop_files": "Drop Files Here",
+    "drop_hint": "to upload instantly",
+    "highlighted": "Message highlighted",
+    "voice_msg_text": "[Voice Message]",
+    "scroll_bottom": "Scroll to bottom",
+    "members": "{{count}} members",
+    "admin_tools": "Admin Tools",
+    "message_default": "Message",
+    "attached_file": "Attached file/media",
+    "unknown_user": "User",
+    "slow_mode_wait": "Slow mode: wait {{seconds}}s",
+    "mention_title": "Mention someone",
+    "upload": {
+      "images": "Images",
+      "files": "Files"
+    },
+    "commands": {
+      "title": "Slash Commands",
+      "no_results": "No commands available",
+      "ai": "Ask AI Assistant",
+      "weather": "Current weather",
+      "remind": "Set a reminder"
+    }
+  },
+  "archived_page": {
+    "title": "Archived Chats",
+    "no_archived": "No archived chats",
+    "no_archived_desc": "Chats you archive will appear here",
+    "center_title": "Your Archive",
+    "center_desc": "Select a conversation to view it or unarchive it to bring it back to your main chat list."
+  },
+  "global_search": {
+    "placeholder": "Search for messages, people, or files...",
+    "type_to_search": "Type something to start searching...",
+    "tabs": {
+      "all": "All",
+      "people": "People",
+      "messages": "Messages",
+      "files": "Files"
+    },
+    "recent_searches": "Recent Searches",
+    "clear_all": "Clear all",
+    "no_recent": "No recent searches",
+    "people_results": "People",
+    "messages_results": "Messages",
+    "files_results": "Files",
+    "view_all": "View all",
+    "no_results": "No results found for \"{{query}}\"",
+    "in": "in",
+    "shared_in": "Shared in",
+    "contact_badge": "Contact"
+  },
+  "find_people": {
+    "title_find": "Find People",
+    "title_profile": "User Profile",
+    "search_placeholder": "Search name or @username...",
+    "discover_title": "Discover new friends",
+    "discover_desc": "Type a name to start searching",
+    "loading": "Looking for users...",
+    "no_results": "No results found",
+    "no_results_desc": "We couldn't find anyone matching \"{{query}}\"",
+    "btn_message": "Message",
+    "btn_back": "Back to search",
+    "status": {
+      "friend": "Friends",
+      "sent": "Sent",
+      "add": "Add Friend"
+    }
+  },
+  "contact_info": {
+    "title_info": "Info",
+    "title_media": "Media",
+    "active_now": "Active Now",
+    "call": "Call",
+    "video": "Video",
+    "section_basic": "BASIC",
+    "section_pinned": "PINNED MESSAGES",
+    "section_security": "SECURITY & SUPPORT",
+    "notifications": {
+      "title": "Notifications",
+      "on": "On",
+      "off": "Off"
+    },
+    "theme": {
+      "title": "Theme",
+      "default": "Default",
+      "dark": "Dark"
+    },
+    "block_user": "Block User",
+    "unblock_user": "Unblock",
+    "report": "Report User",
+    "group_identity": "Group Identity",
+    "global_restrictions": "Global Restrictions",
+    "slow_mode": "Slow Mode"
   },
   "settings": {
     "title": "System Settings",
@@ -26,14 +265,16 @@
       "notifications": "Notifications",
       "privacy": "Privacy & Security",
       "interface": "Interface",
-      "security": "Security"
+      "security": "Security",
+      "reports": "Reports"
     },
     "descriptions": {
       "profile": "Update your personal information and manage account security.",
       "notifications": "Configure how you receive notifications and interact with new messages.",
       "privacy": "Control access and your personal data within the community.",
       "interface": "Customize theme and colors to make the app your own.",
-      "security": "Manage your account security settings."
+      "security": "Manage your account security settings.",
+      "reports": "View your report history and track community violation claims."
     },
     "interface": {
       "title": "Interface & Experience",
@@ -42,6 +283,8 @@
       "accent_color": "Accent Color",
       "wallpaper": "Chat Wallpaper",
       "font_size": "Message Font Size",
+      "theme_label": "Theme",
+      "theme_select": "Select theme",
       "sizes": {
         "small": "Small",
         "medium": "Medium",
@@ -69,7 +312,12 @@
       "update_password": "Update Password",
       "danger_zone": "Danger Zone",
       "delete_account": "Delete My Account",
-      "delete_confirm": "Are you sure? This action cannot be undone."
+      "delete_confirm": "Are you sure? This action cannot be undone.",
+      "delete_modal_title": "Confirm Account Deletion",
+      "delete_modal_content": "Are you sure? This action cannot be undone. All your data will be permanently deleted.",
+      "placeholder_bio": "About you...",
+      "placeholder_status": "What's on your mind?",
+      "enter_passwords": "Please enter both current and new passwords"
     },
     "notifications": {
       "title": "Notification Settings",

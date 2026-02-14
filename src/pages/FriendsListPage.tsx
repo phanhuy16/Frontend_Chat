@@ -11,6 +11,7 @@ import { getStatusUserColor, getStatusUserLabel } from "../utils/enum-helpers";
 import { Modal } from "antd";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import SearchUsersModal from "../components/Chat/SearchUsersModal";
+import { useTranslation } from "react-i18next";
 
 const { confirm } = Modal;
 
@@ -18,6 +19,7 @@ const FriendsListPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setCurrentConversation, setConversations, conversations } = useChat();
+  const { t } = useTranslation();
 
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ const FriendsListPage: React.FC = () => {
       const existingConversation = conversations.find(
         (conv) =>
           conv.conversationType === 1 &&
-          conv.members.some((m) => m.id === friend.id)
+          conv.members.some((m) => m.id === friend.id),
       );
 
       if (existingConversation) {
@@ -66,26 +68,26 @@ const FriendsListPage: React.FC = () => {
       }
 
       navigate("/chat");
-      toast.success("Đang mở cuộc trò chuyện...");
+      toast.success(t("toast.opening_chat"));
     } catch (err) {
-      toast.error("Không thể mở cuộc trò chuyện");
+      toast.error(t("toast.error_open_chat"));
       console.error(err);
     }
   };
 
   const handleRemoveFriend = async (friendId: number, friendName: string) => {
     confirm({
-      title: "Xác nhận xoá bạn bè",
+      title: t("friends.confirm_remove_title"),
       icon: <ExclamationCircleFilled style={{ color: "red" }} />,
-      content: `Bạn có chắc chắn muốn xóa ${friendName} khỏi danh sách bạn bè?`,
+      content: t("friends.confirm_remove_content", { name: friendName }),
       async onOk() {
         try {
           setRemoving((prev) => ({ ...prev, [friendId]: true }));
           await friendApi.removeFriend(friendId);
           setFriends((prev) => prev.filter((f) => f.id !== friendId));
-          toast.success("Đã xoá bạn bè");
+          toast.success(t("toast.friend_removed"));
         } catch (err) {
-          toast.error("Không thể xoá bạn bè");
+          toast.error(t("toast.error_remove_friend"));
           console.error(err);
         } finally {
           setRemoving((prev) => ({ ...prev, [friendId]: false }));
@@ -98,17 +100,20 @@ const FriendsListPage: React.FC = () => {
   const filteredFriends = friends.filter(
     (friend) =>
       friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      friend.userName.toLowerCase().includes(searchTerm.toLowerCase())
+      friend.userName.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const groupedFriends = filteredFriends.reduce((groups, friend) => {
-    const letter = friend.displayName.charAt(0).toUpperCase();
-    if (!groups[letter]) {
-      groups[letter] = [];
-    }
-    groups[letter].push(friend);
-    return groups;
-  }, {} as { [key: string]: FriendDto[] });
+  const groupedFriends = filteredFriends.reduce(
+    (groups, friend) => {
+      const letter = friend.displayName.charAt(0).toUpperCase();
+      if (!groups[letter]) {
+        groups[letter] = [];
+      }
+      groups[letter].push(friend);
+      return groups;
+    },
+    {} as { [key: string]: FriendDto[] },
+  );
 
   const sortedLetters = Object.keys(groupedFriends).sort();
 
@@ -119,10 +124,10 @@ const FriendsListPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Danh sách bạn bè
+              {t("friends.title")}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              Bạn có {friends.length} người bạn đang kết nối
+              {t("friends.count_friends", { count: friends.length })}
             </p>
           </div>
           <button
@@ -132,7 +137,7 @@ const FriendsListPage: React.FC = () => {
             <span className="material-symbols-outlined text-[10px]">
               person_add
             </span>
-            Thêm bạn mới
+            {t("friends.add_friend")}
           </button>
         </div>
 
@@ -145,7 +150,7 @@ const FriendsListPage: React.FC = () => {
             </span>
             <input
               type="text"
-              placeholder="Tìm kiếm trong danh sách bạn bè..."
+              placeholder={t("friends.search_placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent border-none outline-none w-full text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-[11px]"
@@ -160,7 +165,7 @@ const FriendsListPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">
-              Đang tải danh sách...
+              {t("friends.loading")}
             </p>
           </div>
         ) : sortedLetters.length === 0 ? (
@@ -171,12 +176,12 @@ const FriendsListPage: React.FC = () => {
               </span>
             </div>
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-              {searchTerm ? "Không tìm thấy kết quả" : "Chưa có bạn bè nào"}
+              {searchTerm ? t("friends.no_results") : t("friends.no_friends")}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">
               {searchTerm
-                ? `Không tìm thấy bạn nào trùng khớp với "${searchTerm}"`
-                : "Hãy bắt đầu tìm kiếm và kết bạn để trò chuyện ngay nhé!"}
+                ? t("friends.no_results_desc", { term: searchTerm })
+                : t("friends.no_friends_desc")}
             </p>
           </div>
         ) : (
@@ -229,7 +234,9 @@ const FriendsListPage: React.FC = () => {
                         </p>
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">
-                            Bạn bè từ {formatDate(friend.becomeFriendAt)}
+                            {t("friends.friend_since", {
+                              date: formatDate(friend.becomeFriendAt),
+                            })}
                           </span>
                         </div>
                       </div>
@@ -239,7 +246,7 @@ const FriendsListPage: React.FC = () => {
                         <button
                           onClick={() => handleOpenChat(friend)}
                           className="w-9 h-9 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:scale-110 active:scale-95 transition-all duration-200"
-                          title="Gửi tin nhắn"
+                          title={t("friends.send_message")}
                         >
                           <span className="material-symbols-outlined text-lg">
                             chat
@@ -251,7 +258,7 @@ const FriendsListPage: React.FC = () => {
                           }
                           disabled={removing[friend.id]}
                           className="w-9 h-9 flex items-center justify-center bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/50 hover:scale-110 active:scale-95 transition-all duration-200"
-                          title="Xoá bạn bè"
+                          title={t("friends.remove_friend")}
                         >
                           {removing[friend.id] ? (
                             <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>

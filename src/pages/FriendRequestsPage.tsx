@@ -8,12 +8,14 @@ import { useAuth } from "../hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 import { conversationApi } from "../api/conversation.api";
 import { useFriendRequest } from "../context/FriendRequestContext";
+import { useTranslation } from "react-i18next";
 
 const FriendRequestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setCurrentConversation, setConversations, conversations } = useChat();
   const { decrementCount, refreshCount } = useFriendRequest();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
   const [requests, setRequests] = useState<FriendRequestDto[]>([]);
@@ -33,7 +35,7 @@ const FriendRequestsPage: React.FC = () => {
           : await friendApi.getSentRequests();
       setRequests(data);
     } catch (err) {
-      toast.error("Không thể tải danh sách lời mời");
+      toast.error(t("toast.load_requests_error"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -54,13 +56,13 @@ const FriendRequestsPage: React.FC = () => {
       setCurrentConversation(newConversation);
       setRequests((prev) => prev.filter((r) => r.id !== request.id));
       decrementCount(); // Update badge count
-      toast.success("Đã chấp nhận lời mời kết bạn");
+      toast.success(t("toast.accept_friend_success"));
 
       setTimeout(() => {
         navigate("/chat");
       }, 500);
     } catch (err) {
-      toast.error("Không thể chấp nhận lời mời");
+      toast.error(t("toast.error_accept_friend"));
     } finally {
       setProcessing((prev) => ({ ...prev, [request.id]: false }));
     }
@@ -73,10 +75,12 @@ const FriendRequestsPage: React.FC = () => {
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
       decrementCount(); // Update badge count
       toast.success(
-        activeTab === "received" ? "Đã từ chối lời mời" : "Đã thu hồi lời mời"
+        activeTab === "received"
+          ? t("toast.reject_friend_success")
+          : t("toast.cancel_friend_success"),
       );
     } catch (err) {
-      toast.error("Thao tác thất bại");
+      toast.error(t("toast.action_failed"));
     } finally {
       setProcessing((prev) => ({ ...prev, [requestId]: false }));
     }
@@ -89,11 +93,16 @@ const FriendRequestsPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Lời mời kết bạn
+              {t("friend_requests.title")}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              Bạn có {requests.length} lời mời{" "}
-              {activeTab === "received" ? "đang chờ" : "đã gửi"}
+              {t("friend_requests.count_text", {
+                count: requests.length,
+                type:
+                  activeTab === "received"
+                    ? t("friend_requests.pending")
+                    : t("friend_requests.sent"),
+              })}
             </p>
           </div>
           <button
@@ -116,7 +125,7 @@ const FriendRequestsPage: React.FC = () => {
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            Lời mời đã nhận
+            {t("friend_requests.tab_received")}
           </button>
           <button
             onClick={() => setActiveTab("sent")}
@@ -126,7 +135,7 @@ const FriendRequestsPage: React.FC = () => {
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            Lời mời đã gửi
+            {t("friend_requests.tab_sent")}
           </button>
         </div>
       </div>
@@ -137,7 +146,7 @@ const FriendRequestsPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">
-              Đang tải...
+              {t("friend_requests.loading")}
             </p>
           </div>
         ) : requests.length === 0 ? (
@@ -151,13 +160,13 @@ const FriendRequestsPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
               {activeTab === "received"
-                ? "Không có lời mời nào"
-                : "Bạn chưa gửi lời mời nào"}
+                ? t("friend_requests.no_received")
+                : t("friend_requests.no_sent")}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">
               {activeTab === "received"
-                ? "Khi có ai đó muốn kết bạn với bạn, lời mời sẽ xuất hiện tại đây."
-                : "Hãy tìm kiếm bạn bè và gửi lời mời để bắt đầu trò chuyện!"}
+                ? t("friend_requests.no_received_desc")
+                : t("friend_requests.no_sent_desc")}
             </p>
           </div>
         ) : (
@@ -207,8 +216,8 @@ const FriendRequestsPage: React.FC = () => {
                     </h4>
                     <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
                       {activeTab === "received"
-                        ? "Đã gửi lời mời cho bạn"
-                        : "Chờ xác nhận"}
+                        ? t("friend_requests.sent_you_request")
+                        : t("friend_requests.waiting_confirmation")}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-2 font-medium italic">
                       {formatDate(request.createdAt)}
@@ -223,14 +232,16 @@ const FriendRequestsPage: React.FC = () => {
                         disabled={processing[request.id]}
                         className="w-full py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 text-[10px]"
                       >
-                        {processing[request.id] ? "Đang xử lý..." : "Chấp nhận"}
+                        {processing[request.id]
+                          ? t("common.loading")
+                          : t("friend_requests.accept")}
                       </button>
                       <button
                         onClick={() => handleReject(request.id)}
                         disabled={processing[request.id]}
                         className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 text-[10px]"
                       >
-                        Để sau
+                        {t("friend_requests.later")}
                       </button>
                     </div>
                   ) : (
@@ -241,10 +252,10 @@ const FriendRequestsPage: React.FC = () => {
                         className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all active:scale-95 disabled:opacity-50 group/cancel"
                       >
                         <span className="group-hover/cancel:hidden text-[10px]">
-                          Đang chờ phản hồi
+                          {t("friend_requests.pending_response")}
                         </span>
                         <span className="hidden group-hover/cancel:block text-[10px]">
-                          Thu hồi lời mời
+                          {t("friend_requests.cancel_request")}
                         </span>
                       </button>
                     </div>
