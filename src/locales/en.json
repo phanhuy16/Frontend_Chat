@@ -214,6 +214,11 @@
     "shared_in": "Shared in",
     "contact_badge": "Contact"
   },
+  "empty_state": {
+    "title": "Your conversations live here",
+    "desc": "Select a chat to see the conversation or start a new one with your friends and colleagues.",
+    "btn_start": "Start a New Chat"
+  },
   "find_people": {
     "title_find": "Find People",
     "title_profile": "User Profile",

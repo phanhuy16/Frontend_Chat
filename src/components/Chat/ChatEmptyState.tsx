@@ -1,10 +1,13 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface ChatEmptyStateProps {
   onStartNewChat?: () => void;
 }
 
 const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ onStartNewChat }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
       <div className="relative mb-8 group">
@@ -18,11 +21,10 @@ const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ onStartNewChat }) => {
 
       <div className="max-w-md space-y-3">
         <h2 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-          Your conversations live here
+          {t("empty_state.title")}
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm lg:text-base font-medium leading-relaxed max-w-[280px] mx-auto">
-          Select a chat to see the conversation or start a new one with your
-          friends and colleagues.
+          {t("empty_state.desc")}
         </p>
       </div>
 
@@ -33,7 +35,7 @@ const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ onStartNewChat }) => {
         <span className="material-symbols-outlined text-[18px] font-bold group-hover:rotate-12 transition-transform">
           add
         </span>
-        Start a New Chat
+        {t("empty_state.btn_start")}
       </button>
     </div>
   );

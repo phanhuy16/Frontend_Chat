@@ -15,18 +15,31 @@ const MOCK_TRANSLATIONS: Record<string, string> = {
 };
 
 export const translateText = async (text: string, targetLang: string = "vi"): Promise<string> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  if (!text || !text.trim()) return text;
 
-  // For mock purposes, if we have it in our dictionary, return it
-  // Otherwise, just append a mock suffix to simulate a translation
-  if (MOCK_TRANSLATIONS[text]) {
-    return MOCK_TRANSLATIONS[text];
-  }
+  try {
+    // Using the public Google Translate API endpoint (gtx)
+    // This is a common way to get translations in small projects without a full API key setup
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+    );
 
-  if (targetLang === "vi") {
-    return `[Dịch] ${text} (Bản dịch mô phỏng)`;
+    if (!response.ok) {
+      throw new Error(`Translation API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Google Translate returns an array: [[["translated_text", "original_text", ...], ...], ...]
+    if (data && data[0]) {
+      const translatedParts = data[0].map((part: any) => part[0]);
+      return translatedParts.join("");
+    }
+
+    return text;
+  } catch (err) {
+    console.error("Translation failed:", err);
+    // Return original text on failure so the UI doesn't break
+    return text;
   }
-  
-  return `[Translated] ${text}`;
 };

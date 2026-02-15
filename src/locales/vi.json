@@ -214,6 +214,11 @@
     "shared_in": "Đã chia sẻ trong",
     "contact_badge": "Liên hệ"
   },
+  "empty_state": {
+    "title": "Các cuộc hội thoại ở đây",
+    "desc": "Chọn một cuộc trò chuyện để xem hoặc bắt đầu một cuộc trò chuyện mới với bạn bè và đồng nghiệp.",
+    "btn_start": "Bắt đầu trò chuyện mới"
+  },
   "find_people": {
     "title_find": "Tìm kiếm bạn bè",
     "title_profile": "Hồ sơ người dùng",
