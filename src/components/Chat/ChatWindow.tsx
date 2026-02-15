@@ -52,9 +52,15 @@ import ReminderModal from "../Message/ReminderModal";
 
 interface ChatWindowProps {
   conversation: Conversation;
+  onBack?: () => void;
+  onToggleSidebar?: () => void;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({
+  conversation,
+  onBack,
+  onToggleSidebar,
+}) => {
   const { user } = useAuth();
   const {
     conversations,
@@ -1086,6 +1092,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
           showContactSidebar={showContactSidebar}
           onStartVideoCall={handleStartVideoCall}
           onStartAudioCall={handleStartAudioCall}
+          onBack={onBack}
+          onToggleSidebar={onToggleSidebar}
         />
 
         <PinnedHeader
@@ -1300,16 +1308,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation }) => {
         />
       )}
       {/* Right side: Contact Info Sidebar */}
-      {showContactSidebar && (
-        <>
-          {/* Mobile overlay */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setShowContactSidebar(false)}
-          />
-        </>
-      )}
-
       <ContactInfoSidebar
         isOpen={showContactSidebar}
         onClose={() => setShowContactSidebar(false)}

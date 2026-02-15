@@ -49,7 +49,8 @@
     "close": "Close",
     "loading": "Loading...",
     "success": "Success",
-    "error": "Error"
+    "error": "Error",
+    "back": "Back"
   },
   "toast": {
     "success_update_accent": "Accent color updated!",

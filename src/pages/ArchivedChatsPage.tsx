@@ -113,6 +113,18 @@ const ArchivedChatsPage: React.FC = () => {
     navigate(`/chat/archived/${conv.id}`);
   };
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // ... (useSignalRHandlers call)
+
+  const handleBack = () => {
+    navigate("/chat/archived");
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -122,9 +134,13 @@ const ArchivedChatsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full">
-      <aside className="flex flex-col w-full max-w-[320px] lg:max-w-[360px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300">
-        <div className="flex flex-col gap-6 p-6">
+    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full relative">
+      <aside
+        className={`flex flex-col glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300 ${
+          conversationId ? "hidden md:flex" : "flex"
+        } ${isSidebarCollapsed ? "w-0 md:w-0 opacity-0 pointer-events-none" : "w-full md:w-[320px] lg:w-[360px] opacity-100"}`}
+      >
+        <div className="flex flex-col gap-6 p-6 min-w-[320px]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/chat")}
@@ -171,9 +187,17 @@ const ArchivedChatsPage: React.FC = () => {
         )}
       </aside>
 
-      <main className="flex-1 flex flex-col glass-effect lg:rounded-3xl overflow-hidden relative transition-all duration-300">
+      <main
+        className={`flex-1 flex flex-col glass-effect lg:rounded-3xl overflow-hidden relative transition-all duration-300 ${
+          conversationId ? "flex" : "hidden md:flex"
+        }`}
+      >
         {isConnected && currentConversation ? (
-          <ChatWindow conversation={currentConversation} />
+          <ChatWindow
+            conversation={currentConversation}
+            onBack={handleBack}
+            onToggleSidebar={toggleSidebar}
+          />
         ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />

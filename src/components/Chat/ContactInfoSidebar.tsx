@@ -251,15 +251,15 @@ const ContactInfoSidebar: React.FC<ContactInfoSidebarProps> = ({
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative flex flex-col w-full max-w-sm glass-effect md:rounded-l-none lg:rounded-3xl h-full transition-transform duration-500 ease-in-out z-50 overflow-hidden
+        className={`fixed lg:relative top-0 right-0 flex flex-col w-full md:max-w-sm glass-effect md:rounded-l-none lg:rounded-3xl h-full transition-transform duration-500 ease-in-out z-[110] lg:z-50 shadow-2xl lg:shadow-none overflow-hidden
         ${isOpen ? "translate-x-0" : "translate-x-full"}
-        md:translate-x-0 ${isOpen ? "md:block" : "md:hidden"}`}
+        lg:translate-x-0 ${isOpen ? "lg:block" : "lg:hidden"}`}
       >
         {/* Header */}
         <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">

@@ -29,6 +29,7 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>("profile");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMobileMenu, setShowMobileMenu] = useState(true); // Default to menu on mobile
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -95,10 +96,19 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleTabSelect = (tabId: TabId) => {
+    setActiveTab(tabId);
+    setShowMobileMenu(false);
+  };
+
   return (
-    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full">
+    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full relative">
       {/* Column 2: Settings Sidebar */}
-      <aside className="hidden md:flex flex-col w-full max-w-[280px] lg:max-w-[320px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden p-6 transition-all duration-300">
+      <aside
+        className={`flex flex-col w-full md:w-[280px] lg:w-[320px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden p-6 transition-all duration-300 ${
+          showMobileMenu ? "flex" : "hidden md:flex"
+        }`}
+      >
         <div className="flex flex-col justify-between h-full">
           <div className="flex flex-col gap-8">
             {/* User Info Card */}
@@ -128,7 +138,7 @@ const SettingsPage: React.FC = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabSelect(tab.id)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group ${
                     activeTab === tab.id
                       ? "bg-primary text-white shadow-lg shadow-primary/25"
@@ -165,8 +175,20 @@ const SettingsPage: React.FC = () => {
       </aside>
 
       {/* Column 3: Settings Content Area */}
-      <main className="flex-1 overflow-y-auto glass-effect lg:rounded-3xl transition-all duration-500 relative bg-white/30 dark:bg-transparent">
-        <div className="p-6 lg:p-10 mx-auto max-w-4xl">
+      <main
+        className={`flex-1 overflow-y-auto glass-effect lg:rounded-3xl transition-all duration-500 relative bg-white/30 dark:bg-transparent ${
+          !showMobileMenu ? "flex" : "hidden md:flex"
+        }`}
+      >
+        <div className="p-6 lg:p-10 mx-auto max-w-4xl w-full">
+          {/* Back Button (Mobile) */}
+          <button
+            onClick={() => setShowMobileMenu(true)}
+            className="flex md:hidden items-center gap-2 text-slate-500 hover:text-primary mb-6 transition-colors"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+            <span className="font-bold text-sm">{t("common.back")}</span>
+          </button>
           {/* Dynamic Page Heading */}
           <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="flex items-center gap-2 mb-2">

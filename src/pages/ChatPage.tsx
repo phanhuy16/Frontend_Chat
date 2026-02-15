@@ -58,8 +58,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
     {},
   );
   const [activeFolder, setActiveFolder] = useState<FolderType>("all");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
+
+  const handleBack = () => {
+    navigate("/chat");
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   const reloadConversations = useCallback(async () => {
     if (!user?.id) return;
@@ -358,10 +367,14 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
   });
 
   return (
-    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full">
+    <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden h-full relative">
       {/* Column 2: Conversation List */}
-      <aside className="flex flex-col w-full max-w-[320px] lg:max-w-[360px] glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300">
-        <div className="flex flex-col gap-6 p-6">
+      <aside
+        className={`flex flex-col glass-effect lg:rounded-3xl shrink-0 overflow-hidden transition-all duration-300 ${
+          conversationId ? "hidden md:flex" : "flex"
+        } ${isSidebarCollapsed ? "w-0 md:w-0 opacity-0 pointer-events-none" : "w-full md:w-[320px] lg:w-[360px] opacity-100"}`}
+      >
+        <div className="flex flex-col gap-6 p-6 min-w-[320px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
               {t("chat_list.title")}
@@ -419,9 +432,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ pendingRequestCount = 0 }) => {
       </aside>
 
       {/* Column 3: Main Chat Area */}
-      <main className="flex-1 flex flex-col glass-effect lg:rounded-3xl overflow-hidden relative transition-all duration-300">
+      <main
+        className={`flex-1 flex flex-col glass-effect lg:rounded-3xl overflow-hidden relative transition-all duration-300 ${
+          conversationId ? "flex" : "hidden md:flex"
+        }`}
+      >
         {isConnected && currentConversation ? (
-          <ChatWindow conversation={currentConversation} />
+          <ChatWindow
+            conversation={currentConversation}
+            onBack={handleBack}
+            onToggleSidebar={toggleSidebar}
+          />
         ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />

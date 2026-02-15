@@ -23,6 +23,8 @@ interface ChatHeaderProps {
   onStartVideoCall: () => void;
   onStartAudioCall: () => void;
   messages: Message[];
+  onBack?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -36,6 +38,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onStartVideoCall,
   onStartAudioCall,
   messages,
+  onBack,
+  onToggleSidebar,
 }) => {
   const { user } = useAuth();
   const { typingUsersByConversation } = useChat();
@@ -112,9 +116,27 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <header className="flex items-center justify-between gap-4 px-4 py-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 z-20">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Back Button (Mobile) */}
+        <button
+          onClick={onBack}
+          className="flex md:hidden items-center justify-center w-8 h-8 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"
+        >
+          <span className="material-symbols-outlined !text-[24px]">
+            arrow_back
+          </span>
+        </button>
+
+        {/* Toggle Sidebar (Tablet) */}
+        <button
+          onClick={onToggleSidebar}
+          className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"
+        >
+          <span className="material-symbols-outlined !text-[24px]">menu</span>
+        </button>
+
         <div
-          className="relative group cursor-pointer"
+          className="relative group cursor-pointer flex items-center gap-3"
           onClick={() => setShowContactSidebar(true)}
         >
           <div className="absolute -inset-0.5 bg-gradient-to-tr from-primary to-secondary rounded-full blur opacity-30 group-hover:opacity-60 transition duration-300"></div>

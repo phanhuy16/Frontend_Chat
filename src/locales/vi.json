@@ -49,7 +49,8 @@
     "close": "Đóng",
     "loading": "Đang tải...",
     "success": "Thành công",
-    "error": "Lỗi"
+    "error": "Lỗi",
+    "back": "Quay lại"
   },
   "toast": {
     "success_update_accent": "Đã cập nhật màu chủ đạo!",

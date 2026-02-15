@@ -16,6 +16,7 @@ import GroupCallWindow from "../Call/GroupCallWindow";
 import IncomingCallModal from "../Call/IncomingCallModal";
 import VideoCallWindow from "../Call/VideoCallWindow";
 import { CallType, ConversationType } from "../../types";
+import BottomNav from "../Chat/BottomNav";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -121,8 +122,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative z-10 flex h-full w-full p-0 lg:p-2 gap-0 lg:gap-2 overflow-hidden">
-        {/* Column 1: Primary Navigation */}
+      <div className="relative z-10 flex h-full w-full p-0 lg:p-2 gap-0 lg:gap-2 overflow-hidden flex-col md:flex-row">
+        {/* Column 1: Primary Navigation (Desktop/Tablet) */}
         <SidebarNav
           user={user}
           avatar={avatar}
@@ -132,22 +133,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         />
 
         {/* Dynamic Content Columns */}
-        <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden">
+        <div className="flex-1 flex gap-0 lg:gap-4 overflow-hidden mb-16 md:mb-0">
           {children}
         </div>
+
+        {/* Bottom Navigation (Mobile) */}
+        <BottomNav />
       </div>
 
-      {/* Global AI FAB - Only show if NOT in a specific conversation */}
+      {/* Global AI FAB - Only show if NOT in a specific conversation on mobile */}
       {!isConversationOpen && (
         <button
           onClick={handleAiClick}
-          className="fixed bottom-10 right-10 w-12 h-12 bg-gradient-to-tr from-primary to-primary-dark rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-[100] group animate-bounce-in"
+          className="fixed bottom-20 md:bottom-10 right-6 md:right-10 w-12 h-12 bg-gradient-to-tr from-primary to-primary-dark rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-[100] group animate-bounce-in"
           title="Chat with AI Assistant"
         >
           <span className="material-symbols-outlined text-xl group-hover:rotate-12 transition-transform">
             smart_toy
           </span>
-          <span className="absolute right-full mr-3 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <span className="absolute right-full mr-3 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none hidden md:block">
             Ask AI
           </span>
         </button>
